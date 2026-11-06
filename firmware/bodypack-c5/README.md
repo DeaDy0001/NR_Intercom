@@ -12,6 +12,11 @@ Damit lässt sich testen:
 
 ## 1. Verkabelung Testaufbau
 
+![Verdrahtungsplan C5 + WM8960 + Tasten](../../docs/img/verkabelung-c5-wm8960.png)
+
+*Jede Linie ist ein Draht (erzeugt mit `tools/wiring_diagram.py`).*
+
+
 | WM8960 Audio Board | ESP32-C5-Zero | Hinweis |
 |---|---|---|
 | VCC (3V3) | **3V3** | |

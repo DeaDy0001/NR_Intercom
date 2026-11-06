@@ -1,0 +1,71 @@
+# Display-Firmware ESP32-S3 AMOLED (Phase 1: Display- und Bedientest)
+
+Diese Firmware läuft auf dem **Waveshare ESP32-S3 AMOLED 1,91″** (RM67162, 536 × 240) und testet:
+
+- **Display:** Ansteuerung über QSPI, Farben, Ausrichtung, Helligkeit, Bildrate
+- **Drehgeber 1 + 2** (KY-040) inklusive Taster, kurz und lang gedrückt
+- **Akkuspannung** (GPIO1)
+- eine **Demo-Oberfläche** für das Intercom mit 4 Kanälen
+
+Die Verbindung zum ESP32-C5 (Funk und Audio) folgt in Phase 2. Bis dahin zeigt die Kopfzeile „Funk: nicht verbunden“.
+
+![Vorschau](../../docs/img/display-s3-vorschau.png)
+
+*Vorschau, am PC aus genau diesem Code gerendert: Hauptseite, Menü, Info, Testbild, FPS-Test.*
+
+## 1. Verkabelung
+
+![Verdrahtungsplan S3 + Drehgeber](../../docs/img/verkabelung-s3-drehgeber.png)
+
+
+Nichts umlöten: Die Drehgeber bleiben, wie sie laut dem bisherigen Sketch im NR_Com-Repo schon verdrahtet sind.
+
+| Drehgeber | Pin | ESP32-S3 | Leiste |
+|---|---|---|---|
+| Drehgeber 1 | CLK | GPIO11 | H1 Pin 9 |
+| Drehgeber 1 | DT | GPIO12 | H1 Pin 10 |
+| Drehgeber 1 | SW | GPIO13 | H1 Pin 11 |
+| Drehgeber 2 | CLK | GPIO14 | H1 Pin 12 |
+| Drehgeber 2 | DT | GPIO16 | H2 Pin 7 |
+| Drehgeber 2 | SW | GPIO15 | H1 Pin 14 |
+| beide | + / GND | 3V3 / GND | H2 Pin 5 / GND |
+
+- Wenn ein Drehgeber falsch herum zählt: in `menuconfig` → **NR Display → Drehgeber → Drehrichtung umkehren**.
+- Wenn er pro Rastung zwei Schritte macht oder nur jede zweite Rastung zählt: **Zählschritte pro Rastung** auf 2 oder 4 stellen.
+- Das WM8960-Board kann am S3 abgesteckt bleiben. Audio übernimmt künftig der C5.
+
+## 2. Flashen
+
+### Variante A: fertige Datei
+1. Chrome oder Edge öffnen: <https://espressif.github.io/esptool-js/>
+2. S3-Board per USB-C anschließen → **Connect** (bei Problemen BOOT-Taste halten und Reset drücken)
+3. `firmware/bin/nr-display-s3.bin` mit **Flash Address 0x0** → **Program**
+
+### Variante B: selbst bauen (ESP-IDF 5.5)
+```bash
+cd firmware/display-s3
+idf.py set-target esp32s3
+idf.py build flash monitor
+```
+
+## 3. Bedienung
+
+| | Drehgeber 1 (links) | Drehgeber 2 (rechts) |
+|---|---|---|
+| **Hauptseite** | Drehen: Kanal wählen · kurz: Hören an/aus · lang: Talk an/aus | Drehen: Lautstärke des Kanals · kurz: Menü |
+| **Menü** | Drehen: Eintrag wählen · kurz: ausführen | Drehen: Wert ändern (Helligkeit) · kurz: zurück |
+| **Info / Testbild / FPS-Test** | kurz: zurück | kurz: zurück |
+
+Helligkeit und Ausrichtung werden gespeichert.
+
+## 4. Was bitte prüfen
+
+1. **Testbild:** Oben links ist die weiße Leiste, die Farben sind in der Reihenfolge weiß, gelb, cyan, grün, magenta, rot, blau, schwarz.
+   Wenn alles auf dem Kopf steht: Menü → **Display drehen**.
+   Wenn die Farben falsch sind (z. B. rot und blau vertauscht), bitte ein Foto schicken.
+2. **Verläufe** im Testbild laufen gleichmäßig ohne Streifen oder Sprünge.
+3. **FPS-Test:** Wie viele Bilder pro Sekunde werden angezeigt, und läuft der blaue Balken flüssig?
+   Erwartung: etwa 30–60 FPS bei vollem Bild.
+   Bei Bildfehlern in `menuconfig` den **QSPI-Takt** von 75 auf 40 MHz senken.
+4. **Drehgeber:** Jede Rastung bewegt die Auswahl genau um einen Schritt, ohne Springen. Kurz und lang drücken werden sauber unterschieden.
+5. **Info-Seite:** Akkuspannung plausibel? Mit USB und ohne Akku erscheint meist „USB“ oder ein Wert um 4,2–5 V.

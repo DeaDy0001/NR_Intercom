@@ -1,0 +1,63 @@
+menu "NR Display"
+
+    menu "AMOLED (RM67162, QSPI)"
+        config NRD_LCD_CS
+            int "CS"
+            default 6
+        config NRD_LCD_SCK
+            int "SCK"
+            default 47
+        config NRD_LCD_D0
+            int "D0"
+            default 18
+        config NRD_LCD_D1
+            int "D1"
+            default 7
+        config NRD_LCD_D2
+            int "D2"
+            default 48
+        config NRD_LCD_D3
+            int "D3"
+            default 5
+        config NRD_LCD_RST
+            int "Reset (auch Touch-Reset)"
+            default 17
+        config NRD_LCD_PCLK_MHZ
+            int "QSPI-Takt in MHz"
+            range 10 80
+            default 75
+    endmenu
+
+    menu "Drehgeber"
+        config NRD_ENC1_CLK
+            int "Drehgeber 1 CLK"
+            default 11
+        config NRD_ENC1_DT
+            int "Drehgeber 1 DT"
+            default 12
+        config NRD_ENC1_SW
+            int "Drehgeber 1 SW (Taster)"
+            default 13
+        config NRD_ENC2_CLK
+            int "Drehgeber 2 CLK"
+            default 14
+        config NRD_ENC2_DT
+            int "Drehgeber 2 DT"
+            default 16
+        config NRD_ENC2_SW
+            int "Drehgeber 2 SW (Taster)"
+            default 15
+        config NRD_ENC_STEPS_PER_DETENT
+            int "Zaehlschritte pro Rastung (KY-040: 4)"
+            range 1 4
+            default 4
+        config NRD_ENC_INVERT
+            bool "Drehrichtung umkehren"
+            default n
+    endmenu
+
+    config NRD_BAT_ADC_GPIO
+        int "Akkuspannung (Teiler 1:2)"
+        default 1
+
+endmenu

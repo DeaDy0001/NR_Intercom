@@ -1,5 +1,10 @@
 # Verkabelung NR_Intercom Bodypack
 
+> **Hinweis (neuer Stand):** Diese Seite beschreibt den **ersten Aufbau** (WM8960 direkt am ESP32-S3).
+> Inzwischen übernimmt ein **ESP32-C5-Zero** Funk und Audio, der WM8960 hängt am C5, und der S3 macht nur noch Display und Drehgeber.
+> Aktuelle Verdrahtungspläne: [C5 + WM8960 + Tasten](img/verkabelung-c5-wm8960.png) · [S3 + Drehgeber](img/verkabelung-s3-drehgeber.png).
+> Die Hinweise zu PSRAM-Pins, Display-Reset (GPIO17) und MCLK gelten weiterhin.
+
 Stand: Prüfung des Schaltplans `img/bodypack-schaltplan-original.png`.
 Die Leitungen wurden automatisch aus dem Bild nachverfolgt und von Hand gegengeprüft.
 

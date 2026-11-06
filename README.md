@@ -17,6 +17,8 @@ Aktueller Prototyp: ESP32-S3 AMOLED + Waveshare WM8960 Audio Board
 
 ➡️ **Funknetz-Planung (Access Points, Reichweite, Einstellungen): [docs/funknetz-planung.md](docs/funknetz-planung.md)**
 
+➡️ **Verdrahtungspläne Testaufbau (jeder Pin mit eigener Linie):** [C5 + WM8960 + Tasten](docs/img/verkabelung-c5-wm8960.png) · [S3 + Drehgeber](docs/img/verkabelung-s3-drehgeber.png)
+
 ➡️ **Verkabelung und gefundene Fehler: [docs/verkabelung.md](docs/verkabelung.md)** *(Prototyp mit WM8960)*
 
 ➡️ **Analyse NR_Com und Anbindung des Bodypacks: [docs/analyse-nr-com.md](docs/analyse-nr-com.md)**
@@ -29,6 +31,7 @@ Aktueller Prototyp: ESP32-S3 AMOLED + Waveshare WM8960 Audio Board
 |---|---|---|
 | 0 | Verkabelung prüfen und korrigieren | 🔧 Fehler gefunden, Umlöten nötig |
 | 1 | Test-Firmware ESP32-C5: WM8960, Mikrofon → Kopfhörer, WLAN 5 GHz, Funk-Messung, RTP-Echo, Tasten → [firmware/bodypack-c5](firmware/bodypack-c5/README.md) | 🔧 bereit zum Testen |
+| 1b | Test-Firmware ESP32-S3-Display: Oberfläche, Drehgeber, Akku → [firmware/display-s3](firmware/display-s3/README.md) | 🔧 bereit zum Testen |
 | 2 | Netzwerk: WLAN, Login (REST), Socket.IO-Signalisierung, Opus über RTP (mediasoup PlainTransport) | ⏳ braucht das neue Server-Event `createPlainTransport` ([Prompt](docs/prompt-com-dev.md)) |
 | 3 | Intercom-Funktion: Kanäle (`joinChannel`), Talk/PTT (`setChannelMicMute`), Lautstärke (`setChannelSettings`), Display-Oberfläche (LVGL) | ⏳ |
 | 4 | Einrichtung (WLAN, Server, Name), OTA-Update, Akku-Optimierung | ⏳ |
