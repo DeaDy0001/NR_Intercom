@@ -36,7 +36,14 @@ Nichts umlöten: Die Drehgeber bleiben, wie sie laut dem bisherigen Sketch im NR
 
 ## 2. Flashen
 
-### Variante A: fertige Datei
+### Variante 0: Doppelklick (Windows mit Arduino IDE)
+1. In der Arduino IDE muss das Paket **„esp32 by Espressif“** installiert sein (Werkzeuge → Board → Boardverwalter).
+2. S3-Board per USB-C anschließen. Den **seriellen Monitor der Arduino IDE schließen**, er blockiert sonst den Port.
+3. **`firmware/flash-s3.bat`** doppelklicken. Das Skript findet esptool selbst, zeigt die COM-Ports und fragt nach dem Port.
+   Bei nur einem Gerät genügt Enter.
+4. Klappt es nicht: BOOT-Taste halten, kurz RESET drücken, BOOT loslassen und mit „j“ neu versuchen.
+
+### Variante A: fertige Datei im Browser
 1. Chrome oder Edge öffnen: <https://espressif.github.io/esptool-js/>
 2. S3-Board per USB-C anschließen → **Connect** (bei Problemen BOOT-Taste halten und Reset drücken)
 3. `firmware/bin/nr-display-s3.bin` mit **Flash Address 0x0** → **Program**

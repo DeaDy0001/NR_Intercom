@@ -1,0 +1,2 @@
+# Windows-Batchdateien unveraendert mit CRLF speichern
+*.bat -text
