@@ -3,6 +3,10 @@
 Stand: Prüfung des Schaltplans `img/bodypack-schaltplan-original.png`.
 Die Leitungen wurden automatisch aus dem Bild nachverfolgt und von Hand gegengeprüft.
 
+> **Achtung, der Schaltplan ist nicht ganz aktuell:** Laut dem Arduino-Sketch im NR_Com-Repo
+> (`wm8960/wm8960_full_loopback`) wurde **Drehgeber 2 SW schon von GPIO17 auf GPIO15** umgelötet.
+> Die Soll-Belegung unten geht von diesem Stand aus. **Bitte mit dem Multimeter prüfen, was wirklich verdrahtet ist.**
+
 ## Hardware
 
 | Teil | Bezeichnung |
@@ -30,7 +34,9 @@ Der ESP32-S3**R8** hat 8 MB **Octal**-PSRAM im Chip. Dieser PSRAM ist intern fes
 
 Betroffen: WM8960 CLK (GPIO35), WS (GPIO36), RXSDA (GPIO37), MCLK (GPIO34).
 
-### 2. Drehgeber 2 Taster (SW) liegt auf GPIO17 → das ist der Display-Reset
+### 2. Drehgeber 2 Taster (SW) liegt im Schaltplan auf GPIO17 → das ist der Display-Reset
+
+Laut Sketch ist das bereits auf **GPIO15** korrigiert. Dann ist hier nichts mehr zu tun.
 
 GPIO17 ist auf dem Board über R13 (0 Ω) fest mit **RESET von AMOLED und Touch** verbunden.
 Wenn man Drehgeber 2 drückt, wird das Display zurückgesetzt, und die Firmware kann das Display nicht
@@ -57,7 +63,7 @@ I2S garantiert mit demselben Takt (kein Driften, keine Knackser).
 | 2 / 10 GND | GND | GND | U1-3 / Masse | ✅ ok |
 | 3 SDA | I2C Daten | **GPIO40** | U1-29 | ✅ ok (gemeinsamer Bus mit IMU/Touch, Adresse WM8960 = 0x1A) |
 | 4 SCL | I2C Takt | **GPIO39** | U1-27 | ✅ ok |
-| 5 / 13 CLK | I2S BCLK (WM8960 → ESP) | **GPIO15** | **U1-14** | ❌ **umlöten** (war GPIO35 / U1-22) |
+| 5 / 13 CLK | I2S BCLK (WM8960 → ESP) | **GPIO44** | **U1-2** | ❌ **umlöten** (war GPIO35 / U1-22) |
 | 6 / 14 WS | I2S LRCLK (WM8960 → ESP) | **GPIO21** | **U1-17** | ❌ **umlöten** (war GPIO36 / U1-24) |
 | 7 RXSDA | I2S DAC-Daten (ESP → WM8960) | **GPIO43** | **U1-1** | ❌ **umlöten** (war GPIO37 / U1-25) |
 | 15 TXSDA | I2S ADC-Daten (WM8960 → ESP) | **GPIO38** | U1-26 | ✅ ok |
@@ -67,7 +73,7 @@ I2S garantiert mit demselben Takt (kein Driften, keine Knackser).
 CLK auf Pin 5 und 13 bzw. WS auf Pin 6 und 14 sind auf dem WM8960-Board dieselbe Leitung.
 Es genügt also je ein Draht. Wenn beide verbunden sind, schadet das nicht.
 
-> GPIO43 ist eigentlich der UART0-TX. Der Bootloader gibt dort beim Start kurz Text aus, während
+> GPIO43/44 sind eigentlich UART0 (TX/RX). Der Bootloader gibt dort beim Start kurz Text aus, während
 > der WM8960 noch stumm ist. Das ist harmlos. Konsole und Flashen laufen danach über USB (GPIO19/20).
 
 ### Drehgeber (KY-040, mit 3,3 V versorgt, **nicht** 5 V)
@@ -80,7 +86,7 @@ Es genügt also je ein Draht. Wenn beide verbunden sind, schadet das nicht.
 | Rotary 1 | + / GND | 3V3 / GND | U1-36 / GND | ✅ |
 | Rotary 2 | CLK | GPIO14 | U1-12 | ✅ |
 | Rotary 2 | DT | GPIO16 | U1-34 | ✅ |
-| Rotary 2 | SW | **GPIO44** | **U1-2** | ❌ **umlöten** (war GPIO17 / U1-35) |
+| Rotary 2 | SW | **GPIO15** | **U1-14** | ⚠️ laut Sketch schon umgelötet (Schaltplan zeigt noch GPIO17 / U1-35) |
 | Rotary 2 | + / GND | 3V3 / GND | U1-36 / GND | ✅ |
 
 ### Taster (über Stecker H2 → H1, angenommen 1:1 durchverbunden)
@@ -129,11 +135,11 @@ an GPIO39/40).
 
 ## Checkliste zum Umlöten
 
-- [ ] Draht WM8960 CLK (Pin 5/13): von U1-22 (GPIO35) → **U1-14 (GPIO15)**
+- [ ] Draht WM8960 CLK (Pin 5/13): von U1-22 (GPIO35) → **U1-2 (GPIO44)**
 - [ ] Draht WM8960 WS (Pin 6/14): von U1-24 (GPIO36) → **U1-17 (GPIO21)**
 - [ ] Draht WM8960 RXSDA (Pin 7): von U1-25 (GPIO37) → **U1-1 (GPIO43)**
 - [ ] Draht WM8960 RXMCLK/TXMCLK (Pin 8/16) ↔ U1-21 (GPIO34): **entfernen**
-- [ ] Draht Rotary 2 SW: von U1-35 (GPIO17) → **U1-2 (GPIO44)**
+- [ ] Rotary 2 SW: prüfen, dass er auf **U1-14 (GPIO15)** liegt und **nicht** mehr auf U1-35 (GPIO17)
 - [ ] Danach mit dem Multimeter prüfen: U1-21, U1-22, U1-24, U1-25, U1-35 haben **keine** Verbindung mehr
 - [ ] WM8960-Jumper P1: egal, da MCLK nicht angeschlossen ist (am besten abziehen)
 
