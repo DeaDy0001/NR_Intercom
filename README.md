@@ -10,7 +10,9 @@ Drahtloses Intercom-Bodypack (Beltpack) als Client für die bestehende NR_Com-So
 - 2× KY-040 Drehgeber, 4× Taster
 - Headset-Anschluss, USB-C
 
-➡️ **Verkabelung und gefundene Fehler: [docs/verkabelung.md](docs/verkabelung.md)**
+➡️ **Hardware-Konzept (Funk, eigene Trägerplatine, Akku, Latenz): [docs/hardware-konzept.md](docs/hardware-konzept.md)**
+
+➡️ **Verkabelung und gefundene Fehler: [docs/verkabelung.md](docs/verkabelung.md)** *(Prototyp mit WM8960)*
 
 ➡️ **Analyse NR_Com und Anbindung des Bodypacks: [docs/analyse-nr-com.md](docs/analyse-nr-com.md)**
 
