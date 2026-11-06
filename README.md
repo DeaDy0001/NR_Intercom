@@ -5,12 +5,17 @@ Drahtloses Intercom-Bodypack (Beltpack) als Client für die bestehende NR_Com-So
 
 ## Hardware
 
-- Waveshare ESP32-S3 AMOLED-Board (ESP32-S3R8)
-- Waveshare WM8960 Audio Board (Codec, Headset und Lautsprecher)
-- 2× KY-040 Drehgeber, 4× Taster
-- Headset-Anschluss, USB-C
+Ziel (siehe Hardware-Konzept):
+- Waveshare ESP32-C5-Zero (WLAN 5 GHz, Audio, NR_Com-Protokoll), gesteckt
+- Waveshare ESP32-S3 AMOLED (Display, Bedienung), gesteckt
+- eigene Trägerplatine: TLV320AIC3204, Mic-Vorverstärker mit Phantomspeisung, XLR/6,35-Kombibuchse, 6,35-mm-Kopfhörer, 2× 18650
+- 4 frei programmierbare Tasten, 2 Drehgeber
+
+Aktueller Prototyp: ESP32-S3 AMOLED + Waveshare WM8960 Audio Board
 
 ➡️ **Hardware-Konzept (Funk, eigene Trägerplatine, Akku, Latenz): [docs/hardware-konzept.md](docs/hardware-konzept.md)**
+
+➡️ **Funknetz-Planung (Access Points, Reichweite, Einstellungen): [docs/funknetz-planung.md](docs/funknetz-planung.md)**
 
 ➡️ **Verkabelung und gefundene Fehler: [docs/verkabelung.md](docs/verkabelung.md)** *(Prototyp mit WM8960)*
 

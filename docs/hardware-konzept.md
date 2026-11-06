@@ -1,203 +1,207 @@
-# Hardware-Konzept Bodypack: Analyse und Empfehlung
+# Hardware-Konzept Bodypack (Version 2)
 
-Anforderungen: **guter Empfang**, **viele Teilnehmer in einem Netz**, **möglichst geringe Latenz**,
-Akku für **einen ganzen Tag** (2–3× 18650), **eigene Trägerplatine**, auf die nur noch das ESP32-Display-Board gesteckt wird.
+Anforderungen:
+- guter Empfang, **20+ Bodypacks**, möglichst geringe Latenz
+- **normale Headsets** inkl. Broadcast-Headsets: Mikrofon über **XLR/6,35-mm-Kombibuchse**, Kopfhörer über **6,35 mm Stereo**, **Phantomspeisung einstellbar**
+- erstes Test-Headset: **Audio-Technica BPHS1**
+- **4 frei programmierbare Tasten** + **2 Drehgeber** für die Bedienung am Display
+- Akku für **einen ganzen Tag** (2–3× 18650)
+- **eigene Trägerplatine**, Module werden nur gesteckt
+- WLAN-Netz wird mitgeplant → [funknetz-planung.md](funknetz-planung.md)
 
 ---
 
-## 1. Kurzfassung / Empfehlung
+## 1. Ergebnis in Kürze
 
-| Thema | Empfehlung |
+| Thema | Entscheidung |
 |---|---|
-| Funk | **WLAN bleibt** (NR_Com ist IP-basiert, kein Gateway nötig), aber **5 GHz und Wi-Fi 6** statt 2,4 GHz |
-| Funkchip | **ESP32-C5** (Dual-Band 2,4/5 GHz, Wi-Fi 6) als Modul **ESP32-C5-WROOM-1U-N8R8** (externe Antenne, 8 MB PSRAM) auf der Trägerplatine |
-| Display/UI | Das **Waveshare ESP32-S3 AMOLED** bleibt als Steck-Board und macht nur Oberfläche, Drehgeber und Menü |
-| Aufteilung | **C5 = Funk + Audio + Opus + NR_Com-Protokoll**, **S3 = Display + Bedienung**, Verbindung über UART |
-| Audio-Codec | **TI TLV320AIC3204** (stromsparend, rauscharm, Mic-PGA bis +47,5 dB, interner DSP für EQ/AGC/Mithörton) statt WM8960 |
-| Akku | **2× 18650 parallel (1S2P)**, ca. 24 Wh → **ca. 17–22 h** Laufzeit. Ein dritter Akku ist nur für Reserve oder Kälte nötig |
-| Laden | USB-C mit Schaltregler-Lader **mit Power-Path** (z. B. TI BQ25606/BQ25895), ca. 2–3 A, voll in ca. 3 h |
-| Größter Latenz-Hebel | **Der Server**, nicht das Funknetz: Jitterbuffer 60 ms + Mixer 40 ms lassen sich auf ca. 20 + 10 ms senken |
-| Netz | Eigene **Intercom-SSID nur auf 5 GHz**, mehrere APs mit Roaming (802.11k/v/r), WMM-Voice. Etwa **15–20 Bodypacks pro AP-Funkkanal** einplanen |
-
-Fazit: Der ESP32 ist **nicht das Problem**. Das Problem ist **2,4 GHz**. Mit einem ESP32-C5 auf 5 GHz,
-guter externer Antenne und einer sauber geplanten WLAN-Infrastruktur ist das ein tragfähiger Kompromiss.
-Professionelle DECT-Systeme sind noch etwas robuster, lassen sich aber im Selbstbau praktisch nicht umsetzen (siehe Abschnitt 2).
+| Funk | WLAN **5 GHz, Wi-Fi 6** mit **ESP32-C5** |
+| Funk-Modul | **Waveshare ESP32-C5-Zero(-M)**, gesteckt, mit **IPEX-Anschluss für externe Antenne** ✅ |
+| Display + Bedienung | **Waveshare ESP32-S3 AMOLED**, gesteckt (vorhanden) |
+| Aufteilung | **C5 = Funk, Audio, Opus, NR_Com-Protokoll, die 4 Tasten**; **S3 = Display, Drehgeber, Menü, Akku-Anzeige** |
+| Mikrofon | Neutrik-**Kombibuchse XLR/6,35 mm** → rauscharmer symmetrischer Mic-Vorverstärker (+20…+60 dB) → Codec |
+| Phantomspeisung | per Software **Aus / P48** (optional P12/P24), Boost-Wandler auf der Platine |
+| Kopfhörer | **6,35 mm Stereo**, eigener Kopfhörer-Verstärker (treibt 32–600 Ω laut genug) |
+| Codec | TI **TLV320AIC3204** (ADC/DAC + DSP für EQ/AGC/Limiter + Mithörton) |
+| Akku | **2× 18650 parallel** (ca. 22–24 Wh), ca. **15–22 h** |
+| Netz | mind. **2–3 APs** für 20+ Bodypacks, eigene 5-GHz-SSID, Roaming |
 
 ---
 
-## 2. Funk-Optionen im Vergleich
+## 2. Das ESP32-C5-Zero: passt das?
 
-| Option | Empfang / Störfestigkeit | Viele Teilnehmer | Latenz (Funk) | Anbindung NR_Com | Aufwand | Bewertung |
-|---|---|---|---|---|---|---|
-| **A: ESP32-S3, WLAN 2,4 GHz (Wi-Fi 4)**, so wie jetzt | ⚠️ 2,4 GHz ist auf Events voll (Publikumshandys, Bluetooth, Funk-DMX, Video-Funk). Nur 3 überlappungsfreie Kanäle | ⚠️ 3 Kanäle × ca. 15 Geräte | 2–20 ms, unter Last mehr Jitter | ✅ direkt | gering | Nur für Proben und kleine Setups |
-| **B: ESP32-C5, WLAN 5 GHz (Wi-Fi 6)** ✅ | ✅ deutlich freieres Band, in EU 4 Kanäle ohne DFS (36–48) plus viele DFS-Kanäle | ✅ skaliert über mehrere APs und Kanäle, OFDMA | 1–10 ms | ✅ direkt | mittel | **Empfehlung** |
-| C: ESP32-P4 + C5/C6 | wie B bzw. A | wie B | wie B | ✅ | hoch | Mehr Rechenleistung, für Audio unnötig |
-| D: DECT NR+ (z. B. Nordic nRF9151, 1,9 GHz) | ✅ eigenes, lizenzfreies Band | ✅ Mesh | niedrig | ❌ braucht eigene Basisstationen und ein Gateway zu NR_Com | sehr hoch | Technologie noch jung, kein fertiger Audio-Stack |
-| E: Klassisches DECT (wie Riedel Bolero, Clear-Com FreeSpeak) | ✅✅ | ✅ | ca. 30–50 ms Ende-zu-Ende, sehr konstant | ❌ Gateway nötig | ❌ Module und Protokoll-Stacks sind für Selbstbau kaum erhältlich | Nicht machbar |
-| F: Eigenes 2,4-GHz- oder Sub-GHz-Funkprotokoll | ⚠️ / ✅ | ⚠️ Bandbreite begrenzt | niedrig | ❌ eigene Basisstation | sehr hoch | Nicht sinnvoll |
-| G: Bluetooth LE Audio | ❌ geringe Reichweite | ❌ | niedrig | ❌ | – | Ungeeignet |
+**Ja, für die Aufgabe „Funk + Audio“ passt es sehr gut.**
 
-**Warum 5 GHz so viel bringt:** Für „viele Teilnehmer“ zählt die **Anzahl der Funkkanäle**.
-Jedes Bodypack verschickt viele kleine Pakete. Ein AP-Funkkanal schafft realistisch etwa 15–25 Sprach-Clients
-(Erfahrungswert aus Voice-over-WLAN). 2,4 GHz hat nur 3 nutzbare Kanäle, die zudem mit allem anderen geteilt werden.
-5 GHz hat deutlich mehr. Mehr Teilnehmer heißt dann einfach mehr APs auf verschiedenen Kanälen.
+| | ESP32-C5-Zero |
+|---|---|
+| Chip | ESP32-C5HF4 (RISC-V 240 MHz, 384 KB SRAM, 4 MB Flash, **kein PSRAM**) |
+| Funk | 2,4 + **5 GHz Wi-Fi 6**, Bluetooth 5 |
+| Antenne | Keramikantenne **und IPEX**, umschaltbar per Software (GP26) ✅ |
+| Größe | 28 × 18 mm, Version „-M“ mit Stiftleisten zum Stecken |
+| Freie Pins | GP0–GP12 + Lötpads GP23/24/25/28 (GP13/14 = USB, GP26 = Antennen-Umschalter, GP27 = RGB-LED) |
 
-**Nachteil von 5 GHz:** Die Reichweite ist etwas geringer und Wände dämpfen stärker. Das gleicht man mit mehreren APs aus,
-was bei vielen Teilnehmern ohnehin nötig ist. Wichtig ist außerdem, wie die Antenne am Bodypack sitzt (siehe Abschnitt 5).
+**Vorteile:**
+- Die gesamte Funktechnik sitzt fertig und geprüft auf dem Modul. Auf der Trägerplatine ist **kein HF-Layout** nötig, das ist beim Selbstbau der heikelste Teil.
+- Der IPEX-Anschluss erlaubt eine richtige externe Antenne oben am Gehäuse. Das ist für den Empfang der wichtigste Punkt.
+- Klein, günstig, steckbar und austauschbar.
+
+**Einschränkung:** **Kein PSRAM.** Für WLAN, TLS, Opus-Encoder und -Decoder, RTP und Jitterbuffer reichen die 384 KB voraussichtlich
+(Schätzung ca. 200–280 KB). Für zusätzlich eine Display-Oberfläche auf demselben Chip wird es aber eng (siehe Abschnitt 3).
+Das wird als erste Messung am Prototyp geprüft.
 
 ---
 
-## 3. Systemaufbau (Empfehlung)
+## 3. Braucht es wirklich einen zweiten ESP32 nur für das Display?
+
+**Technisch nicht zwingend. Für Version 1 ist es aber die bessere Wahl.**
+
+| | **A: C5 + S3-Display (empfohlen für V1)** | B: nur ein C5 + einfaches SPI-Display |
+|---|---|---|
+| Audio-Sicherheit | ✅ Audio und Funk laufen allein auf dem C5. Display-Updates können keine Aussetzer verursachen | ⚠️ ein Rechenkern für Audio, Funk und Oberfläche gleichzeitig |
+| Speicher | ✅ Die Oberfläche läuft auf dem S3 mit 8 MB PSRAM | ⚠️ C5-Zero ohne PSRAM ist für eine Oberfläche zu knapp. Man bräuchte ein C5-Board mit PSRAM |
+| Pins | ✅ reichlich | ⚠️ 17 Pins für I2S, I2C, Display, 4 Tasten, 2 Drehgeber → I/O-Expander nötig |
+| Display | ✅ schönes AMOLED, schon vorhanden | ein SPI-TFT-Modul (z. B. 1,9–2″), eigenes Gehäuse-Fenster |
+| „Nur stecken“ | ✅ beide Module gesteckt | ✅ |
+| Strom | ca. +0,2–0,3 W | ✅ etwas sparsamer |
+| Kosten | ca. +25 € | ✅ |
+| Software | zwei Firmwares + einfache UART-Verbindung | eine Firmware |
+
+**Empfehlung:** Version 1 baut auf **A**. Wenn die Messungen am Prototyp zeigen, dass der C5 genug Reserve hat
+(Rechenlast Opus und WLAN), kann eine spätere, günstigere **Version 2 mit nur einem Chip** kommen.
+Die Firmware wird von Anfang an so aufgebaut, dass die Oberfläche später auf den C5 umziehen kann.
+
+---
+
+## 4. Systemaufbau
 
 ```
-                  ┌──────────────── Trägerplatine (eigene Platine, EasyEDA) ───────────────┐
-                  │                                                                        │
- Headset  ──XLR-4/TRRS──► Mic-Vorverstärker / Bias ──► TLV320AIC3204 ◄─I2S/I2C─► ESP32-C5-WROOM-1U ──U.FL──► Dual-Band-Antenne
- (Kopfhörer) ◄──────────── Kopfhörer-Ausgang ◄────────┘     (Codec)                 (WLAN 5 GHz, Opus, RTP,
-                  │                                                                  Socket.IO zu NR_Com)
-                  │   Taster SW1–4 (Talk) ─────────────────────────────────────────►    │ UART
-                  │                                                                     ▼
-                  │   Drehgeber 1+2 ──────────────► [Buchsenleisten] ◄── Waveshare ESP32-S3 AMOLED (gesteckt)
-                  │                                                     Display, Menü, Pegel, Akku-Anzeige
-                  │                                                                        │
-                  │   USB-C ─► USB-Hub (beide Chips flashbar) ─► Lader mit Power-Path ─► 2× 18650 (1S2P)
-                  │                                      └─► Buck-Boost 3,3 V ─► C5 + Codec
-                  │                                      └─► VSYS ─► ESP32-S3-Board
-                  │   Akku-Anzeige (MAX17048), Ein/Aus-Taster (Soft-Power), Status-LEDs, opt. Vibration
-                  └────────────────────────────────────────────────────────────────────────┘
+                         ┌───────────────────────── Trägerplatine (EasyEDA) ─────────────────────────┐
+ Kombibuchse XLR/6,35 ──►│ Schutz + Phantom (Aus/P48) ─► Mic-Vorverstärker ─► TLV320AIC3204 ◄─I2S/I2C─┐│
+ (Mikrofon)              │                                          (Codec)                         ││
+ 6,35 mm Stereo ◄────────│◄── Kopfhörer-Verstärker ◄─────────────────┘                               ││
+ (Kopfhörer)             │                                                                           ▼│
+                         │   Taster 1–4 (frei programmierbar, mit RGB-LED) ──────────────► [ESP32-C5-Zero]──IPEX──► Antenne
+                         │                                                                    │ UART
+                         │   Drehgeber 1+2 ──────────────► [ESP32-S3 AMOLED, gesteckt] ◄──────┘
+                         │                                  Display, Menü, Akku-Anzeige
+                         │   USB-C (Laden) ─► Lader mit Power-Path ─► 2× 18650 parallel
+                         │                       ├─► Buck-Boost 3,3 V ─► C5, Codec, Logik
+                         │                       ├─► ±5 V (rauscharm) ─► Mic-Vorverstärker, Kopfhörer-Verstärker
+                         │                       ├─► Boost 48 V ─► Phantomspeisung
+                         │                       └─► VSYS ─► S3-Board
+                         │   Akku-Anzeige (MAX17048), Soft-Power-Taster
+                         └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Warum zwei Chips statt einem?**
-- Das Audio läuft auf dem C5 völlig ungestört. Im bisherigen Sketch musste I2S während jedes Display-Updates **angehalten** werden.
-  Das kann es so nicht mehr geben.
-- Das S3-Board kann bleiben, wie es ist: Display, Gehäuse-Ausschnitt und Bedienung sind schon da.
-- Zwischen den Boards laufen nur 2–4 Leitungen (UART plus Reset/Boot für den C5). Die Pin-Probleme von heute (PSRAM-Pins, Display-Reset) fallen weg.
-- Eine Alternative wäre, den C5 als reines WLAN-Modul für den S3 zu nutzen (ESP-Hosted). Das braucht aber 6–7 schnelle
-  Leitungen über die Steckverbindung, und auf dem S3 sind kaum Pins frei. Deshalb ist die Aufteilung nach Aufgaben besser.
+---
 
-**Talk-Tasten direkt an den C5:** Beim Drücken schaltet der C5 das Mikrofon **sofort lokal** frei und meldet es parallel an den Server.
-So gibt es keine Verzögerung durch den Umweg über das Display-Board.
+## 5. Audio-Teil (normale Headsets und Broadcast-Headsets)
+
+### Test-Headset Audio-Technica BPHS1
+- Mikrofon: **dynamisch**, Niere → **keine Phantomspeisung**, braucht viel Verstärkung (ca. +40…+55 dB)
+- Kopfhörer: **65 Ω**, ca. 100 dB/mW, Stereo
+- Kabel BPCB1: Mikrofon auf **XLR-Stecker**, Kopfhörer auf **6,35-mm-Klinke**. Das passt direkt an Kombibuchse + 6,35-mm-Buchse ✅
+
+### Mikrofon-Eingang
+- **Neutrik-Kombibuchse** (XLR-3 + 6,35 mm TRS, symmetrisch, Printmontage)
+- **Phantomspeisung** (IEC 61938): per Software **Aus / P48** über 6,81-kΩ-Präzisionswiderstände.
+  Optional **P12/P24** über einen zweiten Widerstandssatz, der umgeschaltet wird. Langsames Hoch- und Runterfahren gegen Knacken.
+  Der Ausgang ist während des Umschaltens stumm. Die Spannung kommt aus einem kleinen Boost-Wandler (max. 10 mA).
+- **Schutz:** 63-V-Koppelkondensatoren, Klemmdioden (gegen den Entladestoß beim Ein- und Ausstecken mit Phantom), ESD-Schutz
+- **Vorverstärker:** rauscharmer Instrumentenverstärker für Mikrofone (Klasse THAT1512 / INA163),
+  Verstärkung in Stufen umschaltbar (+20 / +40 / +60 dB). Die Feineinstellung macht der Codec digital.
+  Damit sind dynamische Broadcast-Mikrofone **und** Kondensator-Mikrofone möglich.
+- **Wichtig, WLAN-Brummen:** Bei hoher Mikrofonverstärkung kann das WLAN-Senden als Brummen oder Knattern einstreuen.
+  Gegenmittel: symmetrischer Eingang, HF-Filter direkt an der Buchse, Abschirmhaube über dem Vorverstärker, durchgehende Massefläche und die Antenne weit weg vom Analogteil.
+
+### Kopfhörer-Ausgang
+- **6,35 mm Stereo** (Neutrik-Printbuchse)
+- Kopfhörer-Verstärker mit ±5-V-Versorgung (z. B. **OPA1622**): ca. 3 Veff, laut genug auch an 300–600 Ω.
+  Der BPHS1 (65 Ω) braucht für laute Umgebungen ca. 1,5 Veff.
+- Stereo-Nutzung als Option: z. B. **Kanal A links / Kanal B rechts** oder überall Mono-Mix. Das ist in der Firmware einstellbar.
+- Begrenzer (Limiter) im Codec-DSP als Gehörschutz gegen laute Knackser
+
+### Codec TLV320AIC3204
+- 48 kHz, I2S. Der **C5 ist Takt-Master**, es gibt nur eine Taktquelle.
+- DSP: Hochpass (Trittschall, Popp-Geräusche), EQ, AGC/Kompressor fürs Mikrofon, Limiter für den Kopfhörer
+- **Mithörton** direkt im Codec ohne Verzögerung (Pegel einstellbar)
 
 ---
 
-## 4. Latenz-Budget
+## 6. Bedienung
 
-| Abschnitt | Heute (NR_Com-Standard) | Optimiert |
+| Element | Angeschlossen an | Funktion |
 |---|---|---|
-| Aufnahme-Puffer (I2S/DMA) | 5 ms | 2–5 ms |
-| Opus-Frame + Lookahead (Gerät) | 10 + 2,5 ms | 10 + 2,5 ms (Modus „restricted lowdelay“) |
-| WLAN Uplink | 2–10 ms | 1–5 ms (5 GHz, WMM-Voice) |
-| **Server-Jitterbuffer** | **60 ms** | 20–30 ms |
-| **Server-Mixer (audiomixer)** | **40 ms** | 10 ms |
-| Server Opus-Encoder | 10 ms | 10 ms |
-| WLAN Downlink | 2–10 ms | 1–5 ms |
-| Jitterbuffer Gerät | 30–40 ms | 20–30 ms (adaptiv) |
-| Wiedergabe-Puffer | 5 ms | 2–5 ms |
-| **Summe Mund → Ohr** | **ca. 165–190 ms** | **ca. 75–100 ms** |
+| **Taste 1–4** | **C5** (direkt, schnellste Reaktion) | **frei programmierbar**: Talk Kanal X (Tasten- oder Halte-Modus), Ruf (Call), Mikro stumm, Antworten usw. Je Taste eine **RGB-LED** (Talk/Ruf/Status), alle zusammen über 1 Pin (SK6812-LED-Kette) |
+| **Drehgeber 1 + 2** (mit Druck) | **S3** | Bedienung am Display: Menü, Kanal wählen, Lautstärke pro Kanal, Einstellungen |
 
-- Der größte Hebel liegt **im Server** (Jitterbuffer und Mixer). Das ist ein Thema für den Com-Dev, der Wert ist dort schon einstellbar (`audioMixerService.js:115-166`).
-- Der eigene Mithörton kommt **analog** im Codec mit ca. 0 ms. So fühlt sich das Sprechen sofort an.
-- Viele Teilnehmer oder 10-ms-Frames: Bei 10 ms sind es 100 Pakete pro Sekunde und Richtung pro Gerät.
-  Wird die Funkzelle voll, können Gerät und Server auf **20-ms-Frames** gehen. Das halbiert die Paketlast und kostet 10 ms Latenz.
-  Die Frame-Länge wird in der Firmware einstellbar sein.
+Die Tastenbelegung wird im Gerät gespeichert. Sie wird am Display über die Drehgeber eingestellt, später optional auch über NR_Com.
 
 ---
 
-## 5. Empfang: worauf es ankommt
+## 7. Pin-Belegung (Planung)
 
-1. **Externe Dual-Band-Antenne** (2,4/5 GHz) über U.FL, oben am Gehäuse und vom Körper weg (wie die Stummelantenne bei Profi-Beltpacks).
-   Der Körper dämpft 5 GHz stark. Gürtelclip und Antenne gehören deshalb auf entgegengesetzte Seiten.
-2. **Kein Metallgehäuse um die Antenne.** Akkus und Platine stehen zwischen Antenne und Körper, nicht zwischen Antenne und AP.
-3. **Option für später: Antennen-Diversity.** Zwei Antennen (vorne und hinten) mit einem HF-Umschalter. ESP-IDF unterstützt externe Antennenumschaltung.
-4. **Infrastruktur:**
-   - eigene SSID nur für das Intercom, **nur 5 GHz**, 20 MHz Kanalbreite
-   - für Shows die DFS-freien Kanäle 36–48 bevorzugen. Bei DFS kann ein Radar-Ereignis den AP für ca. 60 s vom Kanal werfen.
-   - mehrere APs mit Controller und Roaming (802.11k/v/r)
-   - niedrige Datenraten abschalten (Mindestrate 12–24 Mbit/s), WMM an
-   - Server per Kabel ans Netz
-5. **Firmware:** WLAN-Stromsparmodus aus (sonst ca. 100 ms zusätzliche Verzögerung). Pakete als Sprache markieren (DSCP EF → WMM AC_VO). Opus mit FEC und Paketverlust-Verschleierung (PLC).
+**ESP32-C5-Zero (Funk + Audio):**
 
----
-
-## 6. Akku und Laufzeit
-
-**Verbrauch (Schätzung, muss am Prototyp gemessen werden):**
-
-| Verbraucher | ca. |
+| Funktion | Pins |
 |---|---|
-| ESP32-C5, WLAN aktiv ohne Stromsparen (5 GHz) | 0,35–0,5 W |
-| ESP32-S3-Board (WLAN aus) + AMOLED (dunkle Oberfläche, mittlere Helligkeit) | 0,25–0,4 W |
-| Codec + Kopfhörer (laut) | 0,05–0,15 W |
-| Wandlerverluste (ca. 10 %) | 0,1 W |
-| **Summe** | **ca. 0,8–1,2 W** |
+| I2S zum Codec (BCLK, WS, DOUT, DIN) | 4 |
+| I2C (Codec, I/O-Expander für Phantom, Verstärkung, Kopfhörer-Mute) | 2 |
+| UART zum S3 | 2 |
+| Taste 1–4 | 4 |
+| LED-Kette (SK6812) | 1 |
+| **Summe** | **13 von 17** (USB bleibt frei zum Flashen) |
 
-**Laufzeit:**
+**ESP32-S3 AMOLED (Display):** UART zum C5 (2), Reset/Boot des C5 (2), Drehgeber (6), I2C für Akku-Anzeige und Lader (vorhandener Bus GPIO39/40), Soft-Power (2).
+Ohne I2S fallen alle bisherigen Pin-Konflikte weg (PSRAM-Pins 33–37, Display-Reset GPIO17 bleiben frei).
 
-| Akku | Energie (nutzbar) | Laufzeit |
+---
+
+## 8. Akku und Laufzeit
+
+| Verbraucher (Schätzung, wird gemessen) | ca. |
+|---|---|
+| ESP32-C5, WLAN aktiv ohne Stromsparen | 0,35–0,5 W |
+| ESP32-S3-Board + AMOLED (dunkle Oberfläche) | 0,25–0,4 W |
+| Codec + Vorverstärker + Kopfhörer-Verstärker | 0,1–0,2 W |
+| Phantomspeisung (nur bei Kondensator-Mikrofon) | 0–0,3 W |
+| Wandlerverluste | ca. 0,1–0,15 W |
+| **Summe** | **ca. 0,9–1,4 W** |
+
+| Akku | nutzbar | Laufzeit |
 |---|---|---|
-| 2× 18650 à 3400 mAh, parallel | ca. 22 Wh | **ca. 18–27 h** |
-| 3× 18650 parallel | ca. 33 Wh | ca. 27–40 h |
+| **2× 18650 (à ca. 3400 mAh) parallel** | ca. 22 Wh | **ca. 15–24 h** |
+| 3× 18650 parallel | ca. 33 Wh | ca. 23–36 h |
 
-→ **2 Zellen reichen für einen Tag**, auch mit Reserve. Bei viel Kälte oder sehr hellem Display werden es weniger.
+→ 2 Zellen reichen für einen Tag. Mit dauerhaft eingeschalteter Phantomspeisung und Kälte wird es knapper.
+Der dritte Zellen-Platz kann auf der Platine **vorgesehen** werden, eine Bestückung ist dann optional.
 
-**Warum parallel (1S) und nicht in Reihe (2S):**
-- Alles läuft mit 3,3 V. Bei 1S braucht es nur einen Buck-Boost-Wandler.
-- Laden über USB-C mit 5 V ist einfach, ohne Spannungserhöhung und ohne Balancing.
-- Nur **gleiche Zellen** aus derselben Charge verwenden, entweder als fertiges Pack mit Schutzschaltung oder geschützte Zellen in Haltern.
-
-**Stromversorgung auf der Trägerplatine:**
-- **USB-C**, CC-Widerstände für 5 V/3 A, ESD-Schutz
-- **Lader mit Power-Path** (Gerät läuft beim Laden weiter), z. B. TI BQ25606 (eigenständig) oder BQ25895 (per I2C auslesbar), Ladestrom 2–3 A, **NTC** an den Zellen (sie liegen am Körper)
-- **Akku-Anzeige:** MAX17048 (zeigt % genau an, kaum Eigenverbrauch)
-- **3,3 V:** Buck-Boost (z. B. TI TPS63020/TPS63802) für C5 und Codec. Den Analogteil des Codecs zusätzlich filtern.
-- **ESP32-S3-Board:** Über den Pin **VSYS** speisen (Systemspannung 3,5–4,2 V). Der eigene Akkuanschluss (BAT) des Boards bleibt **leer**.
-  ⚠️ Vor dem Platinen-Layout am Board-Schaltplan prüfen.
-- **Ein/Aus:** Soft-Power-Taster (lang drücken). Die Firmware kann dann sauber herunterfahren und sich abmelden.
+Stromversorgung:
+- USB-C (5 V/3 A, ESD)
+- Lader mit Power-Path, z. B. TI BQ25895 (per I2C, 2–3 A)
+- NTC an den Zellen
+- MAX17048 für die Prozentanzeige
+- Buck-Boost 3,3 V für die Logik, rauscharmes ±5 V für den Analogteil, Boost 48 V für die Phantomspeisung
+- Das S3-Board wird über VSYS gespeist, sein BAT-Anschluss bleibt leer
+- Soft-Power-Taster (lang drücken: Ein/Aus, sauberes Abmelden)
 
 ---
 
-## 7. Audio-Teil
+## 9. Latenz-Budget (unverändert)
 
-- **Codec TLV320AIC3204** (Alternative TLV320AIC3254 mit größerem DSP; WM8960 als Notlösung).
-  - Mikrofon-Verstärkung bis +47,5 dB, differenzielle Eingänge. Mit Vorverstärker geeignet für **dynamische** Headset-Mikrofone, mit Bias für **Elektret**.
-  - Der interne DSP macht Hochpass, EQ, AGC und Limiter, sodass der Funkchip nicht damit belastet wird.
-  - Analoger Mithörton ohne Verzögerung.
-  - Sehr geringer Verbrauch.
-- **Headset-Anschluss:** Bei Profi-Intercom-Headsets ist **XLR-4** üblich (1 Mic−, 2 Mic+, 3 Kopfhörer−, 4 Kopfhörer+).
-  Zusätzlich **3,5 mm TRRS** für Handy- und PC-Headsets. Mic-Bias umschaltbar (dynamisch/Elektret).
-- **Kopfhörer-Verstärker:** Profi-Headsets haben oft 150–600 Ω und brauchen mehr Spannung, als der Codec bei 3,3 V liefert.
-  Optional ein kleiner Kopfhörer-Verstärker mit Ladungspumpe (z. B. TPA6132A2).
-- **Takt:** Der C5 ist I2S-Master und liefert MCLK, oder der Codec erzeugt den Takt per PLL aus BCLK. Es gibt nur **eine** Taktquelle, sodass das Problem von heute nicht mehr auftreten kann.
-- Abtastrate 48 kHz. Opus kann intern auch mit 16 kHz (Wideband) arbeiten. Das spart Rechenzeit, die Sprachqualität ist für Intercom ausreichend, und der Server braucht dafür keine Änderung.
+Heute ca. **165–190 ms** Mund → Ohr, davon **100 ms im Server** (Jitterbuffer 60 ms + Mixer 40 ms).
+Mit Server-Tuning und 5 GHz sind ca. **75–100 ms** realistisch. Der eigene Mithörton hat ca. 0 ms (im Codec).
 
 ---
 
-## 8. Was ändert sich an der Software-Planung?
+## 10. Vorgehen
 
-- Die bisherige Planung bleibt zum großen Teil gültig (Login, Socket.IO, PlainTransport, Opus/RTP, PTT, Lautstärke).
-  Sie läuft jetzt auf dem **ESP32-C5**.
-- Neu: eine kleine **UART-Schnittstelle zwischen C5 und S3** (Status, Pegel, Kanalnamen, Tastendrücke, Menübefehle).
-- Firmware-Updates: Der C5 holt Updates per WLAN (OTA) und kann den S3 über UART mitflashen. Für die Entwicklung sind beide über einen USB-Hub an der USB-C-Buchse erreichbar.
-- Beim Server sind zusätzlich zum bisherigen Prompt die **Latenz-Parameter** wichtig (Jitterbuffer und Mixer-Latenz, optional 20-ms-Frames).
-
----
-
-## 9. Vorgehen (Vorschlag)
-
-1. **Prototyp ohne eigene Platine:**
-   - ESP32-C5-Devkit, z. B. ESP32-C5-DevKitC-1 mit WROOM-1U
-   - TLV320AIC3204-Eval- oder Breakout-Board (alternativ vorerst das vorhandene WM8960-Board)
-   - vorhandenes S3-AMOLED-Board
-   - Damit gleich messen: WLAN-Latenz, Paketverlust, Stromverbrauch, Opus-Rechenlast
-2. **Gleichzeitig:** Server-Erweiterung (PlainTransport) und Latenz-Tuning durch den Com-Dev
-3. **Trägerplatine V1** in EasyEDA, gefertigt und bestückt bei JLCPCB. Davor die Teile auf Verfügbarkeit bei LCSC prüfen.
-4. **Gehäuse** mit Antennenposition, Akkufach und Gürtelclip
-5. **Feldtest** mit mehreren Geräten und mehreren APs
-
-## Offene Fragen an dich
-
-1. **Welche Headsets** sollen dran (Hersteller/Modell, dynamisch oder Elektret, Anschluss XLR-4 oder 3,5 mm)?
-2. **Wie viele Bodypacks** gleichzeitig (ungefähr 5, 20 oder 50+)? Wie groß ist das Gelände, drinnen oder draußen?
-3. **WLAN-Infrastruktur:** Gibt es schon APs (welche)? Oder soll eine Empfehlung für ein Intercom-Funknetz dazu?
-4. Braucht es einen **Lautsprecher** im Bodypack (z. B. für Rufsignale), eine **Vibration** oder **Ruf-Tasten (Call)**?
-5. Sollen die Talk-Tasten **beleuchtet** sein (Talk-/Ruf-Anzeige)?
+1. **Prototyp auf dem Tisch:**
+   - ESP32-C5-Zero + vorhandenes S3-AMOLED-Board
+   - zum Start der WM8960 oder ein AIC3204-Testboard
+   - einfacher Mic-Vorverstärker für das BPHS1
+   - Messen: Opus-Rechenlast und Speicher auf dem C5, Latenz, Paketverlust, Stromverbrauch, Funk-Reichweite
+2. **Server:** PlainTransport-Erweiterung und Latenz-Tuning durch den Com-Dev
+3. **Trägerplatine V1** in EasyEDA, gefertigt und bestückt bei JLCPCB (Analogteil mit Abschirmung)
+4. **Gehäuse:** Antenne oben, Akkufach, Gürtelclip, Buchsen unten oder seitlich
+5. **Funknetz** aufbauen und messen (siehe [funknetz-planung.md](funknetz-planung.md)), dann Feldtest mit mehreren Geräten
