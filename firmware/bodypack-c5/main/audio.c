@@ -141,8 +141,8 @@ static void audio_task(void *arg)
 
 esp_err_t audio_init(void)
 {
-    g_tx_stream   = xStreamBufferCreate(AUDIO_RATE * AUDIO_RING_MS / 1000 * sizeof(int16_t), 1);
-    g_play_stream = xStreamBufferCreate(AUDIO_RATE * AUDIO_RING_MS / 1000 * sizeof(int16_t), 1);
+    g_tx_stream   = xStreamBufferCreate(AUDIO_RATE * AUDIO_TX_RING_MS / 1000 * sizeof(int16_t), 1);
+    g_play_stream = xStreamBufferCreate(AUDIO_RATE * AUDIO_PLAY_RING_MS / 1000 * sizeof(int16_t), 1);
     if (!g_tx_stream || !g_play_stream) return ESP_ERR_NO_MEM;
 
     // ESP32 = I2S-Slave, WM8960 liefert BCLK und WS

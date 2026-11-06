@@ -6,7 +6,8 @@ Damit lässt sich testen:
 - **Audio:** Mikrofon → Kopfhörer (`loop`), Testton (`tone`)
 - **WLAN 5 GHz:** Verbindung, Signalstärke, AP-Wechsel, Antenne intern/extern
 - **Funk-Messung:** Umlaufzeit, Schwankung und Paketverlust zum PC (`nettest`)
-- **Audio über WLAN:** Mikrofon → PC und PC → Kopfhörer als RTP (vorerst unkomprimiert L16, Opus folgt)
+- **Audio über WLAN:** Mikrofon → PC und PC → Kopfhörer als RTP mit **Opus** (48 kHz, Payload-Typ 111 wie NR_Com) oder unkomprimiert (L16)
+- **Messwerte:** Opus-Rechenzeit, freier RAM, Jitter, Verluste, FEC
 - **4 Tasten** und RGB-LED
 
 ## 1. Verkabelung Testaufbau
@@ -50,7 +51,9 @@ die richtige Lösung kommt mit der eigenen Platine.
 4. Danach im Terminal derselben Seite (115200 Baud) oder mit einem anderen seriellen Terminal arbeiten
 
 ### Variante B: selbst bauen (ESP-IDF 5.5)
+Die Opus-Bibliothek ist ein Git-Submodul und muss einmal mitgeholt werden:
 ```bash
+git submodule update --init
 cd firmware/bodypack-c5
 idf.py set-target esp32c5
 idf.py build flash monitor
@@ -100,6 +103,20 @@ ant ext        dann: status
 Mit angeschlossener externer Antenne muss `ant ext` das deutlich bessere Signal zeigen.
 Ist es umgekehrt, ist der Pegel vertauscht: In `menuconfig` unter **NR Bodypack → Pegel für externe Antenne** auf 0 stellen.
 
+### Test 4a: Opus lokal (ohne Netz)
+```text
+rtp 127.0.0.1 5004         Pakete an sich selbst schicken (Opus-Encoder -> Decoder)
+mode rtp
+side 0
+opus 48 5 lowdelay         48 kbit/s, Komplexitaet 5, geringste Latenz
+```
+Taste 1 halten und sprechen: Man hört sich über den Opus-Codec. Danach `status`:
+- **CPU: Opus-Encoder / Decoder in µs pro Paket.** Bei 10-ms-Paketen sollte der Encoder deutlich unter 10.000 µs liegen.
+- **Stack: Codec-Task frei.** Sollte über 2.000 Byte bleiben.
+- **RAM: frei / minimal.** Sollte über 20.000 Byte bleiben.
+
+Zum Vergleich: `opus 48 10 lowdelay`, `opus 32 5 voip`, `rtp frame 20`. Bitte die Werte notieren.
+
 ### Test 4: Echo über WLAN (eigene Stimme über das Netz)
 PC: `python tools/udp_echo.py` läuft. Am Bodypack:
 ```text
@@ -111,15 +128,22 @@ side 0                     Mithörton aus (sonst hört man sich doppelt)
 Mit `rtp jb 20` / `rtp jb 60` lässt sich der Jitterbuffer verändern. `status` zeigt Verluste und Jitter.
 
 ### Test 5: Audio zum PC und vom PC (GStreamer)
-Bodypack → PC (Lautsprecher am PC):
+Dafür `udp_echo.py` beenden, weil Port 5006 belegt ist. Am Bodypack: `rtp <pc-ip> 5006`, `mode rtp`.
+
+Bodypack → PC (Lautsprecher am PC), **Opus**:
+```bash
+gst-launch-1.0 udpsrc port=5006 caps="application/x-rtp,media=audio,clock-rate=48000,encoding-name=OPUS,payload=111" ! rtpjitterbuffer latency=30 ! rtpopusdepay ! opusdec ! audioconvert ! audioresample ! autoaudiosink
+```
+
+PC → Bodypack (Testton in den Kopfhörer), **Opus**:
+```bash
+gst-launch-1.0 audiotestsrc is-live=true wave=sine freq=440 volume=0.3 ! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=1 ! opusenc bitrate=48000 frame-size=10 ! rtpopuspay pt=111 ! udpsink host=<BODYPACK-IP> port=5004
+```
+
+Unkomprimiert (L16) zum Vergleich: am Bodypack `rtp codec l16` (immer 5-ms-Pakete).
 ```bash
 gst-launch-1.0 udpsrc port=5006 caps="application/x-rtp,media=audio,clock-rate=48000,encoding-name=L16,channels=1,payload=96" ! rtpjitterbuffer latency=30 ! rtpL16depay ! audioconvert ! audioresample ! autoaudiosink
-```
-(Dafür `udp_echo.py` beenden, weil Port 5006 belegt ist.)
-
-PC → Bodypack (Testton in den Kopfhörer):
-```bash
-gst-launch-1.0 audiotestsrc is-live=true wave=sine freq=440 volume=0.3 ! audioconvert ! audioresample ! audio/x-raw,format=S16BE,rate=48000,channels=1 ! rtpL16pay pt=96 min-ptime=10000000 max-ptime=10000000 ! udpsink host=<BODYPACK-IP> port=5004
+gst-launch-1.0 audiotestsrc is-live=true wave=sine freq=440 volume=0.3 ! audioconvert ! audioresample ! audio/x-raw,format=S16BE,rate=48000,channels=1 ! rtpL16pay pt=96 min-ptime=5000000 max-ptime=5000000 ! udpsink host=<BODYPACK-IP> port=5004
 ```
 
 ## 5. Was die Ergebnisse uns sagen
@@ -130,7 +154,11 @@ Bitte die Ausgaben von `status` und `nettest` (aus verschiedenen Entfernungen) z
 - wie weit die Bodypacks vom AP weg dürfen
 - ob die interne Antenne reicht oder die externe nötig ist
 
+## Speicher (wichtig für das C5-Zero ohne PSRAM)
+Beim Start sind ca. 170 KB RAM frei. WLAN, Opus-Encoder (ca. 25 KB) + Decoder (ca. 18 KB) und der Codec-Task (32 KB Stack) passen hinein.
+Encoder und Decoder laufen deshalb in **einem** gemeinsamen Task.
+Wenn `status` beim minimalen freien RAM unter 10.000 Byte fällt, auf ein C5-Board mit PSRAM wechseln (z. B. mit ESP32-C5-WROOM-1U-N8R8). Die Firmware läuft dort unverändert.
+
 ## Noch nicht enthalten (nächste Schritte)
-- Opus-Codec (braucht die Opus-Bibliothek, siehe Hinweis in der Hauptdoku)
 - Anbindung an NR_Com (Login, Socket.IO, PlainTransport), sobald der Com-Dev das Server-Event fertig hat
 - Verbindung zum ESP32-S3-Display-Board (UART)

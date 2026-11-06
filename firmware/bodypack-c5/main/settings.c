@@ -8,7 +8,7 @@
 static const char *TAG = "settings";
 #define SETTINGS_NS      "nrb"
 #define SETTINGS_KEY     "cfg"
-#define SETTINGS_VERSION 1
+#define SETTINGS_VERSION 2
 
 settings_t g_set;
 
@@ -36,6 +36,10 @@ void settings_reset(void)
     g_set.frame_ms   = 10;
     g_set.jb_ms      = 30;
     g_set.ptt_latch  = 0;
+    g_set.codec      = CODEC_OPUS;
+    g_set.opus_kbps  = 48;
+    g_set.opus_cplx  = 5;
+    g_set.opus_voip  = 0;
 }
 
 void settings_load(void)

@@ -1,0 +1,3 @@
+[submodule "firmware/bodypack-c5/components/opus/opus"]
+	path = firmware/bodypack-c5/components/opus/opus
+	url = https://github.com/xiph/opus.git

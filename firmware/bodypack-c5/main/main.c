@@ -1,7 +1,7 @@
 // NR_Intercom Bodypack - ESP32-C5 (Funk + Audio), Test-Firmware Phase 1
 //
 // - WM8960 (Waveshare Audio Board) als I2S-Master, ESP32-C5 als Slave, 48 kHz
-// - Modi: loop (Mic -> Kopfhoerer), tone (1 kHz), rtp (L16 ueber WLAN)
+// - Modi: loop (Mic -> Kopfhoerer), tone (1 kHz), rtp (Opus oder L16 ueber WLAN)
 // - WLAN 5 GHz, Stromsparen aus, Roaming 802.11k/v/r
 // - Funk-Messung (nettest) gegen tools/udp_echo.py
 // - Bedienung ueber USB-Konsole (help) und 4 Tasten
@@ -9,6 +9,7 @@
 #include "nvs_flash.h"
 #include "esp_log.h"
 #include "esp_console.h"
+#include "esp_system.h"
 #include "driver/i2c_master.h"
 #include "sdkconfig.h"
 #include "settings.h"
@@ -68,5 +69,6 @@ void app_main(void)
     console_cmds_register();
     ESP_ERROR_CHECK(esp_console_start_repl(repl));
 
-    ESP_LOGI(TAG, "bereit. 'help' fuer Befehle, 'status' fuer den Zustand.");
+    ESP_LOGI(TAG, "bereit. Freier RAM: %u Byte (minimal %u). 'help' fuer Befehle, 'status' fuer den Zustand.",
+             (unsigned)esp_get_free_heap_size(), (unsigned)esp_get_minimum_free_heap_size());
 }

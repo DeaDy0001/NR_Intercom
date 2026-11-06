@@ -16,6 +16,11 @@ typedef enum {
 } mic_src_t;
 
 typedef enum {
+    CODEC_OPUS = 0,
+    CODEC_L16  = 1,
+} codec_sel_t;
+
+typedef enum {
     BAND_AUTO = 0,
     BAND_5G   = 1,
     BAND_2G   = 2,
@@ -35,9 +40,13 @@ typedef struct {
     uint8_t  boost;         // Mic-Boost 0=0dB 1=+13 2=+20 3=+29 dB
     uint8_t  hp_vol;        // Kopfhoerer 0..100 %
     uint8_t  sidetone;      // Mithoerton 0..100 %
-    uint8_t  frame_ms;      // RTP-Paketlaenge 5 oder 10 ms (L16)
+    uint8_t  frame_ms;      // RTP-Paketlaenge: Opus 5/10/20 ms, L16 5/10 ms
     uint16_t jb_ms;         // Ziel-Jitterbuffer in ms
     uint8_t  ptt_latch;     // 1 = Taste 1 schaltet um, 0 = halten
+    uint8_t  codec;         // codec_sel_t
+    uint8_t  opus_kbps;     // Opus-Bitrate in kbit/s (8..128)
+    uint8_t  opus_cplx;     // Opus-Komplexitaet 0..10
+    uint8_t  opus_voip;     // 0 = restricted lowdelay (CELT, minimale Latenz), 1 = voip (SILK/Hybrid + FEC)
 } settings_t;
 
 extern settings_t g_set;

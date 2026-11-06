@@ -7,7 +7,8 @@
 
 #define AUDIO_RATE        48000
 #define AUDIO_BLOCK       240           // 5 ms pro I2S-Block
-#define AUDIO_RING_MS     100
+#define AUDIO_TX_RING_MS  50            // Mikrofon -> Codec (max. Paket 20 ms)
+#define AUDIO_PLAY_RING_MS 60           // Decoder -> I2S (Paket bis 40 ms + Fuellstand 10 ms)
 
 typedef struct {
     uint32_t blocks;          // verarbeitete 5-ms-Bloecke
