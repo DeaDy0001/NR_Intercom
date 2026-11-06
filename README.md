@@ -28,7 +28,7 @@ Aktueller Prototyp: ESP32-S3 AMOLED + Waveshare WM8960 Audio Board
 | Phase | Inhalt | Status |
 |---|---|---|
 | 0 | Verkabelung prüfen und korrigieren | 🔧 Fehler gefunden, Umlöten nötig |
-| 1 | Hardware-Test-Firmware: WM8960 (I2C + I2S), Mikrofon → Kopfhörer, Drehgeber und Tasten, Display, Akku | ⏳ |
+| 1 | Test-Firmware ESP32-C5: WM8960, Mikrofon → Kopfhörer, WLAN 5 GHz, Funk-Messung, RTP-Echo, Tasten → [firmware/bodypack-c5](firmware/bodypack-c5/README.md) | 🔧 bereit zum Testen |
 | 2 | Netzwerk: WLAN, Login (REST), Socket.IO-Signalisierung, Opus über RTP (mediasoup PlainTransport) | ⏳ braucht das neue Server-Event `createPlainTransport` ([Prompt](docs/prompt-com-dev.md)) |
 | 3 | Intercom-Funktion: Kanäle (`joinChannel`), Talk/PTT (`setChannelMicMute`), Lautstärke (`setChannelSettings`), Display-Oberfläche (LVGL) | ⏳ |
 | 4 | Einrichtung (WLAN, Server, Name), OTA-Update, Akku-Optimierung | ⏳ |
