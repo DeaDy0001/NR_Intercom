@@ -42,7 +42,7 @@ void settings_reset(void)
     g_set.opus_cplx  = 5;
     g_set.opus_voip  = 0;
     g_set.gate_db    = -50;
-    strlcpy(g_set.com_host, "nr-com.local", sizeof(g_set.com_host));
+    strlcpy(g_set.com_host, "auto", sizeof(g_set.com_host));   // Server im Netzwerk suchen
     g_set.com_port   = 3002;
     g_set.com_pin[0] = 0;
     g_set.com_on     = 1;

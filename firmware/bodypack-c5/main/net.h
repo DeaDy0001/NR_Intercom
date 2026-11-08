@@ -31,3 +31,4 @@ typedef struct {
 
 int       net_scan_list(net_ap_t *out, int max);   // blockiert 2-4 s, staerkster AP je SSID, sortiert
 void      net_get_mac_hex(char out[13]);
+uint32_t  net_broadcast_addr(void);                // gerichtete Broadcast-Adresse des WLANs (Netzwerk-Byteorder), 0 = keine

@@ -24,6 +24,7 @@ static int64_t s_save_at;       // 0 = nichts zu speichern
 static bool    s_send_settings = true;
 static bool    s_send_channels = true;
 static bool    s_do_scan;
+static bool    s_do_disc;
 
 // Freitext (SSID, Passwort, Kanalnamen, PIN) wird als Hex uebertragen: keine Probleme mit Leerzeichen/Umlauten
 static void hex_enc(const char *s, char *out, size_t max)
@@ -103,6 +104,22 @@ static void send_channels(void)
         send_line(b);
     }
     snprintf(b, sizeof(b), "CE n=%d rev=%lu\n", n, (unsigned long)st.rev);
+    send_line(b);
+}
+
+static void do_disc(void)
+{
+    static com_server_t sv[6];
+    send_line("DS\n");                                  // Suche laeuft
+    int n = net_is_connected() ? com_discover(sv, 6, 1600) : 0;
+    char b[200], nm[50], pr[66];
+    for (int i = 0; i < n; i++) {
+        hex_enc(sv[i].name, nm, sizeof(nm));
+        hex_enc(sv[i].project, pr, sizeof(pr));
+        snprintf(b, sizeof(b), "d ip=%.15s p=%u n=%.49s j=%.65s\n", sv[i].ip, sv[i].port, nm, pr);
+        send_line(b);
+    }
+    snprintf(b, sizeof(b), "DE n=%d\n", n);
     send_line(b);
 }
 
@@ -207,6 +224,8 @@ static void handle_line(char *line)
         }
     } else if (!strcmp(cmd, "CHGET")) {
         s_send_channels = true;
+    } else if (!strcmp(cmd, "DISC")) {
+        s_do_disc = true;
     } else if (!strcmp(cmd, "SCAN")) {
         s_do_scan = true;
     } else if (!strcmp(cmd, "WIFI")) {                   // WIFI <ssid hex> <passwort hex>
@@ -266,6 +285,10 @@ static void link_task(void *arg)
             }
         }
         int64_t now = esp_timer_get_time();
+        if (s_do_disc) {
+            s_do_disc = false;
+            do_disc();
+        }
         if (s_do_scan) {
             s_do_scan = false;
             do_scan();

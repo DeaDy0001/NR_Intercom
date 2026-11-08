@@ -36,7 +36,18 @@ typedef struct {
     uint32_t    rev;    // aendert sich bei jeder neuen Kanalliste
 } com_status_t;
 
+#define COM_HOST_AUTO "auto"          // Server automatisch suchen (Broadcast, dann nr-com.local)
+#define COM_DISC_PORT 3010            // UDP-Port der Server-Suche
+
+typedef struct {
+    char     ip[16];
+    uint16_t port;                    // HTTP-Port des Gateways
+    char     name[24];
+    char     project[32];
+} com_server_t;
+
 esp_err_t com_init(void);
+int       com_discover(com_server_t *out, int max, int ms);   // blockiert ms Millisekunden
 void      com_restart(void);                        // nach Aenderung von Host/Port/PIN/Ein-Aus
 void      com_get_status(com_status_t *st);
 int       com_get_channels(com_channel_t *out, int max);

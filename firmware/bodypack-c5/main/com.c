@@ -12,6 +12,7 @@
 #include "cJSON.h"
 #include "lwip/netdb.h"
 #include "lwip/inet.h"
+#include "lwip/sockets.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -123,6 +124,87 @@ static void utf8_copy(char *dst, const char *src, size_t n)
         size_t need = lead >= 0xF0 ? 4 : lead >= 0xE0 ? 3 : 2;
         if (len - (i - 1) < need) dst[i - 1] = 0;
     }
+}
+
+// ---------------------------------------------------------------- Server-Suche
+// Broadcast "NRCOM_DISCOVER 1" an UDP 3010, jeder NR_Com-Server antwortet mit
+// {"nrcom":1,"api":1,"name":"NR_Com","project":{"id":1,"name":"..."},"port":3002}
+int com_discover(com_server_t *out, int max, int ms)
+{
+    int s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (s < 0) return 0;
+    int one = 1;
+    setsockopt(s, SOL_SOCKET, SO_BROADCAST, &one, sizeof(one));
+    struct timeval tv = { .tv_sec = 0, .tv_usec = 200000 };
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    struct sockaddr_in any = { .sin_family = AF_INET, .sin_port = 0, .sin_addr.s_addr = htonl(INADDR_ANY) };
+    bind(s, (struct sockaddr *)&any, sizeof(any));
+
+    static const char req[] = "NRCOM_DISCOVER 1\n";
+    int n = 0;
+    int64_t end = esp_timer_get_time() + (int64_t)ms * 1000, next_send = 0;
+    char buf[300];
+    while (esp_timer_get_time() < end) {
+        int64_t now = esp_timer_get_time();
+        if (now >= next_send) {                          // alle 500 ms wiederholen (UDP kann verloren gehen)
+            next_send = now + 500000;
+            struct sockaddr_in dst = { .sin_family = AF_INET, .sin_port = htons(COM_DISC_PORT) };
+            dst.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+            sendto(s, req, sizeof(req) - 1, 0, (struct sockaddr *)&dst, sizeof(dst));
+            uint32_t bc = net_broadcast_addr();
+            if (bc) {
+                dst.sin_addr.s_addr = bc;
+                sendto(s, req, sizeof(req) - 1, 0, (struct sockaddr *)&dst, sizeof(dst));
+            }
+        }
+        struct sockaddr_in from;
+        socklen_t fl = sizeof(from);
+        int len = recvfrom(s, buf, sizeof(buf) - 1, 0, (struct sockaddr *)&from, &fl);
+        if (len <= 0) continue;
+        buf[len] = 0;
+        cJSON *root = cJSON_Parse(buf);
+        if (!root) continue;
+        const cJSON *ok = cJSON_GetObjectItem(root, "nrcom");
+        const cJSON *port = cJSON_GetObjectItem(root, "port");
+        if (cJSON_IsNumber(ok) && cJSON_IsNumber(port)) {
+            char ip[16];
+            inet_ntop(AF_INET, &from.sin_addr, ip, sizeof(ip));
+            int k;
+            for (k = 0; k < n; k++) if (!strcmp(out[k].ip, ip)) break;
+            if (k == n && n < max) {
+                com_server_t *sv = &out[n++];
+                strlcpy(sv->ip, ip, sizeof(sv->ip));
+                sv->port = (uint16_t)port->valueint;
+                const cJSON *nm = cJSON_GetObjectItem(root, "name");
+                const cJSON *pr = cJSON_GetObjectItem(root, "project");
+                const cJSON *pn = pr ? cJSON_GetObjectItem(pr, "name") : NULL;
+                utf8_copy(sv->name, cJSON_IsString(nm) ? nm->valuestring : "NR_Com", sizeof(sv->name));
+                utf8_copy(sv->project, cJSON_IsString(pn) ? pn->valuestring : "", sizeof(sv->project));
+            }
+        }
+        cJSON_Delete(root);
+    }
+    close(s);
+    return n;
+}
+
+// Server-Adresse bestimmen: "auto" = Suche per Broadcast, sonst/danach Name oder IP aufloesen
+static bool find_server(char ip[16], uint16_t *port)
+{
+    const bool autom = !strcmp(g_set.com_host, COM_HOST_AUTO);
+    *port = g_set.com_port;
+    if (autom) {
+        com_server_t sv[1];
+        if (com_discover(sv, 1, 1600) > 0) {
+            strlcpy(ip, sv[0].ip, 16);
+            *port = sv[0].port;
+            ESP_LOGI(TAG, "Server gefunden: %s (%s) %s:%u", sv[0].name, sv[0].project, ip, *port);
+            return true;
+        }
+        if (resolve("nr-com.local", ip)) return true;   // Rueckfall: mDNS-Name von NR_Com
+        return false;
+    }
+    return resolve(g_set.com_host, ip);
 }
 
 // ---------------------------------------------------------------- Zustand
@@ -262,7 +344,10 @@ static bool login(const char *ip, uint16_t *rtp_port)
     }
     if (st != 200) {
         char m[48];
-        snprintf(m, sizeof(m), "Login fehlgeschlagen (HTTP %d)", st);
+        cJSON *e = cJSON_Parse(resp);
+        const cJSON *em = e ? cJSON_GetObjectItem(e, "error") : NULL;
+        snprintf(m, sizeof(m), "Login: HTTP %d %s", st, cJSON_IsString(em) ? em->valuestring : "");
+        cJSON_Delete(e);
         set_state(COM_ERROR, m);
         return false;
     }
@@ -296,12 +381,18 @@ static void com_task(void *arg)
         s_relogin = false;
         if (!g_set.com_on) { set_state(COM_OFF, ""); nap(2000); continue; }
         if (!net_is_connected()) { set_state(COM_NO_WIFI, "warte auf WLAN"); nap(500); continue; }
-        if (!g_set.com_host[0]) { set_state(COM_ERROR, "kein Server eingetragen"); nap(2000); continue; }
+        if (!g_set.com_host[0]) strlcpy(g_set.com_host, COM_HOST_AUTO, sizeof(g_set.com_host));
         if (!g_set.com_pin[0]) { set_state(COM_PIN_WRONG, "keine PIN eingetragen"); nap(2000); continue; }
 
-        set_state(COM_SEARCH, g_set.com_host);
-        if (!resolve(g_set.com_host, ip)) { set_state(COM_SEARCH, "Servername nicht gefunden"); nap(3000); continue; }
-        snprintf(s_base, sizeof(s_base), "http://%s:%u/device/v1", ip, g_set.com_port);
+        const bool autom = !strcmp(g_set.com_host, COM_HOST_AUTO);
+        set_state(COM_SEARCH, autom ? "suche im Netzwerk" : g_set.com_host);
+        uint16_t http_port;
+        if (!find_server(ip, &http_port)) {
+            set_state(COM_SEARCH, autom ? "kein Server im Netzwerk gefunden" : "Servername nicht gefunden");
+            nap(2000);
+            continue;
+        }
+        snprintf(s_base, sizeof(s_base), "http://%s:%u/device/v1", ip, http_port);
         snprintf(url, sizeof(url), "%s/hello", s_base);
         if (http_req(url, NULL, buf, sizeof(buf), 3000) != 200) {
             set_state(COM_SEARCH, "Server antwortet nicht");

@@ -33,7 +33,7 @@
 
 // ---------------------------------------------------------------- Zustand
 typedef enum { SCR_MAIN, SCR_MENU, SCR_INFO, SCR_TEST, SCR_FPS, SCR_BP, SCR_BPSTAT,
-               SCR_DASH, SCR_WIFI, SCR_TEXT, SCR_COMSET } screen_t;
+               SCR_DASH, SCR_WIFI, SCR_TEXT, SCR_COMSET, SCR_DISC } screen_t;
 static screen_t s_scr = SCR_MAIN;
 static int s_menu_sel, s_menu_top;
 static int s_brightness = 180;
@@ -833,13 +833,14 @@ static void handle_wifi(const input_ev_t *ev)
 }
 
 // ---------------------------------------------------------------- Intercom-Server
-enum { CI_ON, CI_HOST, CI_PORT, CI_PIN, CI_APPLY, CI_BACK, CI_COUNT };
+enum { CI_ON, CI_FIND, CI_HOST, CI_PORT, CI_PIN, CI_APPLY, CI_BACK, CI_COUNT };
+static bool host_is_auto(const char *h) { return !h[0] || !strcmp(h, "auto"); }
 
 static void comset_load(void)
 {
     s_cs.on = s_c5.com_on;
     s_cs.port = s_c5.com_port > 0 ? s_c5.com_port : 3002;
-    snprintf(s_cs.host, sizeof(s_cs.host), "%s", s_c5.com_host[0] ? s_c5.com_host : "nr-com.local");
+    snprintf(s_cs.host, sizeof(s_cs.host), "%s", s_c5.com_host[0] ? s_c5.com_host : "auto");
     snprintf(s_cs.pin, sizeof(s_cs.pin), "%s", s_c5.com_pin);
     s_cs.dirty = false;
     s_cs.msg[0] = 0;
@@ -853,6 +854,81 @@ static void comset_apply(void)
 }
 
 static int s_csel;
+static int s_dsel;
+
+// ---------------------------------------------------------------- Server-Suche
+static link_server_t s_srvl[LINK_MAX_SRV];
+static int s_nsrvl;
+// Zeilen: 0 = Automatisch, 1.. = gefundene Server, dann Neu suchen, Zurück
+
+static void draw_disc(void)
+{
+    gfx_clear(C_BG);
+    gfx_text(&font_l, 16, 6, "Server suchen", C_TEXT);
+    bool busy = link_discover_busy();
+    if (!busy) s_nsrvl = link_get_servers(s_srvl, LINK_MAX_SRV);
+    gfx_text_box(&font_s, 220, 14, DISP_W - 236, ALIGN_RIGHT,
+                 busy ? "suche im Netzwerk ..." : !s_c5.wifi ? "erst WLAN verbinden" :
+                 s_nsrvl ? "Server wählen" : "kein Server gefunden", busy ? C_WARN : C_DIM);
+    gfx_hline(0, 46, DISP_W, C_LINE);
+    const int items = 1 + (busy ? 0 : s_nsrvl) + 2;
+    s_dsel = clampv(s_dsel, 0, items - 1);
+    for (int i = 0; i < items && i < 6; i++) {
+        int y = 54 + i * 30;
+        bool sel = i == s_dsel;
+        if (sel) gfx_round_rect(8, y - 2, DISP_W - 16, 28, 6, C_TILE_HI);
+        char l[48] = "", v[48] = "";
+        color_t lc = sel ? C_TEXT : C_DIM;
+        if (i == 0) {
+            snprintf(l, sizeof(l), "Automatisch");
+            snprintf(v, sizeof(v), "%s", host_is_auto(s_cs.host) ? "aktiv · empfohlen" : "empfohlen");
+        } else if (i == items - 2) {
+            snprintf(l, sizeof(l), "%s", busy ? "suche ..." : "Neu suchen");
+            lc = sel ? C_ACCENT : C_DIM;
+        } else if (i == items - 1) {
+            snprintf(l, sizeof(l), "< Zurück");
+            lc = sel ? C_ACCENT : C_DIM;
+        } else {
+            const link_server_t *sv = &s_srvl[i - 1];
+            snprintf(l, sizeof(l), "%.22s", sv->project[0] ? sv->project : sv->name);
+            snprintf(v, sizeof(v), "%s:%d", sv->ip, sv->port);
+            if (!strcmp(sv->ip, s_cs.host)) lc = sel ? C_LISTEN : RGB(30, 150, 70);
+        }
+        gfx_text(&font_m, 20, y, l, lc);
+        if (v[0]) gfx_text_box(&font_s, 260, y + 4, DISP_W - 280, ALIGN_RIGHT, v, sel ? C_ACCENT : C_DIM);
+    }
+    gfx_text_box(&font_s, 0, 222, DISP_W, ALIGN_CENTER, "Automatisch: das Bodypack sucht bei jedem Start selbst", C_DIM);
+}
+
+static void handle_disc(const input_ev_t *ev)
+{
+    bool busy = link_discover_busy();
+    const int items = 1 + (busy ? 0 : s_nsrvl) + 2;
+    if (ev->type == EV_ENC1_TURN) {
+        s_dsel = clampv(s_dsel + ev->value, 0, items - 1);
+    } else if (ev->type == EV_ENC1_PRESS) {
+        if (s_dsel == items - 2) { if (!busy) link_discover(); }
+        else if (s_dsel == items - 1) { s_scr = SCR_COMSET; redraw(); return; }
+        else {
+            if (s_dsel == 0) {
+                snprintf(s_cs.host, sizeof(s_cs.host), "auto");
+            } else {
+                snprintf(s_cs.host, sizeof(s_cs.host), "%s", s_srvl[s_dsel - 1].ip);
+                s_cs.port = s_srvl[s_dsel - 1].port;
+            }
+            s_cs.on = 1;
+            comset_apply();                                  // gleich verbinden
+            s_scr = SCR_COMSET;
+            redraw();
+            return;
+        }
+    } else if (ev->type == EV_ENC2_PRESS || ev->type == EV_ENC1_LONG) {
+        s_scr = SCR_COMSET;
+        redraw();
+        return;
+    }
+    draw_disc();
+}
 
 static void draw_comset(void)
 {
@@ -868,17 +944,20 @@ static void draw_comset(void)
     else snprintf(st, sizeof(st), "%s%s%.40s", com_state_text(s_c5.com_state), s_c5.com_msg[0] ? ": " : "", s_c5.com_msg);
     gfx_text(&font_s, 16, 52, st, sc);
     for (int i = 0; i < CI_COUNT; i++) {
-        int y = 76 + i * 22 + (i >= CI_APPLY ? 6 : 0);
+        int y = 74 + i * 19 + (i >= CI_APPLY ? 6 : 0);
         bool sel = i == s_csel;
-        if (sel) gfx_round_rect(8, y - 1, DISP_W - 16, 22, 6, C_TILE_HI);
-        static const char *const lbl[CI_COUNT] = { "Intercom", "Server", "Port", "PIN", "Übernehmen und verbinden", "< Zurück" };
+        if (sel) gfx_round_rect(8, y - 1, DISP_W - 16, 20, 6, C_TILE_HI);
+        static const char *const lbl[CI_COUNT] = { "Intercom", "Server im Netzwerk suchen", "Server (von Hand)", "Port",
+                                                   "PIN", "Übernehmen und verbinden", "< Zurück" };
         color_t lc = (i >= CI_APPLY) ? (sel ? C_ACCENT : C_DIM) : (sel ? C_TEXT : C_DIM);
         if (i == CI_APPLY && s_cs.dirty) lc = C_WARN;
         gfx_text(&font_s, 20, y + 1, lbl[i], lc);
         char v[64] = "";
         if (i == CI_ON) snprintf(v, sizeof(v), "%s", s_cs.on ? "ein" : "aus");
-        if (i == CI_HOST) snprintf(v, sizeof(v), "%s", s_cs.host);
-        if (i == CI_PORT) snprintf(v, sizeof(v), "%d", s_cs.port);
+        if (i == CI_HOST) snprintf(v, sizeof(v), "%s", host_is_auto(s_cs.host) ? "automatisch" : s_cs.host);
+        if (i == CI_FIND) snprintf(v, sizeof(v), "%s", host_is_auto(s_cs.host) ? "automatisch aktiv" : "");
+        if (i == CI_PORT) snprintf(v, sizeof(v), "%s", host_is_auto(s_cs.host) ? "automatisch" : "");
+        if (i == CI_PORT && !host_is_auto(s_cs.host)) snprintf(v, sizeof(v), "%d", s_cs.port);
         if (i == CI_PIN) snprintf(v, sizeof(v), "%s", s_cs.pin[0] ? s_cs.pin : "(keine)");
         if (i == CI_APPLY && s_cs.msg[0] && !s_cs.dirty) snprintf(v, sizeof(v), "%s", s_cs.msg);
         if (v[0]) gfx_text_box(&font_s, 200, y + 1, DISP_W - 220, ALIGN_RIGHT, v, sel ? C_ACCENT : C_DIM);
@@ -892,7 +971,9 @@ static void handle_comset(const input_ev_t *ev)
     } else if (ev->type == EV_ENC1_PRESS) {
         switch (s_csel) {
         case CI_ON:   s_cs.on = !s_cs.on; s_cs.dirty = true; break;
-        case CI_HOST: text_open("Server (Name oder IP)", s_cs.host, 47, CS_HOST, TX_COM_HOST, SCR_COMSET); return;
+        case CI_FIND: s_scr = SCR_DISC; s_dsel = 0; link_discover(); redraw(); return;
+        case CI_HOST: text_open("Server (Name oder IP)", host_is_auto(s_cs.host) ? "" : s_cs.host, 47, CS_HOST,
+                                TX_COM_HOST, SCR_COMSET); return;
         case CI_PORT: { char p[8]; snprintf(p, sizeof(p), "%d", s_cs.port);
                         text_open("Port (Standard 3002)", p, 5, CS_DIGITS, TX_COM_PORT, SCR_COMSET); return; }
         case CI_PIN:  text_open("PIN des Bodypack-Benutzers", s_cs.pin, 15, CS_FULL, TX_COM_PIN, SCR_COMSET); return;
@@ -918,6 +999,7 @@ static void redraw(void)
     case SCR_WIFI: draw_wifi(); break;
     case SCR_TEXT: draw_text_entry(); break;
     case SCR_COMSET: draw_comset(); break;
+    case SCR_DISC: draw_disc(); break;
     case SCR_MENU: draw_menu(); break;
     case SCR_INFO: draw_info(); break;
     case SCR_TEST: draw_test(); break;
@@ -936,6 +1018,7 @@ static void handle(const input_ev_t *ev)
     case SCR_WIFI:   handle_wifi(ev); break;
     case SCR_TEXT:   handle_text(ev); break;
     case SCR_COMSET: handle_comset(ev); break;
+    case SCR_DISC:   handle_disc(ev); break;
     case SCR_MAIN:
         if (com_on_line()) { handle_channels(ev); break; }
         /* fallthrough */
@@ -1060,7 +1143,7 @@ static void ui_task(void *arg)
                 draw_bpstat();
             } else if (s_scr == SCR_MAIN || s_scr == SCR_DASH) {
                 redraw();                                  // Kanalliste bzw. Uebersicht mit 10 Hz
-            } else if ((s_scr == SCR_WIFI || s_scr == SCR_COMSET) && (now / 100000) % 5 == 0) {
+            } else if ((s_scr == SCR_WIFI || s_scr == SCR_COMSET || s_scr == SCR_DISC) && (now / 100000) % 5 == 0) {
                 redraw();                                  // Suche/Status mit 2 Hz
             }
         }

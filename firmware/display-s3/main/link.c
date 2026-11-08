@@ -22,6 +22,9 @@ static uint32_t s_ch_gen;
 static link_ap_t s_ap[LINK_MAX_AP];
 static int s_nap, s_nap_new;
 static bool s_scanning;
+static link_server_t s_srv[LINK_MAX_SRV];
+static int s_nsrv, s_nsrv_new;
+static bool s_discovering;
 
 static int hexv(char c)
 {
@@ -168,6 +171,19 @@ static void handle_line(char *line)
         xSemaphoreGive(s_lock);
         return;
     }
+    if (line[0] == 'D' && line[1] == 'S') { s_discovering = true; s_nsrv_new = 0; return; }
+    if (line[0] == 'd' && line[1] == ' ') {
+        if (s_nsrv_new >= LINK_MAX_SRV) return;
+        link_server_t *v = &s_srv[s_nsrv_new];
+        if (!kv(line, "ip", v->ip, sizeof(v->ip))) return;
+        v->port = kvi(line, "p", 3002);
+        v->name[0] = v->project[0] = 0;
+        kvhex(line, "n", v->name, sizeof(v->name));
+        kvhex(line, "j", v->project, sizeof(v->project));
+        s_nsrv_new++;
+        return;
+    }
+    if (line[0] == 'D' && line[1] == 'E') { s_nsrv = s_nsrv_new; s_discovering = false; return; }
     if (line[0] == 'W' && line[1] == 'S') { s_scanning = true; s_nap_new = 0; return; }
     if (line[0] == 'w' && line[1] == ' ') {
         if (s_nap_new >= LINK_MAX_AP) return;
@@ -273,6 +289,27 @@ void link_channel(int idx, const char *cmd, int value)
         s_ch_gen++;
     }
     xSemaphoreGive(s_lock);
+}
+
+void link_discover(void)
+{
+    s_discovering = true;
+    s_nsrv_new = 0;
+    send("DISC\n");
+}
+
+bool link_discover_busy(void)
+{
+    return s_discovering;
+}
+
+int link_get_servers(link_server_t *out, int max)
+{
+    xSemaphoreTake(s_lock, portMAX_DELAY);
+    int n = s_discovering ? 0 : (s_nsrv < max ? s_nsrv : max);
+    memcpy(out, s_srv, n * sizeof(link_server_t));
+    xSemaphoreGive(s_lock);
+    return n;
 }
 
 void link_scan(void)

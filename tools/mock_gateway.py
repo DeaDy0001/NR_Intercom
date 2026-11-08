@@ -9,6 +9,7 @@ Nur Python-Standardbibliothek. Start (Windows):  py tools\\mock_gateway.py
 - HTTP auf Port 3002 (/device/v1/hello, login, state, cmd, logout)
 - RTP auf Port 40000: Was das Bodypack beim Sprechen schickt, kommt als "Mix" zurueck (Echo),
   sofern das Bodypack in mindestens einem Kanal ist. So hoert man sich selbst mit voller Funk-Latenz.
+- Server-Suche: antwortet auf "NRCOM_DISCOVER" an UDP 3010 (Bodypack: Server "automatisch")
 - Simulierte Sprecher in den Kanaelen (Aktivitaetsanzeige am Display), abschaltbar mit --no-sim
 - Windows-Firewall: Python beim ersten Start fuer "Private Netzwerke" erlauben.
 """
@@ -198,6 +199,25 @@ def rtp_loop():
             log(f"RTP {s['name']}: empfangen {s['rx']}, zurueck {s['tx']}" + ("" if joined else " (in keinem Kanal -> kein Echo)"))
 
 
+def discovery_loop():
+    """Server-Suche: Bodypacks rufen per Broadcast 'NRCOM_DISCOVER 1' an UDP 3010."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        sock.bind(("0.0.0.0", args.disc_port))
+    except OSError as e:
+        log(f"Server-Suche: UDP {args.disc_port} nicht verfuegbar ({e})")
+        return
+    log(f"Server-Suche: UDP-Port {args.disc_port}")
+    reply = json.dumps({"nrcom": 1, "api": 1, "name": "NR_Com (Mock)",
+                        "project": {"id": 1, "name": "Mock-Projekt"}, "port": args.port}).encode()
+    while True:
+        data, addr = sock.recvfrom(512)
+        if data.startswith(b"NRCOM_DISCOVER"):
+            sock.sendto(reply, addr)
+            log(f"Server-Suche von {addr[0]} beantwortet")
+
+
 def sim_loop():
     """Zufaellige Sprecher in den Kanaelen fuer die Aktivitaetsanzeige."""
     while True:
@@ -237,6 +257,7 @@ def main():
     p = argparse.ArgumentParser(description="NR_Com Device-Gateway Mock")
     p.add_argument("--port", type=int, default=3002, help="HTTP-Port (Standard 3002)")
     p.add_argument("--rtp-port", type=int, default=40000, help="RTP-Port (Standard 40000)")
+    p.add_argument("--disc-port", type=int, default=3010, help="UDP-Port der Server-Suche (Standard 3010)")
     p.add_argument("--pin", default="1234", help="PIN fuer den Login (Standard 1234)")
     p.add_argument("--no-sim", action="store_true", help="keine simulierten Sprecher")
     p.add_argument("--autojoin", action="store_true", help="nach dem Login automatisch in Kanal 'Regie'")
@@ -244,12 +265,13 @@ def main():
 
     threading.Thread(target=rtp_loop, daemon=True).start()
     threading.Thread(target=reaper, daemon=True).start()
+    threading.Thread(target=discovery_loop, daemon=True).start()
     if not args.no_sim:
         threading.Thread(target=sim_loop, daemon=True).start()
     srv = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
     srv.daemon_threads = True
     log(f"Mock-Gateway laeuft: http://{local_ip()}:{args.port}/device/v1  (PIN {args.pin})")
-    log(f"Am Bodypack als Server eintragen: {local_ip()}  Port {args.port}")
+    log(f"Am Bodypack: Intercom-Server -> 'Server im Netzwerk suchen' (oder von Hand {local_ip()}, Port {args.port})")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

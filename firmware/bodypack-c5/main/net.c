@@ -183,6 +183,13 @@ int net_scan_list(net_ap_t *out, int max)
     return n_out;
 }
 
+uint32_t net_broadcast_addr(void)
+{
+    esp_netif_ip_info_t ii;
+    if (!s_connected || esp_netif_get_ip_info(s_netif, &ii) != ESP_OK) return 0;
+    return ii.ip.addr | ~ii.netmask.addr;
+}
+
 void net_get_mac_hex(char out[13])
 {
     uint8_t m[6] = { 0 };

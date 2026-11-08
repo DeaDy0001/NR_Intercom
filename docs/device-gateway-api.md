@@ -26,6 +26,23 @@ Referenz-Implementierung zum Testen ohne NR_Com: [`tools/mock_gateway.py`](../to
 
 ---
 
+## 1a. Server finden (UDP-Broadcast, Port 3010)
+
+Damit niemand am Bodypack eine IP eintippen muss:
+
+- Das Gerät schickt `NRCOM_DISCOVER 1\n` (ASCII) per UDP an `255.255.255.255:3010` und an die
+  Broadcast-Adresse seines WLANs, alle 500 ms, insgesamt ca. 1,6 s lang.
+- Jeder NR_Com-Server antwortet **per Unicast an Absender-IP und -Port** mit einem JSON-Objekt:
+  ```json
+  { "nrcom": 1, "api": 1, "name": "NR_Com", "project": { "id": 1, "name": "Show 2026" }, "port": 3002 }
+  ```
+  `port` ist der HTTP-Port, an dem `/device/v1` tatsächlich hängt (bei SSL an `HTTP_PORT` = 3002,
+  bei SSL aus der Hauptport). Die Server-IP nimmt das Gerät aus dem Absender der Antwort.
+- Gerät mit Server-Einstellung „automatisch“: nimmt den ersten Server, der antwortet. Antwortet keiner,
+  versucht es `nr-com.local` (mDNS) mit dem eingestellten Port.
+
+---
+
 ## 2. Endpunkte
 
 ### `GET /device/v1/hello`

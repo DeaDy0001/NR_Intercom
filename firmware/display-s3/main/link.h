@@ -66,3 +66,15 @@ bool      link_scan_busy(void);
 int       link_get_scan(link_ap_t *out, int max);
 void      link_wifi(const char *ssid, const char *pass);
 void      link_com(bool on, int port, const char *host, const char *pin);
+
+typedef struct {
+    char ip[16];
+    int  port;
+    char name[24];
+    char project[32];
+} link_server_t;
+
+#define LINK_MAX_SRV 6
+void      link_discover(void);                                            // NR_Com-Server im Netz suchen
+bool      link_discover_busy(void);
+int       link_get_servers(link_server_t *out, int max);

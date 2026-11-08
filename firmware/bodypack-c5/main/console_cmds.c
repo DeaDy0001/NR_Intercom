@@ -449,7 +449,14 @@ static int cmd_com(int argc, char **argv)
             printf("  %2d %-24s %s %s Lautst. %3d%%%s\n", i, ch[i].name, ch[i].joined ? "drin" : "    ",
                    ch[i].talk ? "TALK" : "    ", ch[i].volume, ch[i].talkers ? "  (spricht jemand)" : "");
         }
-        printf("com on|off | com server <name/ip> [port] | com pin <pin> | com join|leave|talk|untalk <nr> | com vol <nr> <0..100>\n");
+        printf("com find | com server auto | com on|off | com server <name/ip> [port] | com pin <pin> | com join|leave|talk|untalk <nr> | com vol <nr> <0..100>\n");
+        return 0;
+    }
+    if (!strcmp(argv[1], "find")) {
+        com_server_t sv[6];
+        int n = com_discover(sv, 6, 1600);
+        printf("%d Server gefunden\n", n);
+        for (int i = 0; i < n; i++) printf("  %s:%u  %s  (%s)\n", sv[i].ip, sv[i].port, sv[i].name, sv[i].project);
         return 0;
     }
     if (!strcmp(argv[1], "on") || !strcmp(argv[1], "off")) {
