@@ -27,7 +27,7 @@ Server-Suche per UDP-Broadcast:
  4. Windows-Firewall: UDP 3010 eingehend erlauben (zusätzlich zu TCP 3002 und UDP 40000-49999).
     Wenn ihr ein Installer-/Setup-Skript mit Firewall-Regeln habt, bitte dort ergänzen.
  5. Test von einem zweiten PC:
-      python -c "import socket;s=socket.socket(2,2);s.setsockopt(1,6,1);s.settimeout(2);s.sendto(b'NRCOM_DISCOVER 1\n',('255.255.255.255',3010));print(s.recvfrom(512))"
+      python -c "import socket as S;s=S.socket(S.AF_INET,S.SOCK_DGRAM);s.setsockopt(S.SOL_SOCKET,S.SO_BROADCAST,1);s.settimeout(2);s.sendto(b'NRCOM_DISCOVER 1',('255.255.255.255',3010));print(s.recvfrom(512))"
     (unter Windows: py statt python) -> muss das JSON mit dem richtigen Port liefern.
  6. Optional in GET /device/v1/status mit ausgeben, dass die Suche läuft und auf welchem Port.
 
