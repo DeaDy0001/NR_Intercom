@@ -12,6 +12,9 @@
 #include "rtp.h"
 #include "nettest.h"
 #include "driver/i2c_master.h"
+#include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "sdkconfig.h"
 
 extern i2c_master_bus_handle_t g_i2c_bus;
@@ -245,6 +248,7 @@ static int cmd_nettest(int argc, char **argv)
 
 static int cmd_i2cscan(int argc, char **argv)
 {
+    if (!g_i2c_bus) { printf("I2C-Bus nicht aktiv\n"); return 1; }
     printf("I2C-Scan (SDA=GP%d, SCL=GP%d):\n", CONFIG_NRB_PIN_I2C_SDA, CONFIG_NRB_PIN_I2C_SCL);
     int found = 0;
     for (int a = 0x08; a < 0x78; a++) {
@@ -258,6 +262,75 @@ static int cmd_i2cscan(int argc, char **argv)
     } else if (!wm8960_present()) {
         printf("  WM8960 antwortet jetzt? Dann einmal 'restart' eingeben.\n");
     }
+    if (!found) {
+        printf("  Tipp: 'i2cdiag' prueft Spannung und vertauschte Leitungen.\n");
+    }
+    return 0;
+}
+
+static int scan_bus(int sda, int scl, bool *wm)
+{
+    i2c_master_bus_config_t cfg = {
+        .i2c_port = I2C_NUM_0, .sda_io_num = sda, .scl_io_num = scl, .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7, .flags.enable_internal_pullup = true,
+    };
+    i2c_master_bus_handle_t bus;
+    if (i2c_new_master_bus(&cfg, &bus) != ESP_OK) return -1;
+    int n = 0;
+    *wm = false;
+    for (int a = 0x08; a < 0x78; a++) {
+        if (i2c_master_probe(bus, a, 20) == ESP_OK) {
+            n++;
+            if (a == 0x1A) *wm = true;
+        }
+    }
+    i2c_del_master_bus(bus);
+    return n;
+}
+
+static int cmd_i2cdiag(int argc, char **argv)
+{
+    const int sda = CONFIG_NRB_PIN_I2C_SDA, scl = CONFIG_NRB_PIN_I2C_SCL;
+    if (wm8960_present()) {
+        printf("WM8960 wurde beim Start gefunden, I2C ist in Ordnung.\n");
+        return 0;
+    }
+    printf("I2C-Diagnose (SDA=GP%d, SCL=GP%d)\n", sda, scl);
+    // 1) Ruhepegel ohne interne Pull-ups: das WM8960-Board hat eigene 10-k-Pull-ups nach 3,3 V
+    i2c_del_master_bus(g_i2c_bus);
+    g_i2c_bus = NULL;
+    gpio_config_t io = { .pin_bit_mask = (1ULL << sda) | (1ULL << scl), .mode = GPIO_MODE_INPUT,
+                         .pull_up_en = GPIO_PULLUP_DISABLE, .pull_down_en = GPIO_PULLDOWN_ENABLE };
+    gpio_config(&io);
+    vTaskDelay(pdMS_TO_TICKS(20));
+    int l_sda = gpio_get_level(sda), l_scl = gpio_get_level(scl);
+    io.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    gpio_config(&io);
+    printf("1) Pegel ohne interne Pull-ups (schwacher Pull-down aktiv):\n");
+    printf("   SDA (GP%d): %s\n", sda, l_sda ? "HIGH -> Leitung haengt am WM8960-Board, Board hat Strom" :
+                                              "LOW  -> nicht verbunden ODER WM8960-Board ohne 3,3 V");
+    printf("   SCL (GP%d): %s\n", scl, l_scl ? "HIGH -> Leitung haengt am WM8960-Board, Board hat Strom" :
+                                              "LOW  -> nicht verbunden ODER WM8960-Board ohne 3,3 V");
+    // 2) normal und vertauscht scannen
+    bool wm;
+    int n1 = scan_bus(sda, scl, &wm);
+    printf("2) Scan SDA=GP%d / SCL=GP%d: %d Geraet(e)%s\n", sda, scl, n1, wm ? ", WM8960 (0x1A) gefunden" : "");
+    bool wm2;
+    int n2 = scan_bus(scl, sda, &wm2);
+    printf("3) Scan VERTAUSCHT SDA=GP%d / SCL=GP%d: %d Geraet(e)%s\n", scl, sda, n2,
+           wm2 ? ", WM8960 (0x1A) gefunden" : "");
+    printf("Ergebnis: ");
+    if (wm) printf("WM8960 antwortet jetzt -> 'restart' eingeben.\n");
+    else if (wm2) printf("SDA und SCL sind VERTAUSCHT -> die zwei Draehte an GP9/GP10 tauschen, dann 'restart'.\n");
+    else if (!l_sda && !l_scl) printf("keine Spannung auf SDA/SCL -> 3V3/GND des WM8960 und die Pins GP9/GP10 pruefen.\n");
+    else printf("Leitungen haben Spannung, aber keine Antwort -> SDA/SCL am WM8960 nach Aufdruck pruefen "
+                "(nicht nach Nummer 1-16).\n");
+    // urspruenglichen Bus wiederherstellen
+    i2c_master_bus_config_t cfg = {
+        .i2c_port = I2C_NUM_0, .sda_io_num = sda, .scl_io_num = scl, .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7, .flags.enable_internal_pullup = true,
+    };
+    i2c_new_master_bus(&cfg, &g_i2c_bus);
     return 0;
 }
 
@@ -307,6 +380,7 @@ void console_cmds_register(void)
         { .command = "opus",    .help = "Opus: opus <kbit/s> [komplexitaet] [lowdelay|voip]", .func = cmd_opus },
         { .command = "talk",    .help = "Talk: talk [on|off]", .func = cmd_talk },
         { .command = "nettest", .help = "Funk-Messung: nettest <pc-ip> [port] [s] [ms] [bytes]", .func = cmd_nettest },
+        { .command = "i2cdiag", .help = "I2C-Diagnose: Pegel messen, SDA/SCL vertauscht testen", .func = cmd_i2cdiag },
         { .command = "i2cscan", .help = "I2C-Bus absuchen (WM8960 = 0x1A)", .func = cmd_i2cscan },
         { .command = "reg",     .help = "WM8960-Register schreiben: reg <nr> <wert> (hex)", .func = cmd_reg },
         { .command = "log",     .help = "Log-Ausgaben: log on|off", .func = cmd_log },
