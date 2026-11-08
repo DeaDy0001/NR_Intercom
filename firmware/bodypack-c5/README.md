@@ -49,6 +49,11 @@ die richtige Lösung kommt mit der eigenen Platine.
 
 ## 2. Flashen
 
+### Variante 0: Doppelklick (Windows mit Arduino IDE)
+1. Arduino IDE: Paket **„esp32 by Espressif“ ab Version 3.3** (ältere esptool-Versionen kennen den C5 nicht).
+2. C5-Zero per USB-C anschließen, seriellen Monitor schließen.
+3. **`firmware/flash-c5.bat`** doppelklicken, COM-Port wählen.
+
 ### Variante A: fertige Datei, ohne Entwicklungsumgebung
 1. Chrome oder Edge öffnen: <https://espressif.github.io/esptool-js/>
 2. ESP32-C5-Zero per USB-C anschließen → **Connect** (bei Problemen BOOT-Taste halten und dann Reset drücken)
