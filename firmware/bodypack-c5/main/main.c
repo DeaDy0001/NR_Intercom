@@ -23,6 +23,7 @@
 static const char *TAG = "main";
 
 void console_cmds_register(void);
+i2c_master_bus_handle_t g_i2c_bus;
 
 void app_main(void)
 {
@@ -46,6 +47,7 @@ void app_main(void)
     };
     i2c_master_bus_handle_t bus;
     ESP_ERROR_CHECK(i2c_new_master_bus(&bus_cfg, &bus));
+    g_i2c_bus = bus;
 
     if (wm8960_init(bus) == ESP_OK) {
         wm8960_set_mic(g_set.mic, g_set.pga_db, g_set.boost);

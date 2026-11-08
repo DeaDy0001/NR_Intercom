@@ -11,6 +11,10 @@
 #include "net.h"
 #include "rtp.h"
 #include "nettest.h"
+#include "driver/i2c_master.h"
+#include "sdkconfig.h"
+
+extern i2c_master_bus_handle_t g_i2c_bus;
 
 static void save(void)
 {
@@ -35,6 +39,9 @@ void console_print_status(void)
     }
     printf("\n       Abbrueche %lu, AP-Wechsel %lu, Antenne %s\n", (unsigned long)ni.disconnects,
            (unsigned long)ni.roams, g_set.ant_ext ? "extern" : "intern");
+    printf("Codec: WM8960 %s (I2C SDA=GP%d, SCL=GP%d), Schreibfehler %lu\n",
+           wm8960_present() ? "gefunden + eingestellt" : "NICHT gefunden",
+           CONFIG_NRB_PIN_I2C_SDA, CONFIG_NRB_PIN_I2C_SCL, (unsigned long)wm8960_write_errors());
     printf("Audio: Modus %s, Mic %s (PGA %+d dB, Boost %d), Kopfhoerer %d%%, Mithoerton %d%%, Talk %s\n",
            mode_name(g_set.mode), g_set.mic == MIC_ONBOARD ? "Board" : "Buchse", g_set.pga_db,
            g_set.boost, g_set.hp_vol, g_set.sidetone, g_talk ? "AN" : "aus");
@@ -236,6 +243,24 @@ static int cmd_nettest(int argc, char **argv)
     return 0;
 }
 
+static int cmd_i2cscan(int argc, char **argv)
+{
+    printf("I2C-Scan (SDA=GP%d, SCL=GP%d):\n", CONFIG_NRB_PIN_I2C_SDA, CONFIG_NRB_PIN_I2C_SCL);
+    int found = 0;
+    for (int a = 0x08; a < 0x78; a++) {
+        if (i2c_master_probe(g_i2c_bus, a, 20) == ESP_OK) {
+            printf("  0x%02X%s\n", a, a == 0x1A ? "  <- WM8960" : "");
+            found++;
+        }
+    }
+    if (!found) {
+        printf("  keine Geraete gefunden: SDA/SCL vertauscht oder nicht verbunden, 3V3/GND am WM8960 pruefen\n");
+    } else if (!wm8960_present()) {
+        printf("  WM8960 antwortet jetzt? Dann einmal 'restart' eingeben.\n");
+    }
+    return 0;
+}
+
 static int cmd_reg(int argc, char **argv)
 {
     if (argc < 3) { printf("reg <nr hex> <wert hex>  (WM8960 direkt schreiben)\n"); return 1; }
@@ -282,6 +307,7 @@ void console_cmds_register(void)
         { .command = "opus",    .help = "Opus: opus <kbit/s> [komplexitaet] [lowdelay|voip]", .func = cmd_opus },
         { .command = "talk",    .help = "Talk: talk [on|off]", .func = cmd_talk },
         { .command = "nettest", .help = "Funk-Messung: nettest <pc-ip> [port] [s] [ms] [bytes]", .func = cmd_nettest },
+        { .command = "i2cscan", .help = "I2C-Bus absuchen (WM8960 = 0x1A)", .func = cmd_i2cscan },
         { .command = "reg",     .help = "WM8960-Register schreiben: reg <nr> <wert> (hex)", .func = cmd_reg },
         { .command = "log",     .help = "Log-Ausgaben: log on|off", .func = cmd_log },
         { .command = "factory", .help = "Werkseinstellungen", .func = cmd_factory },

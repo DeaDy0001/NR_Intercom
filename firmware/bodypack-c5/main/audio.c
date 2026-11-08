@@ -62,7 +62,13 @@ static void audio_task(void *arg)
         if (err != ESP_OK || got != sizeof(in)) {
             s_st.i2s_errors++;
             if (err == ESP_ERR_TIMEOUT) {
-                ESP_LOGW(TAG, "kein I2S-Takt vom WM8960 (BCLK/WS pruefen)");
+                static int64_t last_warn;
+                int64_t now = esp_timer_get_time();
+                if (now - last_warn > 5000000) {   // hoechstens alle 5 s melden
+                    last_warn = now;
+                    ESP_LOGW(TAG, "kein I2S-Takt vom WM8960 (Codec per I2C erreichbar? 'i2cscan' / CLK->GP%d, WS->GP%d pruefen)",
+                             CONFIG_NRB_PIN_I2S_BCLK, CONFIG_NRB_PIN_I2S_WS);
+                }
             }
             continue;
         }

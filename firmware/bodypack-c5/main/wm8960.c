@@ -42,14 +42,28 @@ static const char *TAG = "wm8960";
 
 static i2c_master_dev_handle_t s_dev;
 static uint16_t s_cache[56];
+static bool s_present;
+static uint32_t s_write_errors;
+
+bool wm8960_present(void)
+{
+    return s_present;
+}
+
+uint32_t wm8960_write_errors(void)
+{
+    return s_write_errors;
+}
 
 esp_err_t wm8960_write(uint8_t reg, uint16_t val)
 {
+    if (!s_dev) return ESP_ERR_INVALID_STATE;
     uint8_t buf[2] = { (uint8_t)((reg << 1) | ((val >> 8) & 1)), (uint8_t)(val & 0xFF) };
     esp_err_t err = i2c_master_transmit(s_dev, buf, sizeof(buf), 50);
     if (err == ESP_OK) {
         if (reg < 56) s_cache[reg] = val & 0x1FF;
     } else {
+        s_write_errors++;
         ESP_LOGE(TAG, "Schreiben R%02X fehlgeschlagen: %s", reg, esp_err_to_name(err));
     }
     return err;
@@ -117,7 +131,9 @@ esp_err_t wm8960_init(i2c_master_bus_handle_t bus)
     wm8960_write(R_ROUTMIX, 0x100);
     wm8960_write(R_CLASSD1, 0x037);   // Lautsprecher aus
 
-    ESP_LOGI(TAG, "WM8960 initialisiert (Master, PLL 12,288 MHz, 48 kHz, I2S 16 Bit)");
+    s_present = (s_write_errors == 0);
+    ESP_LOGI(TAG, "WM8960 initialisiert (Master, PLL 12,288 MHz, 48 kHz, I2S 16 Bit)%s",
+             s_present ? "" : " - ABER mit Schreibfehlern!");
     return ESP_OK;
 }
 
