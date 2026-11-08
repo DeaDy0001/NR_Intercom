@@ -82,6 +82,7 @@ static const bp_item_t s_bp[BI_COUNT] = {
     [BI_JB]    = { "jb",    "Jitterbuffer",     5, 200, 5, NULL, "%d ms" },
 };
 #define BP_ROWS 5
+#define BP_ITEMS (BI_COUNT + 1)          // letzte Zeile: "Zurück"
 
 static int s_bp_val[BI_COUNT];
 static int64_t s_bp_touched[BI_COUNT];   // lokale Aenderung, noch nicht vom C5 bestaetigt
@@ -298,7 +299,7 @@ static void draw_menu(void)
 {
     gfx_clear(C_BG);
     gfx_text(&font_l, 16, 6, "Menü", C_TEXT);
-    gfx_text_box(&font_s, 140, 14, DISP_W - 156, ALIGN_RIGHT, "L: wählen/OK · R: Wert · drücken/lang: zurück", C_DIM);
+    gfx_text_box(&font_s, 140, 14, DISP_W - 156, ALIGN_RIGHT, "L: wählen · L drücken: OK", C_DIM);
     gfx_hline(0, 46, DISP_W, C_LINE);
     if (s_menu_sel < s_menu_top) s_menu_top = s_menu_sel;
     if (s_menu_sel >= s_menu_top + MENU_ROWS) s_menu_top = s_menu_sel - MENU_ROWS + 1;
@@ -342,16 +343,21 @@ static void draw_bp(void)
     gfx_clear(C_BG);
     gfx_text(&font_l, 16, 6, "Bodypack", C_TEXT);
     gfx_text_box(&font_s, 180, 14, DISP_W - 196, ALIGN_RIGHT,
-                 s_c5.online ? "L: wählen · R: Wert · drücken: zurück" : "keine Verbindung zum C5",
+                 s_c5.online ? "L: wählen + drücken · R: Wert ändern" : "keine Verbindung zum C5",
                  s_c5.online ? C_DIM : C_WARN);
     gfx_hline(0, 46, DISP_W, C_LINE);
     draw_bp_meter();
     if (s_bp_sel < s_bp_top) s_bp_top = s_bp_sel;
     if (s_bp_sel >= s_bp_top + BP_ROWS) s_bp_top = s_bp_sel - BP_ROWS + 1;
-    for (int i = s_bp_top; i < BI_COUNT && i < s_bp_top + BP_ROWS; i++) {
+    for (int i = s_bp_top; i < BP_ITEMS && i < s_bp_top + BP_ROWS; i++) {
         int y = 86 + (i - s_bp_top) * 30;
         bool sel = i == s_bp_sel;
         if (sel) gfx_round_rect(8, y - 2, DISP_W - 16, 28, 6, C_TILE_HI);
+        if (i == BI_COUNT) {                              // Zurueck-Knopf
+            gfx_text(&font_m, 20, y, "< Zurück", sel ? C_ACCENT : C_DIM);
+            gfx_text_box(&font_s, 260, y + 4, DISP_W - 290, ALIGN_RIGHT, "links drücken", sel ? C_TEXT : C_DIM);
+            continue;
+        }
         gfx_text(&font_m, 20, y, s_bp[i].label, sel ? C_TEXT : C_DIM);
         char val[32];
         if (s_c5.have_settings) bp_format(i, val, sizeof(val));
@@ -361,7 +367,13 @@ static void draw_bp(void)
     }
     // Scroll-Hinweis
     if (s_bp_top > 0) gfx_text(&font_s, DISP_W - 20, 82, "^", C_DIM);
-    if (s_bp_top + BP_ROWS < BI_COUNT) gfx_text(&font_s, DISP_W - 20, 222, "v", C_DIM);
+    if (s_bp_top + BP_ROWS < BP_ITEMS) gfx_text(&font_s, DISP_W - 20, 222, "v", C_DIM);
+}
+
+// "Zurück"-Knopf unten rechts auf Seiten ohne Auswahl (jeder Druck auf einen Drehgeber geht zurück)
+static void draw_back_button(void)
+{
+    draw_pill(DISP_W - 150, DISP_H - 34, 138, 30, &font_m, "< Zurück", C_BG, C_ACCENT);
 }
 
 static void draw_bpstat(void)
@@ -385,8 +397,8 @@ static void draw_bpstat(void)
              c->gate_gain_db < -0.5f ? -c->gate_gain_db : 0.0f, (unsigned long)c->clips, (unsigned long)c->xruns);
     snprintf(l[6], 160, "Modus: %s · Talk %s", N_MODE[c->mode < 0 || c->mode > 3 ? 0 : c->mode],
              c->talk ? "AN" : "aus");
-    snprintf(l[7], 160, "Beliebiger Taster: zurück");
-    for (int i = 0; i < 8; i++) gfx_text(&font_s, 16, 54 + i * 22, l[i], i == 7 ? C_DIM : C_TEXT);
+    for (int i = 0; i < 7; i++) gfx_text(&font_s, 16, 54 + i * 21, l[i], C_TEXT);
+    draw_back_button();
 }
 
 static void draw_info(void)
@@ -409,8 +421,8 @@ static void draw_info(void)
     snprintf(l[4], 80, "Display: letztes Update %lu µs", (unsigned long)display_last_push_us());
     snprintf(l[5], 80, "Laufzeit: %llu s", (unsigned long long)(esp_timer_get_time() / 1000000));
     snprintf(l[6], 80, "Funk-Modul (ESP32-C5): %s", s_c5.online ? "verbunden" : "keine Verbindung (UART)");
-    snprintf(l[7], 80, "Beliebiger Taster: zurück");
-    for (int i = 0; i < 8; i++) gfx_text(&font_s, 16, 56 + i * 22, l[i], i == 7 ? C_DIM : C_TEXT);
+    for (int i = 0; i < 7; i++) gfx_text(&font_s, 16, 54 + i * 21, l[i], C_TEXT);
+    draw_back_button();
 }
 
 static void draw_test(void)
@@ -526,9 +538,12 @@ static void handle(const input_ev_t *ev)
 
     case SCR_BP:
         if (ev->type == EV_ENC1_TURN) {
-            s_bp_sel = clampi(s_bp_sel + ev->value, 0, BI_COUNT - 1);
+            s_bp_sel = clampi(s_bp_sel + ev->value, 0, BP_ITEMS - 1);
             draw_bp();
-        } else if (ev->type == EV_ENC2_TURN && s_c5.have_settings) {
+        } else if (ev->type == EV_ENC1_PRESS && s_bp_sel == BI_COUNT) {
+            s_scr = SCR_MENU;                            // "Zurück" gewaehlt
+            redraw();
+        } else if (ev->type == EV_ENC2_TURN && s_c5.have_settings && s_bp_sel < BI_COUNT) {
             bp_change(s_bp_sel, ev->value);
             draw_bp();
         } else if (ev->type == EV_ENC1_PRESS && s_c5.have_settings && s_bp[s_bp_sel].names) {
