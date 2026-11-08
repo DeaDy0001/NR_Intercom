@@ -20,6 +20,20 @@ static audio_stats_t s_st;
 static float s_mic_peak, s_out_peak;   // linear 0..1, abklingend
 static float s_ms_l, s_ms_r;           // mittlere Leistung (normiert), ~0,5 s
 static float s_gate_gain = 1.0f;
+static float s_env;                    // geglaettete Mikrofonleistung fuer das Gate
+static volatile uint32_t s_rx_ovf, s_tx_udf;   // I2S-Aussetzer (aus der ISR gezaehlt)
+
+static bool IRAM_ATTR on_rx_ovf(i2s_chan_handle_t h, i2s_event_data_t *e, void *arg)
+{
+    s_rx_ovf++;
+    return false;
+}
+
+static bool IRAM_ATTR on_tx_udf(i2s_chan_handle_t h, i2s_event_data_t *e, void *arg)
+{
+    s_tx_udf++;
+    return false;
+}
 
 #define GATE_FLOOR   0.0316f           // geschlossen: -30 dB (nicht ganz stumm, klingt natuerlicher)
 #define GATE_HOLD    (200 / AUDIO_BLOCK_MS)   // 200 ms offen halten nach dem letzten Wort
@@ -52,6 +66,8 @@ void audio_get_stats(audio_stats_t *st)
     st->rms_board_db = s_ms_l > 1e-12f ? 10.0f * log10f(s_ms_l) : -120.0f;
     st->rms_jack_db  = s_ms_r > 1e-12f ? 10.0f * log10f(s_ms_r) : -120.0f;
     st->gate_gain_db = lin_to_db(s_gate_gain);
+    st->rx_overflows = s_rx_ovf;
+    st->tx_underruns = s_tx_udf;
 }
 
 static void audio_task(void *arg)
@@ -64,8 +80,9 @@ static void audio_task(void *arg)
     const float tone_step = 2.0f * (float)M_PI * 1000.0f / AUDIO_RATE;
     const float decay = 1.0f - 0.006f * AUDIO_BLOCK_MS;   // Spitzenwert-Abfall pro Block
     const float ms_a  = 0.002f * AUDIO_BLOCK_MS;          // Mittelung Effektivpegel (~0,5 s)
-    const float g_att = 0.02f;   // Gate oeffnet in ~1 ms
-    const float g_rel = 0.0002f; // Gate schliesst in ~100 ms
+    const float g_att = 0.007f;    // Gate oeffnet in ~3 ms
+    const float g_rel = 0.00014f;  // Gate schliesst in ~150 ms
+    const float env_a = 0.1f * AUDIO_BLOCK_MS;   // Huellkurve ~10 ms
     int gate_hold = 0;
 
     while (1) {
@@ -103,14 +120,23 @@ static void audio_task(void *arg)
         s_ms_l += (pl - s_ms_l) * ms_a;
         s_ms_r += (pr - s_ms_r) * ms_a;
 
-        // Mikrofon-Gate: unterdrueckt das Grundrauschen in Sprechpausen
+        // Uebersteuerung zaehlen (Samples am Anschlag)
+        for (int i = 0; i < AUDIO_BLOCK; i++) {
+            if (mic[i] >= 32000 || mic[i] <= -32000) { s_st.clips++; break; }
+        }
+
+        // Mikrofon-Gate: unterdrueckt das Grundrauschen in Sprechpausen.
+        // Entscheidung ueber eine geglaettete Huellkurve (~10 ms) mit 6 dB Hysterese, damit es bei
+        // Rauschen nahe der Schwelle nicht flattert; weiches Oeffnen (~3 ms) gegen Knacksen.
+        float pblk = ch ? pr : pl;
+        s_env += (pblk - s_env) * env_a;
         if (g_set.gate_db < 0) {
-            float pblk = ch ? pr : pl;
-            float thr = powf(10.0f, g_set.gate_db / 10.0f);
-            float target;
-            if (pblk > thr) { gate_hold = GATE_HOLD; target = 1.0f; }
-            else if (gate_hold > 0) { gate_hold--; target = 1.0f; }
-            else target = GATE_FLOOR;
+            float thr_open = powf(10.0f, g_set.gate_db / 10.0f);
+            float thr_close = thr_open * 0.25f;
+            if (s_env > thr_open) gate_hold = GATE_HOLD;
+            else if (s_env > thr_close && gate_hold > 0) gate_hold = GATE_HOLD;   // noch im Hysterese-Band
+            else if (gate_hold > 0) gate_hold--;
+            float target = gate_hold > 0 ? 1.0f : GATE_FLOOR;
             float g = s_gate_gain;
             const float c = target > g ? g_att : g_rel;
             for (int i = 0; i < AUDIO_BLOCK; i++) {
@@ -210,6 +236,10 @@ esp_err_t audio_init(void)
     };
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(s_tx, &std_cfg));
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(s_rx, &std_cfg));
+    i2s_event_callbacks_t rx_cbs = { .on_recv_q_ovf = on_rx_ovf };
+    i2s_event_callbacks_t tx_cbs = { .on_send_q_ovf = on_tx_udf };
+    i2s_channel_register_event_callback(s_rx, &rx_cbs, NULL);
+    i2s_channel_register_event_callback(s_tx, &tx_cbs, NULL);
     ESP_ERROR_CHECK(i2s_channel_enable(s_tx));
     ESP_ERROR_CHECK(i2s_channel_enable(s_rx));
 

@@ -24,6 +24,9 @@ typedef struct {
     float    rms_board_db;    // Effektivpegel Board-Mikrofon (links), ~0,5 s gemittelt
     float    rms_jack_db;     // Effektivpegel Buchse (rechts)
     float    gate_gain_db;    // aktuelle Daempfung des Mikrofon-Gates (0 = offen)
+    uint32_t clips;           // 1-ms-Bloecke mit uebersteuertem Mikrofon (am Anschlag)
+    uint32_t rx_overflows;    // I2S-Aussetzer Eingang (Audio-Task kam zu spaet)
+    uint32_t tx_underruns;    // I2S-Aussetzer Ausgang -> hoerbares Knacksen
 } audio_stats_t;
 
 esp_err_t audio_init(void);

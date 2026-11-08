@@ -45,12 +45,13 @@ static void send_live(void)
     net_info_t ni;
     audio_get_stats(&as);
     net_get_info(&ni);
-    char b[220];
+    char b[260];
     snprintf(b, sizeof(b),
              "L jack=%.1f board=%.1f peak=%.1f out=%.1f gateg=%.0f talk=%d codecok=%d wifi=%d rssi=%d ch=%d "
-             "g5=%d ip=%s ssid=%s\n",
+             "g5=%d clip=%lu xrun=%lu ip=%s ssid=%s\n",
              as.rms_jack_db, as.rms_board_db, as.mic_peak_db, as.out_peak_db, as.gate_gain_db, g_talk ? 1 : 0,
              wm8960_present() ? 1 : 0, ni.connected ? 1 : 0, ni.rssi, ni.channel, ni.band_5g ? 1 : 0,
+             (unsigned long)as.clips, (unsigned long)(as.rx_overflows + as.tx_underruns),
              ni.connected ? ni.ip : "-", g_set.ssid[0] ? g_set.ssid : "-");
     // Leerzeichen in der SSID wuerden das Format stoeren
     for (char *p = strstr(b, "ssid="); p && *p && *p != '\n'; p++) if (*p == ' ') *p = '_';

@@ -18,6 +18,8 @@ typedef struct {
     bool  talk, codec_ok, wifi;
     int   rssi, channel;
     bool  band_5g;
+    uint32_t clips;        // Millisekunden mit uebersteuertem Mikrofon seit Start des C5
+    uint32_t xruns;        // I2S-Aussetzer am C5
     char  ip[16];
     char  ssid[33];
     uint32_t lines;        // empfangene Zeilen (Diagnose)

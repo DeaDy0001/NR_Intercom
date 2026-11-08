@@ -69,9 +69,9 @@ idf.py build flash monitor
 
 | | Drehgeber 1 (links) | Drehgeber 2 (rechts) |
 |---|---|---|
-| **Hauptseite** | Drehen: Kanal wählen · kurz: Hören an/aus · lang: Talk an/aus | Drehen: Lautstärke des Kanals · kurz: Menü |
-| **Menü** | Drehen: Eintrag wählen · kurz: ausführen | Drehen: Wert ändern (Helligkeit) · kurz: zurück |
-| **Bodypack-Einstellungen** | Drehen: Eintrag wählen · kurz: nächster Wert (bei Auswahllisten) | Drehen: Wert ändern (geht sofort an den C5) · kurz: zurück |
+| **Hauptseite (Bodypack-Übersicht)** | Drehen: Kopfhörer-Lautstärke · kurz: Menü · lang: Talk an/aus | Drehen: Mic-Verstärkung · kurz: Menü · lang: nächster Modus |
+| **Menü** | Drehen: Eintrag wählen · kurz: ausführen · lang: zurück | Drehen: Wert ändern (Helligkeit) · kurz: zurück |
+| **Bodypack-Einstellungen** | Drehen: Eintrag wählen · kurz: nächster Wert (bei Auswahllisten) · lang: zurück | Drehen: Wert ändern (geht sofort an den C5) · kurz: zurück |
 | **Bodypack-Status** | kurz: zurück | kurz: zurück |
 | **Info / Testbild / FPS-Test** | kurz: zurück | kurz: zurück |
 
@@ -83,7 +83,8 @@ Oben läuft eine Pegelanzeige des Mikrofons mit (−80 … 0 dBFS); der rote Str
 in Sprechpausen bleibt der Balken links vom Strich (grau = Gate zu), beim Sprechen geht er darüber (grün = offen).
 Ein gelber Wert ist zum C5 geschickt, aber noch nicht bestätigt. WLAN-Name und Passwort setzt man weiter über die USB-Konsole des C5.
 
-Talk lang drücken (Drehgeber 1) schaltet am Bodypack das Senden ein, solange mindestens ein Kanal auf Talk steht.
+**Hauptseite:** Talk, Modus, Mikrofon, Pegel von Mikrofon und Kopfhörer (weißer Strich = Spitze, blauer Strich = Gate-Schwelle,
+roter **CLIP** = Mikrofon übersteuert → Mic-Verstärkung zurückdrehen), Lautstärke, Verstärkung und Gate.
 
 ## 4. Was bitte prüfen
 

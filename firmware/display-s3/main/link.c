@@ -55,6 +55,8 @@ static void parse_kv(char *tok, bool settings)
         else if (!strcmp(k, "rssi")) s->rssi = i;
         else if (!strcmp(k, "ch")) s->channel = i;
         else if (!strcmp(k, "g5")) s->band_5g = i;
+        else if (!strcmp(k, "clip")) s->clips = strtoul(v, NULL, 10);
+        else if (!strcmp(k, "xrun")) s->xruns = strtoul(v, NULL, 10);
         else if (!strcmp(k, "ip")) strlcpy(s->ip, v, sizeof(s->ip));
         else if (!strcmp(k, "ssid")) strlcpy(s->ssid, v, sizeof(s->ssid));
     }

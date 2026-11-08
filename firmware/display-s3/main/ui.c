@@ -12,7 +12,6 @@
 #include "esp_heap_caps.h"
 #include "esp_chip_info.h"
 #include "esp_idf_version.h"
-#include "esp_random.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -31,24 +30,8 @@
 #define C_WARN     RGB(250, 204, 21)
 
 // ---------------------------------------------------------------- Zustand
-typedef struct {
-    const char *name;
-    bool listen;
-    bool talk;
-    int  volume;      // 0..100
-    float level;      // Demo-Pegel 0..1
-} channel_t;
-
-static channel_t s_ch[4] = {
-    { "Regie", true, false, 80, 0 },
-    { "Ton",   true, false, 70, 0 },
-    { "Licht", false, false, 60, 0 },
-    { "Bühne", false, false, 60, 0 },
-};
-
 typedef enum { SCR_MAIN, SCR_MENU, SCR_INFO, SCR_TEST, SCR_FPS, SCR_BP, SCR_BPSTAT } screen_t;
 static screen_t s_scr = SCR_MAIN;
-static int s_sel;              // gewaehlter Kanal
 static int s_menu_sel, s_menu_top;
 static int s_brightness = 180;
 static bool s_flip;
@@ -184,17 +167,10 @@ static void settings_save(void)
 }
 
 // ---------------------------------------------------------------- Zeichnen
-#define TILE_Y   38
-#define TILE_H   160
-#define TILE_W   124
-#define TILE_GAP 8
-#define TILE_X(i) (TILE_GAP + (i) * (TILE_W + TILE_GAP))
-#define VU_DY    112
-
-static void draw_pill(int x, int y, int w, const char *txt, color_t fg, color_t bg)
+static void draw_pill(int x, int y, int w, int h, const font_t *f, const char *txt, color_t fg, color_t bg)
 {
-    gfx_round_rect(x, y, w, 26, 13, bg);
-    gfx_text_box(&font_s, x, y + 4, w, ALIGN_CENTER, txt, fg);
+    gfx_round_rect(x, y, w, h, h / 2, bg);
+    gfx_text_box(f, x, y + (h - f->line_h) / 2, w, ALIGN_CENTER, txt, fg);
 }
 
 static void draw_battery(void)
@@ -209,7 +185,6 @@ static void draw_battery(void)
     } else {
         snprintf(buf, sizeof(buf), "%d %%", s_bat_pct);
     }
-    // Akkusymbol
     gfx_rect(x, 9, 38, 16, 2, C_DIM);
     gfx_fill_rect(x + 38, 13, 3, 8, C_DIM);
     int pct = s_bat_mv > 4400 ? 100 : (s_bat_pct < 0 ? 0 : s_bat_pct);
@@ -238,69 +213,92 @@ static void draw_header(void)
     gfx_hline(0, 32, DISP_W, C_LINE);
 }
 
-static void draw_vu(int i)
+// Pegelbalken von lo..0 dB, optional mit Spitzenwert, Gate-Schwelle und Uebersteuerungs-Anzeige
+static void draw_meter(int x, int y, int w, int h, float db, float lo, float peak_db, int gate_db, bool clip,
+                       color_t col)
 {
-    const channel_t *c = &s_ch[i];
-    int x = TILE_X(i) + 12, y = TILE_Y + VU_DY, w = TILE_W - 24;
-    gfx_fill_rect(x, y, w, 6, RGB(15, 15, 18));
-    int lw = c->listen ? (int)(w * c->level * c->volume / 100.0f) : 0;
-    if (lw > 0) gfx_fill_rect(x, y, lw, 6, lw > w * 0.85f ? C_WARN : C_LISTEN);
+    gfx_fill_rect(x, y, w, h, RGB(18, 18, 22));
+    int lw = (int)((db - lo) / -lo * w);
+    lw = lw < 0 ? 0 : lw > w ? w : lw;
+    if (lw > 0) gfx_fill_rect(x, y, lw, h, col);
+    // Skala alle 10 dB
+    for (int d = (int)lo + 10; d < 0; d += 10) gfx_fill_rect(x + (int)((d - lo) / -lo * w), y + h, 1, 4, C_LINE);
+    if (peak_db > lo) {
+        int px = x + (int)((peak_db - lo) / -lo * w);
+        if (px > x + w - 2) px = x + w - 2;
+        gfx_fill_rect(px, y, 2, h, peak_db > -3 ? C_TALK : C_TEXT);
+    }
+    if (gate_db < 0 && gate_db > lo) {
+        int gx = x + (int)((gate_db - lo) / -lo * w);
+        gfx_fill_rect(gx - 1, y - 4, 3, h + 8, C_ACCENT);
+    }
+    if (clip) {
+        gfx_round_rect(x + w + 6, y - 2, 44, h + 4, 4, C_TALK);
+        gfx_text_box(&font_s, x + w + 6, y + (h - 19) / 2, 44, ALIGN_CENTER, "CLIP", C_TEXT);
+    }
 }
 
-static void draw_tile(int i)
-{
-    const channel_t *c = &s_ch[i];
-    const int x = TILE_X(i), y = TILE_Y;
-    color_t bg = c->talk ? C_TALK_BG : (i == s_sel ? C_TILE_HI : C_TILE);
-    gfx_fill_rect(x, y, TILE_W, TILE_H, C_BG);
-    if (i == s_sel) {                                   // Auswahl: heller Rand
-        gfx_round_rect(x, y, TILE_W, TILE_H, 10, C_TEXT);
-        gfx_round_rect(x + 3, y + 3, TILE_W - 6, TILE_H - 6, 8, bg);
-    } else {
-        gfx_round_rect(x, y, TILE_W, TILE_H, 10, bg);
-    }
-    char num[12];
-    snprintf(num, sizeof(num), "%d", i + 1);
-    gfx_text(&font_s, x + 10, y + 6, num, C_DIM);
-    gfx_text_box(&font_m, x, y + 24, TILE_W, ALIGN_CENTER, c->name, C_TEXT);
-    if (c->talk) {
-        draw_pill(x + 12, y + 60, TILE_W - 24, "TALK", C_TEXT, C_TALK);
-    } else if (c->listen) {
-        draw_pill(x + 12, y + 60, TILE_W - 24, "HÖREN", C_BG, C_LISTEN);
-    } else {
-        draw_pill(x + 12, y + 60, TILE_W - 24, "AUS", C_DIM, RGB(50, 50, 58));
-    }
-    draw_vu(i);
-    // Lautstaerke
-    int bx = x + 12, by = y + 128, bw = TILE_W - 24;
-    gfx_fill_rect(bx, by, bw, 8, RGB(15, 15, 18));
-    gfx_fill_rect(bx, by, bw * c->volume / 100, 8, C_VOL);
-    char vol[12];
-    snprintf(vol, sizeof(vol), "%d %%", c->volume);
-    gfx_text_box(&font_s, x, y + 138, TILE_W, ALIGN_CENTER, vol, C_DIM);
-}
-
-static void draw_footer(void)
-{
-    gfx_fill_rect(0, 204, DISP_W, DISP_H - 204, C_BG);
-    gfx_hline(0, 204, DISP_W, C_LINE);
-    gfx_text(&font_s, 10, 214, "Links: Kanal · kurz Hören · lang Talk", C_DIM);
-    gfx_text_box(&font_s, 300, 214, DISP_W - 310, ALIGN_RIGHT, "Rechts: Lautstärke · Menü", C_DIM);
-}
+static int64_t s_clip_until;     // CLIP-Anzeige bis zu diesem Zeitpunkt
+static uint32_t s_last_clips;
 
 static void draw_main(void)
 {
     gfx_clear(C_BG);
     draw_header();
-    for (int i = 0; i < 4; i++) draw_tile(i);
-    draw_footer();
+    const c5_state_t *c = &s_c5;
+    const bool on = c->online && c->have_settings;
+
+    // Talk links gross
+    bool talk = on && c->talk;
+    draw_pill(12, 44, 150, 56, &font_l, talk ? "TALK" : "Talk aus", talk ? C_TEXT : C_DIM,
+              talk ? C_TALK : C_TILE);
+    // Modus und Mikrofon
+    char b[64];
+    snprintf(b, sizeof(b), "%s", on ? N_MODE[c->mode < 0 || c->mode > 3 ? 0 : c->mode] : "--");
+    gfx_text(&font_m, 180, 44, b, C_TEXT);
+    snprintf(b, sizeof(b), "%s · Codec %s", on ? N_MIC[c->mic ? 1 : 0] : "--",
+             on ? (c->codec_ok ? "ok" : "FEHLT") : "--");
+    gfx_text(&font_s, 180, 76, b, on && !c->codec_ok ? C_WARN : C_DIM);
+
+    // Pegel
+    int64_t now = esp_timer_get_time();
+    if (c->clips != s_last_clips) {
+        if (s_last_clips) s_clip_until = now + 1500000;
+        s_last_clips = c->clips;
+    }
+    float mic_db = on ? (c->mic ? c->jack_db : c->board_db) : -120;
+    bool gate_open = c->gate_gain_db > -3.0f;
+    gfx_text(&font_s, 12, 114, "Mikrofon", C_DIM);
+    draw_meter(100, 116, 370, 14, mic_db, -80, on ? c->peak_db : -120, on ? c->gate : 0, on && now < s_clip_until,
+               gate_open ? C_LISTEN : C_DIM);
+    gfx_text(&font_s, 12, 144, "Kopfhörer", C_DIM);
+    draw_meter(100, 146, 370, 14, on ? c->out_db : -120, -80, -120, 0, false, C_VOL);
+
+    // Werte
+    if (on) {
+        snprintf(b, sizeof(b), "Lautstärke %d %%", c->vol);
+        gfx_text(&font_s, 12, 176, b, C_TEXT);
+        snprintf(b, sizeof(b), "Mic %+d dB, Boost %s", c->pga, N_BOOST[c->boost & 3]);
+        gfx_text_box(&font_s, 160, 176, 220, ALIGN_CENTER, b, C_TEXT);
+        if (c->gate < 0) snprintf(b, sizeof(b), "Gate %d dBFS", c->gate);
+        else snprintf(b, sizeof(b), "Gate aus");
+        gfx_text_box(&font_s, 380, 176, DISP_W - 392, ALIGN_RIGHT, b, C_TEXT);
+    } else {
+        gfx_text_box(&font_s, 0, 176, DISP_W, ALIGN_CENTER,
+                     "Kabel prüfen: GPIO4 > GP3, GPIO10 < GP2, GND", C_WARN);
+    }
+
+    gfx_hline(0, 204, DISP_W, C_LINE);
+    gfx_text_box(&font_s, 10, 214, 180, ALIGN_LEFT, "L: Lautst. / lang Talk", C_DIM);
+    gfx_text_box(&font_s, 190, 214, 156, ALIGN_CENTER, "drücken: Menü", C_ACCENT);
+    gfx_text_box(&font_s, 346, 214, DISP_W - 356, ALIGN_RIGHT, "R: Mic / lang Modus", C_DIM);
 }
 
 static void draw_menu(void)
 {
     gfx_clear(C_BG);
     gfx_text(&font_l, 16, 6, "Menü", C_TEXT);
-    gfx_text_box(&font_s, 200, 14, DISP_W - 216, ALIGN_RIGHT, "Links: wählen/OK · Rechts: Wert · drücken: zurück", C_DIM);
+    gfx_text_box(&font_s, 140, 14, DISP_W - 156, ALIGN_RIGHT, "L: wählen/OK · R: Wert · drücken/lang: zurück", C_DIM);
     gfx_hline(0, 46, DISP_W, C_LINE);
     if (s_menu_sel < s_menu_top) s_menu_top = s_menu_sel;
     if (s_menu_sel >= s_menu_top + MENU_ROWS) s_menu_top = s_menu_sel - MENU_ROWS + 1;
@@ -343,8 +341,8 @@ static void draw_bp(void)
 {
     gfx_clear(C_BG);
     gfx_text(&font_l, 16, 6, "Bodypack", C_TEXT);
-    gfx_text_box(&font_s, 200, 14, DISP_W - 216, ALIGN_RIGHT,
-                 s_c5.online ? "Links: wählen · Rechts: Wert · drücken: zurück" : "keine Verbindung zum C5",
+    gfx_text_box(&font_s, 180, 14, DISP_W - 196, ALIGN_RIGHT,
+                 s_c5.online ? "L: wählen · R: Wert · drücken: zurück" : "keine Verbindung zum C5",
                  s_c5.online ? C_DIM : C_WARN);
     gfx_hline(0, 46, DISP_W, C_LINE);
     draw_bp_meter();
@@ -383,7 +381,8 @@ static void draw_bpstat(void)
         snprintf(l[2], 160, "WLAN: nicht verbunden (SSID %s)", c->ssid);
     snprintf(l[3], 160, "Mikrofon: Buchse %.1f dBFS · Board %.1f dBFS", c->jack_db, c->board_db);
     snprintf(l[4], 160, "Spitze Mic %.1f dBFS · Ausgang %.1f dBFS", c->peak_db, c->out_db);
-    snprintf(l[5], 160, "Gate dämpft gerade %.0f dB", -c->gate_gain_db);
+    snprintf(l[5], 160, "Gate dämpft gerade %.0f dB · übersteuert %lu ms · I2S-Aussetzer %lu",
+             c->gate_gain_db < -0.5f ? -c->gate_gain_db : 0.0f, (unsigned long)c->clips, (unsigned long)c->xruns);
     snprintf(l[6], 160, "Modus: %s · Talk %s", N_MODE[c->mode < 0 || c->mode > 3 ? 0 : c->mode],
              c->talk ? "AN" : "aus");
     snprintf(l[7], 160, "Beliebiger Taster: zurück");
@@ -468,27 +467,30 @@ static void handle(const input_ev_t *ev)
 {
     switch (s_scr) {
     case SCR_MAIN:
+        if (!s_c5.have_settings && (ev->type == EV_ENC1_TURN || ev->type == EV_ENC2_TURN ||
+                                    ev->type == EV_ENC1_LONG || ev->type == EV_ENC2_LONG)) {
+            break;                                          // ohne Bodypack nichts zu verstellen
+        }
         if (ev->type == EV_ENC1_TURN) {
-            int old = s_sel;
-            s_sel = clampi(s_sel + ev->value, 0, 3);
-            if (old != s_sel) { draw_tile(old); draw_tile(s_sel); }
-        } else if (ev->type == EV_ENC1_PRESS) {
-            s_ch[s_sel].listen = !s_ch[s_sel].listen;
-            draw_tile(s_sel);
-        } else if (ev->type == EV_ENC1_LONG) {
-            s_ch[s_sel].talk = !s_ch[s_sel].talk;
-            draw_tile(s_sel);
-            bool any = false;
-            for (int i = 0; i < 4; i++) any |= s_ch[i].talk;
-            link_talk(any);                                 // Bodypack sendet, solange ein Kanal auf Talk ist
+            bp_sync();
+            bp_change(BI_VOL, ev->value);
         } else if (ev->type == EV_ENC2_TURN) {
-            s_ch[s_sel].volume = clampi(s_ch[s_sel].volume + ev->value * 5, 0, 100);
-            draw_tile(s_sel);
-        } else if (ev->type == EV_ENC2_PRESS) {
+            bp_sync();
+            bp_change(BI_PGA, ev->value);
+        } else if (ev->type == EV_ENC1_LONG) {
+            link_talk(!s_c5.talk);
+            s_c5.talk = !s_c5.talk;                          // sofort anzeigen, C5 bestaetigt gleich
+        } else if (ev->type == EV_ENC2_LONG) {
+            bp_sync();
+            bp_change(BI_MODE, 1);
+        } else if (ev->type == EV_ENC1_PRESS || ev->type == EV_ENC2_PRESS) {
             s_scr = SCR_MENU;
             s_menu_sel = 0;
+            s_menu_top = 0;
             redraw();
+            break;
         }
+        draw_main();
         break;
 
     case SCR_MENU:
@@ -515,7 +517,7 @@ static void handle(const input_ev_t *ev)
             case MI_BACK: settings_save(); s_scr = SCR_MAIN; redraw(); break;
             default: break;
             }
-        } else if (ev->type == EV_ENC2_PRESS) {
+        } else if (ev->type == EV_ENC2_PRESS || ev->type == EV_ENC1_LONG) {
             settings_save();
             s_scr = SCR_MAIN;
             redraw();
@@ -532,7 +534,7 @@ static void handle(const input_ev_t *ev)
         } else if (ev->type == EV_ENC1_PRESS && s_c5.have_settings && s_bp[s_bp_sel].names) {
             bp_change(s_bp_sel, 1);                      // Auswahl: naechster Wert
             draw_bp();
-        } else if (ev->type == EV_ENC2_PRESS) {
+        } else if (ev->type == EV_ENC2_PRESS || ev->type == EV_ENC1_LONG) {
             s_scr = SCR_MENU;
             redraw();
         }
@@ -553,7 +555,7 @@ static void handle(const input_ev_t *ev)
 // ---------------------------------------------------------------- Ablauf
 static void ui_task(void *arg)
 {
-    int64_t last_bat = -10000000, last_info = 0, last_vu = 0, fps_t0 = esp_timer_get_time();
+    int64_t last_bat = -10000000, last_info = 0, fps_t0 = esp_timer_get_time();
     uint32_t frame = 0, fps_frames = 0;
     redraw();
     gfx_flush();
@@ -569,7 +571,6 @@ static void ui_task(void *arg)
         int64_t now = esp_timer_get_time();
 
         static int64_t last_link;
-        static bool was_online;
         if (now - last_link > 100000) {                   // Bodypack-Werte mit 10 Hz
             last_link = now;
             link_get(&s_c5);
@@ -578,10 +579,9 @@ static void ui_task(void *arg)
                 draw_bp();
             } else if (s_scr == SCR_BPSTAT && (now / 100000) % 5 == 0) {
                 draw_bpstat();
-            } else if (s_scr == SCR_MAIN && (s_c5.online != was_online || (now / 100000) % 10 == 0)) {
-                draw_header();
+            } else if (s_scr == SCR_MAIN) {
+                draw_main();                               // Uebersicht mit 10 Hz
             }
-            was_online = s_c5.online;
         }
 
         if (now - last_bat > 2000000) {          // Akku alle 2 s
@@ -589,20 +589,6 @@ static void ui_task(void *arg)
             s_bat_mv = battery_mv();
             s_bat_pct = battery_percent();
             if (s_scr == SCR_MAIN) draw_battery();
-        }
-        if (s_scr == SCR_MAIN && now - last_vu > 40000) {   // Demo-Pegel mit 25 Hz
-            last_vu = now;
-            for (int i = 0; i < 4; i++) {
-                float target;
-                if (s_c5.online) {          // echter Ausgangspegel des Bodypacks (gilt fuer alle Kanaele)
-                    float d = (s_c5.out_db + 60.0f) / 60.0f;
-                    target = s_ch[i].listen ? (d < 0 ? 0 : d > 1 ? 1 : d) : 0;
-                } else {
-                    target = s_ch[i].listen ? (esp_random() % 1000) / 1000.0f : 0;
-                }
-                s_ch[i].level = s_ch[i].level * 0.6f + target * 0.4f;
-                draw_vu(i);
-            }
         }
         if (s_scr == SCR_INFO && now - last_info > 500000) {
             last_info = now;

@@ -54,6 +54,8 @@ void console_print_status(void)
     printf("       Effektivpegel Buchse %.1f dBFS, Board-Mic %.1f dBFS, Gate %s (%.0f dB)\n",
            as.rms_jack_db, as.rms_board_db,
            g_set.gate_db < 0 ? "an" : "aus", as.gate_gain_db);
+    printf("       Uebersteuert %lu ms, I2S-Aussetzer Eingang %lu / Ausgang %lu\n", (unsigned long)as.clips,
+           (unsigned long)as.rx_overflows, (unsigned long)as.tx_underruns);
     printf("RTP  : Ziel %s:%u, lokal %u, Codec %s, Paket %d ms, Jitterbuffer Ziel %d ms (aktuell %lu ms)\n",
            g_set.host[0] ? g_set.host : "-", g_set.port, g_set.local_port,
            g_set.codec == CODEC_OPUS ? "Opus" : "L16", g_set.frame_ms, g_set.jb_ms,
@@ -176,13 +178,14 @@ static int cmd_pegel(int argc, char **argv)
     if (secs < 1) secs = 1;
     if (secs > 30) secs = 30;
     printf("Pegelanzeige %d s (Effektivwert, ~0,5 s gemittelt). Erst still sein, dann sprechen.\n", secs);
-    printf("   Buchse    Board   Spitze   Gate\n");
+    printf("   Buchse    Board   Spitze   Gate   Uebersteuert  Aussetzer\n");
     for (int i = 0; i < secs * 2; i++) {
         vTaskDelay(pdMS_TO_TICKS(500));
         audio_stats_t as;
         audio_get_stats(&as);
-        printf("  %6.1f   %6.1f   %6.1f   %4.0f dB\n", as.rms_jack_db, as.rms_board_db, as.mic_peak_db,
-               as.gate_gain_db);
+        printf("  %6.1f   %6.1f   %6.1f   %4.0f dB  %6lu ms   %lu/%lu\n", as.rms_jack_db, as.rms_board_db,
+               as.mic_peak_db, as.gate_gain_db, (unsigned long)as.clips, (unsigned long)as.rx_overflows,
+               (unsigned long)as.tx_underruns);
     }
     return 0;
 }
