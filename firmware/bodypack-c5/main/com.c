@@ -129,6 +129,29 @@ static void utf8_copy(char *dst, const char *src, size_t n)
 // ---------------------------------------------------------------- Server-Suche
 // Broadcast "NRCOM_DISCOVER 1" an UDP 3010, jeder NR_Com-Server antwortet mit
 // {"nrcom":1,"api":1,"name":"NR_Com","project":{"id":1,"name":"..."},"port":3002}
+// GET /device/v1/hello an ip:port; true = Gateway antwortet
+static bool probe_hello(const char *ip, uint16_t port, com_server_t *sv)
+{
+    char url[64], resp[256];
+    snprintf(url, sizeof(url), "http://%s:%u/device/v1/hello", ip, port);
+    if (http_req(url, NULL, resp, sizeof(resp), 1500) != 200) return false;
+    cJSON *root = cJSON_Parse(resp);
+    if (!root) return false;
+    const cJSON *api = cJSON_GetObjectItem(root, "api");
+    bool ok = cJSON_IsNumber(api);
+    if (ok) {
+        strlcpy(sv->ip, ip, sizeof(sv->ip));
+        sv->port = port;
+        const cJSON *nm = cJSON_GetObjectItem(root, "name");
+        const cJSON *pr = cJSON_GetObjectItem(root, "project");
+        const cJSON *pn = pr ? cJSON_GetObjectItem(pr, "name") : NULL;
+        utf8_copy(sv->name, cJSON_IsString(nm) ? nm->valuestring : "NR_Com", sizeof(sv->name));
+        utf8_copy(sv->project, cJSON_IsString(pn) ? pn->valuestring : "nr-com.local", sizeof(sv->project));
+    }
+    cJSON_Delete(root);
+    return ok;
+}
+
 int com_discover(com_server_t *out, int max, int ms)
 {
     int s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -185,6 +208,19 @@ int com_discover(com_server_t *out, int max, int ms)
         cJSON_Delete(root);
     }
     close(s);
+
+    // Rueckfall: Server antwortet (noch) nicht auf die Suche -> mDNS-Namen von NR_Com fragen und
+    // direkt am Gateway nachsehen (Port: eingestellt, 3002 = SSL an, 3000 = SSL aus)
+    if (n == 0 && max > 0) {
+        char ip[16];
+        if (resolve("nr-com.local", ip)) {
+            const uint16_t ports[3] = { g_set.com_port, 3002, 3000 };
+            for (int i = 0; i < 3 && n == 0; i++) {
+                if (i > 0 && ports[i] == ports[0]) continue;
+                if (probe_hello(ip, ports[i], &out[0])) n = 1;
+            }
+        }
+    }
     return n;
 }
 
@@ -201,8 +237,7 @@ static bool find_server(char ip[16], uint16_t *port)
             ESP_LOGI(TAG, "Server gefunden: %s (%s) %s:%u", sv[0].name, sv[0].project, ip, *port);
             return true;
         }
-        if (resolve("nr-com.local", ip)) return true;   // Rueckfall: mDNS-Name von NR_Com
-        return false;
+        return false;                                   // com_discover hat nr-com.local schon versucht
     }
     return resolve(g_set.com_host, ip);
 }
