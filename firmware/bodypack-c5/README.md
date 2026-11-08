@@ -88,7 +88,10 @@ mic board 0 1             Board-Mikrofon, PGA 0 dB, Boost +13 dB
 mic jack 20 2             Headset an der Buchse
 vol 60                    Lautstärke
 mode tone                 1-kHz-Testton
+pegel                     Pegel live: erst still sein (= Grundrauschen), dann sprechen
+gate -50                  Mikrofon-Gate: Schwelle ca. 6-10 dB ueber dem Grundrauschen, 'gate off' = aus
 ```
+Mikrofon -> Kopfhörer dauert ca. 5-6 ms (I2S-Blöcke 1 ms, 4 Puffer je Richtung).
 Erwartung: klarer Ton ohne Rauschen und Pfeifen. `status` zeigt den Pegel (Mic dBFS) und `I2S-Fehler 0`.
 Wenn „kein I2S-Takt vom WM8960“ erscheint: CLK/WS-Leitungen und die I2C-Verbindung prüfen.
 

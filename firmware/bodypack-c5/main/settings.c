@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stddef.h>
 #include "settings.h"
 #include "nvs_flash.h"
 #include "nvs.h"
@@ -8,7 +9,7 @@
 static const char *TAG = "settings";
 #define SETTINGS_NS      "nrb"
 #define SETTINGS_KEY     "cfg"
-#define SETTINGS_VERSION 2
+#define SETTINGS_VERSION 3
 
 settings_t g_set;
 
@@ -40,6 +41,7 @@ void settings_reset(void)
     g_set.opus_kbps  = 48;
     g_set.opus_cplx  = 5;
     g_set.opus_voip  = 0;
+    g_set.gate_db    = -50;
 }
 
 void settings_load(void)
@@ -54,9 +56,17 @@ void settings_load(void)
     size_t len = sizeof(blob);
     esp_err_t err = nvs_get_blob(h, SETTINGS_KEY, &blob, &len);
     nvs_close(h);
+    const size_t hdr = offsetof(settings_blob_t, s);
     if (err == ESP_OK && len == sizeof(blob) && blob.version == SETTINGS_VERSION) {
         g_set = blob.s;
         ESP_LOGI(TAG, "Einstellungen geladen");
+    } else if (err == ESP_OK && blob.version >= 2 && blob.version < SETTINGS_VERSION && len > hdr &&
+               len <= sizeof(blob)) {
+        // aelterer Stand: vorhandene Felder uebernehmen, neue Felder behalten ihre Standardwerte
+        const settings_t def = g_set;   // Standardwerte (settings_reset ist schon gelaufen)
+        memcpy(&g_set, &blob.s, len - hdr);
+        g_set.gate_db = def.gate_db;    // lag im alten Stand evtl. im Fuellbyte
+        ESP_LOGI(TAG, "Einstellungen von Version %lu uebernommen", (unsigned long)blob.version);
     } else {
         ESP_LOGW(TAG, "Einstellungen ungueltig/alt, nutze Standardwerte");
     }

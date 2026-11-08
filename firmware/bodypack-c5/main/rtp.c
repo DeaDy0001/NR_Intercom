@@ -352,7 +352,7 @@ static void codec_task(void *arg)
 
         // 1) Wiedergabe: Puffer zum I2S nur knapp fuellen (ca. 10 ms), der Rest bleibt im Jitterbuffer
         size_t level = xStreamBufferBytesAvailable(g_play_stream) / sizeof(int16_t);
-        if (level <= 2 * AUDIO_BLOCK) {
+        if (level <= AUDIO_PLAY_FILL) {
             int n = play_one(out);
             if (n > 0) {
                 xStreamBufferSend(g_play_stream, out, n * sizeof(int16_t), 0);

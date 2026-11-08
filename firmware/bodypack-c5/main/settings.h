@@ -47,6 +47,8 @@ typedef struct {
     uint8_t  opus_kbps;     // Opus-Bitrate in kbit/s (8..128)
     uint8_t  opus_cplx;     // Opus-Komplexitaet 0..10
     uint8_t  opus_voip;     // 0 = restricted lowdelay (CELT, minimale Latenz), 1 = voip (SILK/Hybrid + FEC)
+    // ab Version 3 (neue Felder immer hinten anhaengen, aeltere Stände werden uebernommen)
+    int8_t   gate_db;       // Mikrofon-Gate: Schwelle in dBFS (-80..-20), 0 = aus
 } settings_t;
 
 extern settings_t g_set;

@@ -18,6 +18,11 @@ static i2s_chan_handle_t s_tx, s_rx;
 static volatile int s_mode = MODE_OFF;
 static audio_stats_t s_st;
 static float s_mic_peak, s_out_peak;   // linear 0..1, abklingend
+static float s_ms_l, s_ms_r;           // mittlere Leistung (normiert), ~0,5 s
+static float s_gate_gain = 1.0f;
+
+#define GATE_FLOOR   0.0316f           // geschlossen: -30 dB (nicht ganz stumm, klingt natuerlicher)
+#define GATE_HOLD    (200 / AUDIO_BLOCK_MS)   // 200 ms offen halten nach dem letzten Wort
 
 static inline int16_t sat16(int32_t v)
 {
@@ -44,6 +49,9 @@ void audio_get_stats(audio_stats_t *st)
     *st = s_st;
     st->mic_peak_db = lin_to_db(s_mic_peak);
     st->out_peak_db = lin_to_db(s_out_peak);
+    st->rms_board_db = s_ms_l > 1e-12f ? 10.0f * log10f(s_ms_l) : -120.0f;
+    st->rms_jack_db  = s_ms_r > 1e-12f ? 10.0f * log10f(s_ms_r) : -120.0f;
+    st->gate_gain_db = lin_to_db(s_gate_gain);
 }
 
 static void audio_task(void *arg)
@@ -54,7 +62,11 @@ static void audio_task(void *arg)
     static int16_t play[AUDIO_BLOCK];
     float phase = 0.0f;
     const float tone_step = 2.0f * (float)M_PI * 1000.0f / AUDIO_RATE;
-    const float decay = 0.97f;   // Spitzenwert-Abfall pro Block
+    const float decay = 1.0f - 0.006f * AUDIO_BLOCK_MS;   // Spitzenwert-Abfall pro Block
+    const float ms_a  = 0.002f * AUDIO_BLOCK_MS;          // Mittelung Effektivpegel (~0,5 s)
+    const float g_att = 0.02f;   // Gate oeffnet in ~1 ms
+    const float g_rel = 0.0002f; // Gate schliesst in ~100 ms
+    int gate_hold = 0;
 
     while (1) {
         size_t got = 0;
@@ -77,11 +89,37 @@ static void audio_task(void *arg)
         // Mikrofon-Kanal waehlen: Board-Mic = links, Buchse = rechts
         const int ch = (g_set.mic == MIC_ONBOARD) ? 0 : 1;
         int32_t mpk = 0;
+        int64_t sl = 0, sr = 0;
         for (int i = 0; i < AUDIO_BLOCK; i++) {
             int16_t s = in[2 * i + ch];
             mic[i] = s;
             int32_t a = s < 0 ? -s : s;
             if (a > mpk) mpk = a;
+            sl += (int32_t)in[2 * i] * in[2 * i];
+            sr += (int32_t)in[2 * i + 1] * in[2 * i + 1];
+        }
+        const float norm = 1.0f / (32768.0f * 32768.0f * AUDIO_BLOCK);
+        float pl = (float)sl * norm, pr = (float)sr * norm;
+        s_ms_l += (pl - s_ms_l) * ms_a;
+        s_ms_r += (pr - s_ms_r) * ms_a;
+
+        // Mikrofon-Gate: unterdrueckt das Grundrauschen in Sprechpausen
+        if (g_set.gate_db < 0) {
+            float pblk = ch ? pr : pl;
+            float thr = powf(10.0f, g_set.gate_db / 10.0f);
+            float target;
+            if (pblk > thr) { gate_hold = GATE_HOLD; target = 1.0f; }
+            else if (gate_hold > 0) { gate_hold--; target = 1.0f; }
+            else target = GATE_FLOOR;
+            float g = s_gate_gain;
+            const float c = target > g ? g_att : g_rel;
+            for (int i = 0; i < AUDIO_BLOCK; i++) {
+                g += (target - g) * c;
+                mic[i] = (int16_t)(mic[i] * g);
+            }
+            s_gate_gain = g;
+        } else {
+            s_gate_gain = 1.0f;
         }
 
         const int mode = s_mode;
@@ -153,7 +191,7 @@ esp_err_t audio_init(void)
 
     // ESP32 = I2S-Slave, WM8960 liefert BCLK und WS
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_SLAVE);
-    chan_cfg.dma_desc_num = 4;
+    chan_cfg.dma_desc_num = AUDIO_DMA_DESC;
     chan_cfg.dma_frame_num = AUDIO_BLOCK;
     chan_cfg.auto_clear = true;
     ESP_ERROR_CHECK(i2s_new_channel(&chan_cfg, &s_tx, &s_rx));
@@ -176,7 +214,8 @@ esp_err_t audio_init(void)
     ESP_ERROR_CHECK(i2s_channel_enable(s_rx));
 
     s_mode = g_set.mode;
-    xTaskCreate(audio_task, "audio", 4096, NULL, configMAX_PRIORITIES - 2, NULL);
+    // hoechste Prioritaet: bei nur 4 ms Puffer darf WLAN den Audio-Task nicht aufhalten
+    xTaskCreate(audio_task, "audio", 4096, NULL, configMAX_PRIORITIES - 1, NULL);
     ESP_LOGI(TAG, "I2S Slave aktiv: BCLK=%d WS=%d DIN=%d DOUT=%d, Modus %s",
              CONFIG_NRB_PIN_I2S_BCLK, CONFIG_NRB_PIN_I2S_WS, CONFIG_NRB_PIN_I2S_DIN,
              CONFIG_NRB_PIN_I2S_DOUT, mode_name(s_mode));

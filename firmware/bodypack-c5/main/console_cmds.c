@@ -51,6 +51,9 @@ void console_print_status(void)
            g_set.boost, g_set.hp_vol, g_set.sidetone, g_talk ? "AN" : "aus");
     printf("       Pegel Mic %.1f dBFS, Ausgang %.1f dBFS, Bloecke %lu, I2S-Fehler %lu\n",
            as.mic_peak_db, as.out_peak_db, (unsigned long)as.blocks, (unsigned long)as.i2s_errors);
+    printf("       Effektivpegel Buchse %.1f dBFS, Board-Mic %.1f dBFS, Gate %s (%.0f dB)\n",
+           as.rms_jack_db, as.rms_board_db,
+           g_set.gate_db < 0 ? "an" : "aus", as.gate_gain_db);
     printf("RTP  : Ziel %s:%u, lokal %u, Codec %s, Paket %d ms, Jitterbuffer Ziel %d ms (aktuell %lu ms)\n",
            g_set.host[0] ? g_set.host : "-", g_set.port, g_set.local_port,
            g_set.codec == CODEC_OPUS ? "Opus" : "L16", g_set.frame_ms, g_set.jb_ms,
@@ -65,7 +68,7 @@ void console_print_status(void)
            (unsigned long)rs.rx_dropped, (unsigned long)rs.rx_resyncs, (unsigned long)rs.rx_bad);
     printf("       Jitter %.2f ms, Unterlauf %lu, Sendepuffer voll %lu\n", rs.jitter_ms,
            (unsigned long)as.play_underruns, (unsigned long)as.tx_overflows);
-    printf("CPU  : Opus-Encoder %lu us (max %lu), Decoder %lu us (max %lu) pro Paket, Audio max %lu us/5ms\n",
+    printf("CPU  : Opus-Encoder %lu us (max %lu), Decoder %lu us (max %lu) pro Paket, Audio max %lu us/ms\n",
            (unsigned long)rs.enc_us_avg, (unsigned long)rs.enc_us_max, (unsigned long)rs.dec_us_avg,
            (unsigned long)rs.dec_us_max, (unsigned long)as.proc_us_max);
     printf("Stack: Codec-Task frei %lu Byte (von 32 KB)\n", (unsigned long)rs.codec_stack_free);
@@ -145,6 +148,42 @@ static int cmd_mic(int argc, char **argv)
     if (argc > 3) g_set.boost = (uint8_t)atoi(argv[3]);
     wm8960_set_mic(g_set.mic, g_set.pga_db, g_set.boost);
     save();
+    return 0;
+}
+
+static int cmd_gate(int argc, char **argv)
+{
+    if (argc < 2) {
+        printf("gate <schwelle dBFS -80..-20> | gate off   (aktuell: %s%d)\n",
+               g_set.gate_db < 0 ? "" : "aus ", g_set.gate_db);
+        printf("  Unter der Schwelle wird das Mikrofon um 30 dB leiser (Sprechpausen ohne Rauschen).\n");
+        printf("  Schwelle finden: 'pegel' still messen, Gate ca. 6-10 dB darueber setzen.\n");
+        return 1;
+    }
+    if (!strcmp(argv[1], "off")) {
+        g_set.gate_db = 0;
+    } else {
+        int v = atoi(argv[1]);
+        g_set.gate_db = (int8_t)(v < -80 ? -80 : v > -20 ? -20 : v);
+    }
+    save();
+    return 0;
+}
+
+static int cmd_pegel(int argc, char **argv)
+{
+    int secs = argc > 1 ? atoi(argv[1]) : 5;
+    if (secs < 1) secs = 1;
+    if (secs > 30) secs = 30;
+    printf("Pegelanzeige %d s (Effektivwert, ~0,5 s gemittelt). Erst still sein, dann sprechen.\n", secs);
+    printf("   Buchse    Board   Spitze   Gate\n");
+    for (int i = 0; i < secs * 2; i++) {
+        vTaskDelay(pdMS_TO_TICKS(500));
+        audio_stats_t as;
+        audio_get_stats(&as);
+        printf("  %6.1f   %6.1f   %6.1f   %4.0f dB\n", as.rms_jack_db, as.rms_board_db, as.mic_peak_db,
+               as.gate_gain_db);
+    }
     return 0;
 }
 
@@ -429,6 +468,8 @@ void console_cmds_register(void)
         { .command = "scan",    .help = "WLAN-Netze in der Umgebung anzeigen", .func = cmd_scan },
         { .command = "mode",    .help = "Audio-Modus: mode off|loop|tone|rtp", .func = cmd_mode },
         { .command = "mic",     .help = "Mikrofon: mic board|jack [pga_db] [boost 0..3]", .func = cmd_mic },
+        { .command = "gate",    .help = "Mikrofon-Gate: gate <-80..-20 dBFS> | gate off", .func = cmd_gate },
+        { .command = "pegel",   .help = "Mikrofonpegel live anzeigen: pegel [sekunden]", .func = cmd_pegel },
         { .command = "vol",     .help = "Kopfhoerer-Lautstaerke: vol 0..100", .func = cmd_vol },
         { .command = "side",    .help = "Mithoerton im RTP-Modus: side 0..100", .func = cmd_side },
         { .command = "rtp",     .help = "RTP: rtp <ip> [port] | codec | frame | jb | latch | reset", .func = cmd_rtp },
