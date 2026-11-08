@@ -244,7 +244,7 @@ esp_err_t wm8960_init(i2c_master_bus_handle_t bus)
     return ESP_OK;
 }
 
-esp_err_t wm8960_set_mic(int src, int pga_db, int boost)
+esp_err_t wm8960_set_mic(int src, int pga_db, int boost)   // src: 0 = L, 1 = R, 2 = beide
 {
     if (pga_db < -17) pga_db = -17;
     if (pga_db > 30) pga_db = 30;
@@ -260,7 +260,12 @@ esp_err_t wm8960_set_mic(int src, int pga_db, int boost)
     uint16_t on   = 0x100 | (uint16_t)vol;        // IPVU + Lautstaerke
     uint16_t mute = 0x100 | 0x080;                // IPVU + Stumm
 
-    if (src == 0) {
+    if (src == 2) {
+        wm8960_write(R_LINPATH, path);
+        wm8960_write(R_RINPATH, path);
+        wm8960_write(R_LINVOL, on);
+        wm8960_write(R_RINVOL, on);
+    } else if (src == 0) {
         wm8960_write(R_LINPATH, path);
         wm8960_write(R_RINPATH, 0x000);
         wm8960_write(R_LINVOL, on);

@@ -153,6 +153,10 @@ static void audio_task(void *arg)
 
         switch (mode) {
         case MODE_LOOP:
+            if (g_set.mic == MIC_STEREO) {       // Test: Eingaenge getrennt auf linkes/rechtes Ohr, ohne Gate
+                memcpy(out, in, sizeof(out));
+                break;
+            }
             for (int i = 0; i < AUDIO_BLOCK; i++) {
                 out[2 * i] = out[2 * i + 1] = mic[i];
             }

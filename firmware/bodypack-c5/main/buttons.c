@@ -31,9 +31,9 @@ static void on_press(int idx)
         ESP_LOGI(TAG, "Modus: %s", mode_name(g_set.mode));
         break;
     case 2:
-        g_set.mic = g_set.mic == MIC_ONBOARD ? MIC_JACK : MIC_ONBOARD;
+        g_set.mic = (g_set.mic + 1) % 3;
         wm8960_set_mic(g_set.mic, g_set.pga_db, g_set.boost);
-        ESP_LOGI(TAG, "Mikrofon: %s", g_set.mic == MIC_ONBOARD ? "Board" : "Buchse");
+        ESP_LOGI(TAG, "Mikrofon: %s", g_set.mic == MIC_ONBOARD ? "Board" : g_set.mic == MIC_JACK ? "Buchse" : "beide");
         break;
     case 3:
         console_print_status();

@@ -13,6 +13,7 @@ typedef enum {
 typedef enum {
     MIC_ONBOARD = 0,  // MEMS-Mikrofon auf dem WM8960-Board (LINPUT1)
     MIC_JACK    = 1,  // Headset-Mikrofon ueber 3,5-mm-Buchse (RINPUT1)
+    MIC_STEREO  = 2,  // Test: beide Eingaenge an, im Loop links = LINPUT1, rechts = RINPUT1
 } mic_src_t;
 
 typedef enum {

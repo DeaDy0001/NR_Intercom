@@ -47,7 +47,7 @@ static const char *s_menu_names[MI_COUNT] = {
 
 // ---------------------------------------------------------------- Bodypack-Einstellungen (ESP32-C5)
 static const char *const N_MODE[]  = { "Aus", "Mithören (Loop)", "Testton 1 kHz", "Funk (RTP)" };
-static const char *const N_MIC[]   = { "Board-Mikrofon", "Headset-Buchse" };
+static const char *const N_MIC[]   = { "Board-Mikrofon", "Headset-Buchse", "Beide (Test L/R)" };
 static const char *const N_BOOST[] = { "0 dB", "+13 dB", "+20 dB", "+29 dB" };
 static const char *const N_BAND[]  = { "Auto", "5 GHz", "2,4 GHz" };
 static const char *const N_ANT[]   = { "intern", "extern" };
@@ -67,7 +67,7 @@ typedef struct {
 
 static const bp_item_t s_bp[BI_COUNT] = {
     [BI_MODE]  = { "mode",  "Modus",            0, 3, 1, N_MODE, NULL },
-    [BI_MIC]   = { "mic",   "Mikrofon",         0, 1, 1, N_MIC, NULL },
+    [BI_MIC]   = { "mic",   "Mikrofon",         0, 2, 1, N_MIC, NULL },
     [BI_PGA]   = { "pga",   "Mic-Verstärkung",  -17, 30, 1, NULL, "%+d dB" },
     [BI_BOOST] = { "boost", "Mic-Boost",        0, 3, 1, N_BOOST, NULL },
     [BI_GATE]  = { "gate",  "Rausch-Gate",      -80, 0, 2, NULL, "%d dBFS" },
@@ -256,7 +256,7 @@ static void draw_main(void)
     char b[64];
     snprintf(b, sizeof(b), "%s", on ? N_MODE[c->mode < 0 || c->mode > 3 ? 0 : c->mode] : "--");
     gfx_text(&font_m, 180, 44, b, C_TEXT);
-    snprintf(b, sizeof(b), "%s · Codec %s", on ? N_MIC[c->mic ? 1 : 0] : "--",
+    snprintf(b, sizeof(b), "%s · Codec %s", on ? N_MIC[c->mic < 0 || c->mic > 2 ? 0 : c->mic] : "--",
              on ? (c->codec_ok ? "ok" : "FEHLT") : "--");
     gfx_text(&font_s, 180, 76, b, on && !c->codec_ok ? C_WARN : C_DIM);
 
@@ -266,7 +266,7 @@ static void draw_main(void)
         if (s_last_clips) s_clip_until = now + 1500000;
         s_last_clips = c->clips;
     }
-    float mic_db = on ? (c->mic ? c->jack_db : c->board_db) : -120;
+    float mic_db = on ? (c->mic == 1 ? c->jack_db : c->board_db) : -120;
     bool gate_open = c->gate_gain_db > -3.0f;
     gfx_text(&font_s, 12, 114, "Mikrofon", C_DIM);
     draw_meter(100, 116, 370, 14, mic_db, -80, on ? c->peak_db : -120, on ? c->gate : 0, on && now < s_clip_until,
@@ -320,7 +320,7 @@ static void draw_bp_meter(void)
 {
     const int x = 16, y = 52, w = DISP_W - 32, h = 14;
     gfx_fill_rect(0, 48, DISP_W, 32, C_BG);
-    float db = s_c5.mic ? s_c5.jack_db : s_c5.board_db;
+    float db = s_c5.mic == 1 ? s_c5.jack_db : s_c5.board_db;
     if (!s_c5.online) db = -120;
     int lw = (int)((db + 80.0f) / 80.0f * w);
     lw = lw < 0 ? 0 : lw > w ? w : lw;

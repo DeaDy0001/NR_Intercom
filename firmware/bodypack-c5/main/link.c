@@ -67,7 +67,7 @@ static bool apply(const char *k, int v)
         g_set.mode = clampi(v, 0, MODE_COUNT - 1);
         audio_set_mode(g_set.mode);
     } else if (!strcmp(k, "mic") || !strcmp(k, "pga") || !strcmp(k, "boost")) {
-        if (k[0] == 'm') g_set.mic = v ? MIC_JACK : MIC_ONBOARD;
+        if (k[0] == 'm') g_set.mic = clampi(v, 0, 2);
         else if (k[0] == 'p') g_set.pga_db = clampi(v, -17, 30);
         else g_set.boost = clampi(v, 0, 3);
         wm8960_set_mic(g_set.mic, g_set.pga_db, g_set.boost);

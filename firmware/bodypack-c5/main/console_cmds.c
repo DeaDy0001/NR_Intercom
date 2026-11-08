@@ -47,7 +47,7 @@ void console_print_status(void)
            CONFIG_NRB_PIN_I2C_SDA, CONFIG_NRB_PIN_I2C_SCL, (unsigned long)(wm8960_get_i2c_hz() / 1000),
            (unsigned long)wm8960_write_errors(), (unsigned long)wm8960_i2c_retries());
     printf("Audio: Modus %s, Mic %s (PGA %+d dB, Boost %d), Kopfhoerer %d%%, Mithoerton %d%%, Talk %s\n",
-           mode_name(g_set.mode), g_set.mic == MIC_ONBOARD ? "Board" : "Buchse", g_set.pga_db,
+           mode_name(g_set.mode), g_set.mic == MIC_ONBOARD ? "Board" : g_set.mic == MIC_JACK ? "Buchse" : "beide (Test)", g_set.pga_db,
            g_set.boost, g_set.hp_vol, g_set.sidetone, g_talk ? "AN" : "aus");
     printf("       Pegel Mic %.1f dBFS, Ausgang %.1f dBFS, Bloecke %lu, I2S-Fehler %lu\n",
            as.mic_peak_db, as.out_peak_db, (unsigned long)as.blocks, (unsigned long)as.i2s_errors);
@@ -141,11 +141,12 @@ static int cmd_mode(int argc, char **argv)
 static int cmd_mic(int argc, char **argv)
 {
     if (argc < 2) {
-        printf("mic board|jack [pga_db -17..30] [boost 0..3]\n");
+        printf("mic board|jack|both [pga_db -17..30] [boost 0..3]\n");
+        printf("  both = Test: beide Eingaenge an, im Loop links = Board (LINPUT1), rechts = Buchse (RINPUT1)\n");
         printf("  boost: 0 = 0 dB, 1 = +13 dB, 2 = +20 dB, 3 = +29 dB\n");
         return 1;
     }
-    g_set.mic = !strcmp(argv[1], "board") ? MIC_ONBOARD : MIC_JACK;
+    g_set.mic = !strcmp(argv[1], "board") ? MIC_ONBOARD : !strcmp(argv[1], "both") ? MIC_STEREO : MIC_JACK;
     if (argc > 2) g_set.pga_db = (int8_t)atoi(argv[2]);
     if (argc > 3) g_set.boost = (uint8_t)atoi(argv[3]);
     wm8960_set_mic(g_set.mic, g_set.pga_db, g_set.boost);
@@ -470,7 +471,7 @@ void console_cmds_register(void)
         { .command = "ant",     .help = "Antenne: ant ext|int", .func = cmd_ant },
         { .command = "scan",    .help = "WLAN-Netze in der Umgebung anzeigen", .func = cmd_scan },
         { .command = "mode",    .help = "Audio-Modus: mode off|loop|tone|rtp", .func = cmd_mode },
-        { .command = "mic",     .help = "Mikrofon: mic board|jack [pga_db] [boost 0..3]", .func = cmd_mic },
+        { .command = "mic",     .help = "Mikrofon: mic board|jack|both [pga_db] [boost 0..3]", .func = cmd_mic },
         { .command = "gate",    .help = "Mikrofon-Gate: gate <-80..-20 dBFS> | gate off", .func = cmd_gate },
         { .command = "pegel",   .help = "Mikrofonpegel live anzeigen: pegel [sekunden]", .func = cmd_pegel },
         { .command = "vol",     .help = "Kopfhoerer-Lautstaerke: vol 0..100", .func = cmd_vol },
