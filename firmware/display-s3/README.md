@@ -34,6 +34,16 @@ Nichts umlöten: Die Drehgeber bleiben, wie sie laut dem bisherigen Sketch im NR
 - Wenn er pro Rastung zwei Schritte macht oder nur jede zweite Rastung zählt: **Zählschritte pro Rastung** auf 2 oder 4 stellen.
 - Das WM8960-Board kann am S3 abgesteckt bleiben. Audio übernimmt künftig der C5.
 
+### Verbindung S3 ↔ C5 (UART, 115200 Baud)
+
+| ESP32-S3 (Display) | ESP32-C5-Zero | Signal |
+|---|---|---|
+| GPIO4 (H2 Pin 10) | **GP3** | S3 sendet → C5 empfängt |
+| GPIO10 (H2 Pin 9) | **GP2** | C5 sendet → S3 empfängt |
+| GND | **GND** | gemeinsame Masse (Pflicht) |
+
+Über ein Kreuz verbinden: TX des einen auf RX des anderen. Beide Boards bleiben per USB versorgt; 3V3 **nicht** verbinden.
+
 ## 2. Flashen
 
 ### Variante 0: Doppelklick (Windows mit Arduino IDE)
@@ -61,9 +71,19 @@ idf.py build flash monitor
 |---|---|---|
 | **Hauptseite** | Drehen: Kanal wählen · kurz: Hören an/aus · lang: Talk an/aus | Drehen: Lautstärke des Kanals · kurz: Menü |
 | **Menü** | Drehen: Eintrag wählen · kurz: ausführen | Drehen: Wert ändern (Helligkeit) · kurz: zurück |
+| **Bodypack-Einstellungen** | Drehen: Eintrag wählen · kurz: nächster Wert (bei Auswahllisten) | Drehen: Wert ändern (geht sofort an den C5) · kurz: zurück |
+| **Bodypack-Status** | kurz: zurück | kurz: zurück |
 | **Info / Testbild / FPS-Test** | kurz: zurück | kurz: zurück |
 
-Helligkeit und Ausrichtung werden gespeichert.
+Helligkeit und Ausrichtung werden gespeichert. Die Bodypack-Einstellungen speichert der C5 selbst (2 s nach der letzten Änderung).
+
+**Bodypack-Einstellungen:** Modus (Aus / Mithören / Testton / Funk), Mikrofon (Board / Headset), Mic-Verstärkung, Mic-Boost,
+Rausch-Gate, Kopfhörer, Mithörton, Talk-Taste (halten / umschalten), WLAN-Band, Antenne, Codec, Opus-Bitrate, Paketlänge, Jitterbuffer.
+Oben läuft eine Pegelanzeige des Mikrofons mit (−80 … 0 dBFS); der rote Strich ist die Gate-Schwelle. Gate richtig eingestellt:
+in Sprechpausen bleibt der Balken links vom Strich (grau = Gate zu), beim Sprechen geht er darüber (grün = offen).
+Ein gelber Wert ist zum C5 geschickt, aber noch nicht bestätigt. WLAN-Name und Passwort setzt man weiter über die USB-Konsole des C5.
+
+Talk lang drücken (Drehgeber 1) schaltet am Bodypack das Senden ein, solange mindestens ein Kanal auf Talk steht.
 
 ## 4. Was bitte prüfen
 

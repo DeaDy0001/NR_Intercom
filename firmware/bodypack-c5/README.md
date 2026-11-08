@@ -29,6 +29,12 @@ Damit lässt sich testen:
 | RXSDA (Pin 7) | **GP8** | Kopfhörer-Daten zum WM8960 |
 | RXMCLK / TXMCLK | **nicht anschließen** | Der WM8960 hat seinen eigenen 24-MHz-Takt |
 
+| S3-Display (UART, 115200 Baud) | ESP32-C5-Zero | Hinweis |
+|---|---|---|
+| GPIO4 (TX) | **GP3** (RX) | Befehle vom Display |
+| GPIO10 (RX) | **GP2** (TX) | Status und Pegel zum Display |
+| GND | **GND** | gemeinsame Masse |
+
 | Taste (schaltet nach GND) | ESP32-C5-Zero | Testfunktion |
 |---|---|---|
 | Taste 1 | **GP0** | Talk (halten) |
@@ -174,4 +180,4 @@ Wenn `status` beim minimalen freien RAM unter 10.000 Byte fällt, auf ein C5-Boa
 
 ## Noch nicht enthalten (nächste Schritte)
 - Anbindung an NR_Com (Login, Socket.IO, PlainTransport), sobald der Com-Dev das Server-Event fertig hat
-- Verbindung zum ESP32-S3-Display-Board (UART)
+- ~~Verbindung zum ESP32-S3-Display-Board (UART)~~ erledigt: Menü „Bodypack-Einstellungen“ am S3

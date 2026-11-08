@@ -56,6 +56,15 @@ menu "NR Display"
             default n
     endmenu
 
+    menu "Verbindung zum ESP32-C5"
+        config NRD_LINK_TX
+            int "UART TX (-> C5 GP3)"
+            default 4
+        config NRD_LINK_RX
+            int "UART RX (<- C5 GP2)"
+            default 10
+    endmenu
+
     config NRD_BAT_ADC_GPIO
         int "Akkuspannung (Teiler 1:2)"
         default 1

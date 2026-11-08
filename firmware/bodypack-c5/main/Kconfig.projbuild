@@ -31,6 +31,12 @@ menu "NR Bodypack"
         config NRB_PIN_BTN4
             int "Taste 4"
             default 11
+        config NRB_PIN_LINK_TX
+            int "UART zum S3-Display: TX (-> S3 GPIO10)"
+            default 2
+        config NRB_PIN_LINK_RX
+            int "UART zum S3-Display: RX (<- S3 GPIO4)"
+            default 3
         config NRB_PIN_LED
             int "WS2812 RGB-LED"
             default 27

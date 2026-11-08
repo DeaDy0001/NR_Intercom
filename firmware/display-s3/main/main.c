@@ -4,7 +4,7 @@
 // - 2 Drehgeber KY-040 ueber PCNT
 // - Akkuspannung ueber GPIO1
 // - Demo-Oberflaeche (4 Kanaele), Menue, Testbild, FPS-Test, Info
-// Die Verbindung zum ESP32-C5 (Funk/Audio) folgt in Phase 2.
+// - UART-Verbindung zum ESP32-C5: Bodypack-Einstellungen und Status im Menue
 
 #include "nvs_flash.h"
 #include "esp_log.h"
@@ -14,6 +14,7 @@
 #include "input.h"
 #include "battery.h"
 #include "ui.h"
+#include "link.h"
 
 static const char *TAG = "main";
 
@@ -30,6 +31,7 @@ void app_main(void)
     ESP_ERROR_CHECK(gfx_init());
     ESP_ERROR_CHECK(input_init());
     if (battery_init() != ESP_OK) ESP_LOGW(TAG, "Akku-Messung nicht verfuegbar");
+    if (link_init() != ESP_OK) ESP_LOGW(TAG, "Verbindung zum C5 nicht verfuegbar");
     ESP_ERROR_CHECK(ui_start());
 
     ESP_LOGI(TAG, "bereit. RAM intern frei %u KB, PSRAM frei %u KB",

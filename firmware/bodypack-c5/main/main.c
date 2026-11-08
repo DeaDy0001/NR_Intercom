@@ -19,6 +19,7 @@
 #include "rtp.h"
 #include "buttons.h"
 #include "led.h"
+#include "link.h"
 
 static const char *TAG = "main";
 
@@ -64,6 +65,7 @@ void app_main(void)
     ESP_ERROR_CHECK(net_init());
     ESP_ERROR_CHECK(rtp_init());
     ESP_ERROR_CHECK(buttons_init());
+    if (link_init() != ESP_OK) ESP_LOGW(TAG, "Display-Verbindung (UART) nicht verfuegbar");
 
     esp_console_repl_t *repl = NULL;
     esp_console_repl_config_t repl_cfg = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
