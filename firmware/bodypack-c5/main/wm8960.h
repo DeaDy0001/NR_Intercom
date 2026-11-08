@@ -7,7 +7,9 @@
 // die PLL macht daraus SYSCLK = 12,288 MHz -> 48 kHz, BCLK = 1,536 MHz (16 Bit Stereo).
 // Der ESP32 ist I2S-Slave, eine MCLK-Leitung zum ESP gibt es nicht.
 
-esp_err_t wm8960_init(i2c_master_bus_handle_t bus);
+esp_err_t wm8960_init(i2c_master_bus_handle_t bus);           // darf erneut aufgerufen werden
+void      wm8960_detach(void);                              // vor i2c_del_master_bus aufrufen
+void      wm8960_i2c_recover(int sda, int scl);             // Bus freitakten (vor i2c_new_master_bus)
 bool      wm8960_present(void);                             // per I2C gefunden und initialisiert
 uint32_t  wm8960_write_errors(void);
 esp_err_t wm8960_set_mic(int src, int pga_db, int boost);   // src: 0 = Board-Mic (L), 1 = Buchse (R)

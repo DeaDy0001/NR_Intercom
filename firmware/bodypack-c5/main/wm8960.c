@@ -2,6 +2,8 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "driver/gpio.h"
+#include "esp_rom_sys.h"
 
 static const char *TAG = "wm8960";
 
@@ -74,21 +76,83 @@ uint16_t wm8960_read_cache(uint8_t reg)
     return reg < 56 ? s_cache[reg] : 0;
 }
 
+void wm8960_i2c_recover(int sda, int scl)
+{
+    // Klassische I2C-Bus-Freigabe: Haengt ein Slave mitten in einem Byte (z. B. nach einem
+    // Neustart des ESP waehrend er SDA auf LOW zieht), takten wir SCL bis zu 9x, bis er SDA
+    // loslaesst, und erzeugen dann eine STOP-Bedingung.
+    gpio_config_t io = { .pin_bit_mask = (1ULL << sda) | (1ULL << scl), .mode = GPIO_MODE_INPUT_OUTPUT_OD,
+                         .pull_up_en = GPIO_PULLUP_ENABLE, .pull_down_en = GPIO_PULLDOWN_DISABLE };
+    gpio_config(&io);
+    gpio_set_level(sda, 1);
+    gpio_set_level(scl, 1);
+    esp_rom_delay_us(10);
+    for (int i = 0; i < 9 && !gpio_get_level(sda); i++) {
+        gpio_set_level(scl, 0);
+        esp_rom_delay_us(10);
+        gpio_set_level(scl, 1);
+        esp_rom_delay_us(10);
+    }
+    // STOP: SDA LOW -> SCL HIGH -> SDA HIGH
+    gpio_set_level(scl, 0);
+    esp_rom_delay_us(10);
+    gpio_set_level(sda, 0);
+    esp_rom_delay_us(10);
+    gpio_set_level(scl, 1);
+    esp_rom_delay_us(10);
+    gpio_set_level(sda, 1);
+    esp_rom_delay_us(10);
+    gpio_reset_pin(sda);
+    gpio_reset_pin(scl);
+}
+
+void wm8960_detach(void)
+{
+    if (s_dev) {
+        i2c_master_bus_rm_device(s_dev);
+        s_dev = NULL;
+    }
+    s_present = false;
+}
+
 esp_err_t wm8960_init(i2c_master_bus_handle_t bus)
 {
-    esp_err_t err = i2c_master_probe(bus, WM8960_ADDR, 100);
+    wm8960_detach();
+    s_write_errors = 0;
+
+    // Mehrere Versuche: der erste Zugriff nach dem Einschalten/Neustart kann scheitern,
+    // wenn der Codec den Bus noch festhaelt. Der Treiber setzt den Bus danach selbst zurueck.
+    esp_err_t err = ESP_FAIL;
+    int attempt;
+    for (attempt = 1; attempt <= 8; attempt++) {
+        err = i2c_master_probe(bus, WM8960_ADDR, 100);
+        if (err == ESP_OK) break;
+        i2c_master_bus_reset(bus);
+        vTaskDelay(pdMS_TO_TICKS(20));
+    }
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "WM8960 nicht gefunden (0x%02X): %s", WM8960_ADDR, esp_err_to_name(err));
+        ESP_LOGE(TAG, "WM8960 nicht gefunden (0x%02X) nach %d Versuchen: %s", WM8960_ADDR, attempt - 1,
+                 esp_err_to_name(err));
         return err;
     }
+    if (attempt > 1) ESP_LOGW(TAG, "WM8960 antwortet erst beim %d. Versuch", attempt);
+
     i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = WM8960_ADDR,
         .scl_speed_hz = 100000,
     };
-    ESP_ERROR_CHECK(i2c_master_bus_add_device(bus, &dev_cfg, &s_dev));
+    err = i2c_master_bus_add_device(bus, &dev_cfg, &s_dev);
+    if (err != ESP_OK) {
+        s_dev = NULL;
+        return err;
+    }
 
-    ESP_ERROR_CHECK(wm8960_write(R_RESET, 0x000));
+    err = wm8960_write(R_RESET, 0x000);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "WM8960-Reset fehlgeschlagen: %s", esp_err_to_name(err));
+        return err;
+    }
     vTaskDelay(pdMS_TO_TICKS(20));
 
     // Stromversorgung: VMID 50k, VREF, beide Eingangs-PGAs, beide ADCs, MICBIAS

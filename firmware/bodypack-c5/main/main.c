@@ -37,6 +37,7 @@ void app_main(void)
 
     if (led_init(CONFIG_NRB_PIN_LED) == ESP_OK) led_set(10, 10, 10);
 
+    wm8960_i2c_recover(CONFIG_NRB_PIN_I2C_SDA, CONFIG_NRB_PIN_I2C_SCL);
     i2c_master_bus_config_t bus_cfg = {
         .i2c_port = I2C_NUM_0,
         .sda_io_num = CONFIG_NRB_PIN_I2C_SDA,
@@ -53,7 +54,7 @@ void app_main(void)
         wm8960_set_mic(g_set.mic, g_set.pga_db, g_set.boost);
         wm8960_set_hp_volume(g_set.hp_vol);
     } else {
-        ESP_LOGE(TAG, "WM8960 fehlt: Verkabelung SDA=GPIO%d / SCL=GPIO%d / 3V3 / GND pruefen",
+        ESP_LOGE(TAG, "WM8960 fehlt: Verkabelung SDA=GPIO%d / SCL=GPIO%d / 3V3 / GND pruefen, dann 'codec' eingeben",
                  CONFIG_NRB_PIN_I2C_SDA, CONFIG_NRB_PIN_I2C_SCL);
     }
 
