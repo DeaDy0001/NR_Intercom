@@ -42,9 +42,10 @@ void console_print_status(void)
     }
     printf("\n       Abbrueche %lu, AP-Wechsel %lu, Antenne %s\n", (unsigned long)ni.disconnects,
            (unsigned long)ni.roams, g_set.ant_ext ? "extern" : "intern");
-    printf("Codec: WM8960 %s (I2C SDA=GP%d, SCL=GP%d), Schreibfehler %lu\n",
+    printf("Codec: WM8960 %s (I2C SDA=GP%d, SCL=GP%d, %lu kHz), Schreibfehler %lu\n",
            wm8960_present() ? "gefunden + eingestellt" : "NICHT gefunden",
-           CONFIG_NRB_PIN_I2C_SDA, CONFIG_NRB_PIN_I2C_SCL, (unsigned long)wm8960_write_errors());
+           CONFIG_NRB_PIN_I2C_SDA, CONFIG_NRB_PIN_I2C_SCL, (unsigned long)(wm8960_get_i2c_hz() / 1000),
+           (unsigned long)wm8960_write_errors());
     printf("Audio: Modus %s, Mic %s (PGA %+d dB, Boost %d), Kopfhoerer %d%%, Mithoerton %d%%, Talk %s\n",
            mode_name(g_set.mode), g_set.mic == MIC_ONBOARD ? "Board" : "Buchse", g_set.pga_db,
            g_set.boost, g_set.hp_vol, g_set.sidetone, g_talk ? "AN" : "aus");
@@ -357,6 +358,31 @@ static int cmd_codec(int argc, char **argv)
     return codec_setup() ? 0 : 1;
 }
 
+static int cmd_i2ctest(int argc, char **argv)
+{
+    if (!g_i2c_bus) { printf("I2C-Bus nicht aktiv\n"); return 1; }
+    const int n = 100;
+    wm8960_detach();
+    printf("I2C-Test: je %d x Adresse 0x1A abfragen und %d x schreiben\n", n, n);
+    const uint32_t speeds[] = { 100000, 50000, 20000, 10000 };
+    uint32_t best = 0;
+    for (size_t i = 0; i < sizeof(speeds) / sizeof(speeds[0]); i++) {
+        int p = 0;
+        int w = wm8960_i2c_test(g_i2c_bus, speeds[i], n, &p);
+        printf("  %3lu kHz: Abfrage %3d/%d OK, Schreiben %3d/%d OK\n",
+               (unsigned long)(speeds[i] / 1000), p, n, w, n);
+        if (w == n && !best) best = speeds[i];
+    }
+    if (best) {
+        printf("-> fehlerfrei ab %lu kHz, nehme diese Geschwindigkeit\n", (unsigned long)(best / 1000));
+        wm8960_set_i2c_hz(best);
+        codec_setup();
+    } else {
+        printf("-> nirgends fehlerfrei: Verdrahtung ist das Problem (siehe Hinweise im Chat)\n");
+    }
+    return 0;
+}
+
 static int cmd_reg(int argc, char **argv)
 {
     if (argc < 3) { printf("reg <nr hex> <wert hex>  (WM8960 direkt schreiben)\n"); return 1; }
@@ -405,6 +431,7 @@ void console_cmds_register(void)
         { .command = "nettest", .help = "Funk-Messung: nettest <pc-ip> [port] [s] [ms] [bytes]", .func = cmd_nettest },
         { .command = "i2cdiag", .help = "I2C-Diagnose: Pegel messen, SDA/SCL vertauscht testen", .func = cmd_i2cdiag },
         { .command = "codec",   .help = "WM8960 neu einstellen (ohne Neustart)", .func = cmd_codec },
+        { .command = "i2ctest", .help = "I2C-Qualitaet messen (100/50/20/10 kHz)", .func = cmd_i2ctest },
         { .command = "i2cscan", .help = "I2C-Bus absuchen (WM8960 = 0x1A)", .func = cmd_i2cscan },
         { .command = "reg",     .help = "WM8960-Register schreiben: reg <nr> <wert> (hex)", .func = cmd_reg },
         { .command = "log",     .help = "Log-Ausgaben: log on|off", .func = cmd_log },

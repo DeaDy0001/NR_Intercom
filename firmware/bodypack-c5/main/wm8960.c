@@ -43,6 +43,7 @@ static const char *TAG = "wm8960";
 #define R_PLL4     0x37
 
 static i2c_master_dev_handle_t s_dev;
+static uint32_t s_hz = 50000;     // langsam = robuster bei fliegender Verdrahtung
 static uint16_t s_cache[56];
 static bool s_present;
 static uint32_t s_write_errors;
@@ -61,7 +62,11 @@ esp_err_t wm8960_write(uint8_t reg, uint16_t val)
 {
     if (!s_dev) return ESP_ERR_INVALID_STATE;
     uint8_t buf[2] = { (uint8_t)((reg << 1) | ((val >> 8) & 1)), (uint8_t)(val & 0xFF) };
-    esp_err_t err = i2c_master_transmit(s_dev, buf, sizeof(buf), 50);
+    esp_err_t err = ESP_FAIL;
+    for (int i = 0; i < 3; i++) {     // bis zu 3 Versuche
+        err = i2c_master_transmit(s_dev, buf, sizeof(buf), 50);
+        if (err == ESP_OK) break;
+    }
     if (err == ESP_OK) {
         if (reg < 56) s_cache[reg] = val & 0x1FF;
     } else {
@@ -69,6 +74,37 @@ esp_err_t wm8960_write(uint8_t reg, uint16_t val)
         ESP_LOGE(TAG, "Schreiben R%02X fehlgeschlagen: %s", reg, esp_err_to_name(err));
     }
     return err;
+}
+
+uint32_t wm8960_get_i2c_hz(void)
+{
+    return s_hz;
+}
+
+void wm8960_set_i2c_hz(uint32_t hz)
+{
+    s_hz = hz;
+}
+
+int wm8960_i2c_test(i2c_master_bus_handle_t bus, uint32_t hz, int n, int *probe_ok)
+{
+    // n x Adresse abfragen und n x ein harmloses Register (Noisegate aus) schreiben
+    int p = 0, w = 0;
+    for (int i = 0; i < n; i++) {
+        if (i2c_master_probe(bus, WM8960_ADDR, 20) == ESP_OK) p++;
+    }
+    i2c_device_config_t cfg = { .dev_addr_length = I2C_ADDR_BIT_LEN_7, .device_address = WM8960_ADDR,
+                                .scl_speed_hz = hz };
+    i2c_master_dev_handle_t dev;
+    if (i2c_master_bus_add_device(bus, &cfg, &dev) == ESP_OK) {
+        uint8_t buf[2] = { (uint8_t)(R_NOISEG << 1), 0x00 };
+        for (int i = 0; i < n; i++) {
+            if (i2c_master_transmit(dev, buf, sizeof(buf), 20) == ESP_OK) w++;
+        }
+        i2c_master_bus_rm_device(dev);
+    }
+    if (probe_ok) *probe_ok = p;
+    return w;
 }
 
 uint16_t wm8960_read_cache(uint8_t reg)
@@ -140,7 +176,7 @@ esp_err_t wm8960_init(i2c_master_bus_handle_t bus)
     i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = WM8960_ADDR,
-        .scl_speed_hz = 100000,
+        .scl_speed_hz = s_hz,
     };
     err = i2c_master_bus_add_device(bus, &dev_cfg, &s_dev);
     if (err != ESP_OK) {
