@@ -23,9 +23,46 @@ typedef struct {
     char  ip[16];
     char  ssid[33];
     uint32_t lines;        // empfangene Zeilen (Diagnose)
+    // Intercom-Einstellungen (S-Zeile)
+    int   com_on, com_port;
+    char  com_host[48];
+    char  com_pin[16];
+    char  wifi_ssid[33];   // eingestellte SSID
+    // Intercom-Status (N-Zeile)
+    int   com_state;       // 0 aus, 1 kein WLAN, 2 suche Server, 3 PIN falsch, 4 verbunden, 5 Fehler
+    int   com_nch;
+    uint32_t com_rev;
+    char  com_ip[16];
+    char  com_user[32];
+    char  com_msg[48];
 } c5_state_t;
+
+#define LINK_MAX_CH   16
+#define LINK_MAX_AP   16
+
+typedef struct {
+    char name[24];
+    bool joined, talk;
+    int  volume;           // 0..100
+    int  talkers;          // andere, die gerade sprechen
+} link_channel_t;
+
+typedef struct {
+    char ssid[33];
+    int  rssi, channel;
+    bool secure;
+} link_ap_t;
+
+enum { COM_ST_OFF, COM_ST_NOWIFI, COM_ST_SEARCH, COM_ST_PIN, COM_ST_ONLINE, COM_ST_ERROR };
 
 esp_err_t link_init(void);
 void      link_get(c5_state_t *st);
 void      link_set(const char *name, int value);   // Einstellung am C5 setzen
 void      link_talk(bool on);
+int       link_get_channels(link_channel_t *out, int max, uint32_t *gen);   // gen aendert sich mit jeder neuen Liste
+void      link_channel(int idx, const char *cmd, int value);              // join | leave | talk | vol
+void      link_scan(void);                                                // WLAN-Suche am C5 starten
+bool      link_scan_busy(void);
+int       link_get_scan(link_ap_t *out, int max);
+void      link_wifi(const char *ssid, const char *pass);
+void      link_com(bool on, int port, const char *host, const char *pin);

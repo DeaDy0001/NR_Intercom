@@ -69,7 +69,11 @@ idf.py build flash monitor
 
 | | Drehgeber 1 (links) | Drehgeber 2 (rechts) |
 |---|---|---|
-| **Hauptseite (Bodypack-Übersicht)** | Drehen: Kopfhörer-Lautstärke · kurz: Menü · lang: Talk an/aus | Drehen: Mic-Verstärkung · kurz: Menü · lang: nächster Modus |
+| **Hauptseite, Intercom verbunden (Kanalliste)** | Drehen: Kanal wählen · kurz: Kanal betreten/verlassen · lang: Talk an/aus · letzte Zeile „Menü“ | Drehen: Kanal-Lautstärke · kurz: Menü · lang: Talk |
+| **WLAN** | Drehen + kurz: Neu suchen / Band / Netz wählen (dann Passwort) / Zurück | kurz: zurück |
+| **Texteingabe (Zeichenrad)** | Drehen: Zeichen · kurz: Zeichen übernehmen (OK / Löschen / Abbruch stehen links am Anfang) · lang: löschen | Drehen: Gruppe abc/ABC/123/#+= · kurz: OK |
+| **Intercom-Server** | Drehen + kurz: Ein/Aus, Server, Port, PIN, Übernehmen, Zurück | kurz: zurück (übernimmt Änderungen) |
+| **Hauptseite ohne Intercom (Bodypack-Übersicht)** | Drehen: Kopfhörer-Lautstärke · kurz: Menü · lang: Talk an/aus | Drehen: Mic-Verstärkung · kurz: Menü · lang: nächster Modus |
 | **Menü** | Drehen: Eintrag wählen · kurz: ausführen · lang: zurück | Drehen: Wert ändern (Helligkeit) · kurz: zurück |
 | **Bodypack-Einstellungen** | Drehen: Eintrag wählen · kurz: nächster Wert (bei Auswahllisten) · lang: zurück | Drehen: Wert ändern (geht sofort an den C5) · kurz: zurück |
 | **Bodypack-Status** | kurz: zurück | kurz: zurück |

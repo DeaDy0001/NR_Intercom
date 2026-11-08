@@ -32,6 +32,8 @@ void net_set_antenna(bool external)
              CONFIG_NRB_PIN_ANT_SW, lvl);
 }
 
+static volatile bool s_scanning;   // waehrend des Scans nicht automatisch neu verbinden
+
 static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
     if (base == WIFI_EVENT && id == WIFI_EVENT_STA_START) {
@@ -50,7 +52,7 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
         if (s_connected) s_disconnects++;
         s_connected = false;
         ESP_LOGW(TAG, "getrennt (Grund %d), verbinde neu ...", ev->reason);
-        if (g_set.ssid[0]) esp_wifi_connect();
+        if (g_set.ssid[0] && !s_scanning) esp_wifi_connect();
     } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t *ev = data;
         snprintf(s_ip, sizeof(s_ip), IPSTR, IP2STR(&ev->ip_info.ip));
@@ -132,6 +134,60 @@ void net_get_info(net_info_t *info)
         info->channel = ap.primary;
         info->band_5g = ap.primary > 14;
     }
+}
+
+int net_scan_list(net_ap_t *out, int max)
+{
+    s_scanning = true;
+    if (!s_connected) {
+        esp_wifi_disconnect();            // ein laufender Verbindungsversuch blockiert sonst den Scan
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    wifi_scan_config_t sc = { .show_hidden = false };
+    esp_err_t err = esp_wifi_scan_start(&sc, true);
+    int n_out = 0;
+    if (err == ESP_OK) {
+        uint16_t n = 24;
+        wifi_ap_record_t *recs = calloc(n, sizeof(wifi_ap_record_t));
+        if (recs) {
+            esp_wifi_scan_get_ap_records(&n, recs);
+            for (int i = 0; i < n; i++) {
+                if (!recs[i].ssid[0]) continue;
+                int k;
+                for (k = 0; k < n_out; k++) if (!strcmp(out[k].ssid, (char *)recs[i].ssid)) break;
+                if (k < n_out) {
+                    if (recs[i].rssi > out[k].rssi) { out[k].rssi = recs[i].rssi; out[k].channel = recs[i].primary; }
+                    continue;
+                }
+                if (n_out >= max) continue;
+                strlcpy(out[n_out].ssid, (char *)recs[i].ssid, sizeof(out[n_out].ssid));
+                out[n_out].rssi = recs[i].rssi;
+                out[n_out].channel = recs[i].primary;
+                out[n_out].secure = recs[i].authmode != WIFI_AUTH_OPEN;
+                n_out++;
+            }
+            free(recs);
+        }
+        // nach Signalstaerke sortieren
+        for (int i = 1; i < n_out; i++) {
+            net_ap_t t = out[i];
+            int j = i - 1;
+            while (j >= 0 && out[j].rssi < t.rssi) { out[j + 1] = out[j]; j--; }
+            out[j + 1] = t;
+        }
+    } else {
+        ESP_LOGW(TAG, "Scan fehlgeschlagen: %s", esp_err_to_name(err));
+    }
+    s_scanning = false;
+    if (!s_connected && g_set.ssid[0]) esp_wifi_connect();
+    return n_out;
+}
+
+void net_get_mac_hex(char out[13])
+{
+    uint8_t m[6] = { 0 };
+    esp_wifi_get_mac(WIFI_IF_STA, m);
+    snprintf(out, 13, "%02x%02x%02x%02x%02x%02x", m[0], m[1], m[2], m[3], m[4], m[5]);
 }
 
 void net_scan(void)

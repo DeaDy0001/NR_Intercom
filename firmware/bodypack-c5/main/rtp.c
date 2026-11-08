@@ -50,6 +50,8 @@ static uint64_t s_enc_sum, s_dec_sum;
 static uint32_t s_enc_n, s_dec_n;
 static TaskHandle_t s_tx_task;
 static OpusDecoder *s_dec;
+static uint16_t s_tx_seq;
+static uint32_t s_tx_ts, s_tx_ssrc;
 
 void rtp_update_target(void)
 {
@@ -64,6 +66,22 @@ void rtp_update_target(void)
     }
     s_dst_valid = true;
     ESP_LOGI(TAG, "RTP-Ziel: %s:%u", g_set.host, g_set.port);
+}
+
+void rtp_set_target(const char *ip, uint16_t port)
+{
+    s_dst_valid = false;
+    memset(&s_dst, 0, sizeof(s_dst));
+    s_dst.sin_family = AF_INET;
+    s_dst.sin_port = htons(port);
+    if (inet_pton(AF_INET, ip, &s_dst.sin_addr) != 1) return;
+    s_dst_valid = true;
+    ESP_LOGI(TAG, "RTP-Ziel (Intercom): %s:%u", ip, port);
+}
+
+uint32_t rtp_get_ssrc(void)
+{
+    return s_tx_ssrc;
 }
 
 void rtp_codec_changed(void)
@@ -140,8 +158,6 @@ static OpusEncoder *create_encoder(void)
 
 // Ein Codec-Task fuer Encoder UND Decoder: spart einen zweiten grossen Stack (kein PSRAM).
 static OpusEncoder *s_enc;
-static uint16_t s_tx_seq;
-static uint32_t s_tx_ts, s_tx_ssrc;
 
 static void encode_and_send(int16_t *pcm, int frame)
 {
@@ -337,10 +353,6 @@ static void codec_task(void *arg)
 {
     static int16_t out[MAX_FRAME_SAMP];
     static int16_t pcm[MAX_TX_SAMP];
-    s_tx_seq = (uint16_t)esp_random();
-    s_tx_ts = esp_random();
-    s_tx_ssrc = esp_random();
-
     while (1) {
         bool busy = false;
         if (s_codec_dirty) {
@@ -375,6 +387,9 @@ static void codec_task(void *arg)
 
 esp_err_t rtp_init(void)
 {
+    s_tx_seq = (uint16_t)esp_random();
+    s_tx_ts = esp_random();
+    s_tx_ssrc = esp_random();
     s_lock = xSemaphoreCreateMutex();
     int err;
     s_dec = opus_decoder_create(AUDIO_RATE, 1, &err);

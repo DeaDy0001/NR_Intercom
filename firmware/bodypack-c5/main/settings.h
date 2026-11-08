@@ -53,6 +53,11 @@ typedef struct {
     uint8_t  opus_voip;     // 0 = restricted lowdelay (CELT, minimale Latenz), 1 = voip (SILK/Hybrid + FEC)
     // ab Version 3 (neue Felder immer hinten anhaengen, aeltere Stände werden uebernommen)
     int8_t   gate_db;       // Mikrofon-Gate: Schwelle in dBFS (-80..-20), 0 = aus
+    // ab Version 4: Intercom-Server (NR_Com Device-Gateway, docs/device-gateway-api.md)
+    char     com_host[48];  // Name oder IP, Standard "nr-com.local"
+    uint16_t com_port;      // HTTP-Port des Gateways, Standard 3002
+    char     com_pin[16];   // PIN des NR_Com-Benutzers
+    uint8_t  com_on;        // 1 = Intercom-Client aktiv
 } settings_t;
 
 extern settings_t g_set;

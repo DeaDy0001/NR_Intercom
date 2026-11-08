@@ -1,6 +1,7 @@
 #include "buttons.h"
 #include "audio.h"
 #include "settings.h"
+#include "com.h"
 #include "wm8960.h"
 #include "net.h"
 #include "led.h"
@@ -22,7 +23,8 @@ static void on_press(int idx)
 {
     switch (idx) {
     case 0:
-        if (g_set.ptt_latch) g_talk = !g_talk;
+        if (com_online()) com_talk_all(g_set.ptt_latch ? !g_talk : true);   // Intercom: alle betretenen Kanaele
+        else if (g_set.ptt_latch) g_talk = !g_talk;
         else g_talk = true;
         break;
     case 1:
@@ -43,7 +45,10 @@ static void on_press(int idx)
 
 static void on_release(int idx)
 {
-    if (idx == 0 && !g_set.ptt_latch) g_talk = false;
+    if (idx == 0 && !g_set.ptt_latch) {
+        if (com_online()) com_talk_all(false);
+        else g_talk = false;
+    }
 }
 
 static void update_led(uint32_t tick)

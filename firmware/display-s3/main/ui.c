@@ -1,3 +1,5 @@
+// Anzeige-Texte werden absichtlich auf die Displaybreite gekuerzt
+#pragma GCC diagnostic ignored "-Wformat-truncation"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -30,7 +32,8 @@
 #define C_WARN     RGB(250, 204, 21)
 
 // ---------------------------------------------------------------- Zustand
-typedef enum { SCR_MAIN, SCR_MENU, SCR_INFO, SCR_TEST, SCR_FPS, SCR_BP, SCR_BPSTAT } screen_t;
+typedef enum { SCR_MAIN, SCR_MENU, SCR_INFO, SCR_TEST, SCR_FPS, SCR_BP, SCR_BPSTAT,
+               SCR_DASH, SCR_WIFI, SCR_TEXT, SCR_COMSET } screen_t;
 static screen_t s_scr = SCR_MAIN;
 static int s_menu_sel, s_menu_top;
 static int s_brightness = 180;
@@ -38,11 +41,14 @@ static bool s_flip;
 static int s_bat_mv = -1, s_bat_pct = -1;
 static float s_fps;
 
-enum { MI_BP, MI_BPSTAT, MI_BRIGHT, MI_FLIP, MI_TEST, MI_FPS, MI_INFO, MI_BACK, MI_COUNT };
+enum { MI_WIFI, MI_COMSET, MI_DASH, MI_BP, MI_BPSTAT, MI_BRIGHT, MI_FLIP, MI_TEST, MI_FPS, MI_INFO, MI_BACK,
+       MI_COUNT };
 static const char *s_menu_names[MI_COUNT] = {
-    "Bodypack-Einstellungen", "Bodypack-Status", "Helligkeit", "Display drehen", "Testbild", "FPS-Test",
-    "Info", "Zurück",
+    "WLAN", "Intercom-Server", "Audio-Übersicht", "Bodypack-Einstellungen", "Bodypack-Status", "Helligkeit",
+    "Display drehen", "Testbild", "FPS-Test", "Info", "< Zurück",
 };
+static void redraw(void);
+static int clampv(int v, int lo, int hi) { return v < lo ? lo : v > hi ? hi : v; }
 #define MENU_ROWS 6
 
 // ---------------------------------------------------------------- Bodypack-Einstellungen (ESP32-C5)
@@ -205,6 +211,13 @@ static void draw_header(void)
         sc = C_WARN;
     } else if (!s_c5.wifi) {
         snprintf(st, sizeof(st), "Bodypack ok · WLAN aus");
+    } else if (s_c5.com_state == COM_ST_ONLINE) {
+        snprintf(st, sizeof(st), "%.22s · %d dBm", s_c5.com_user, s_c5.rssi);
+        sc = C_LISTEN;
+    } else if (s_c5.com_state != COM_ST_OFF) {
+        snprintf(st, sizeof(st), "WLAN ok · Intercom: %s",
+                 s_c5.com_state == COM_ST_PIN ? "PIN?" : s_c5.com_state == COM_ST_NOWIFI ? "warte" : "sucht");
+        sc = C_WARN;
     } else {
         snprintf(st, sizeof(st), "WLAN %d dBm · %s", s_c5.rssi, s_c5.band_5g ? "5 GHz" : "2,4 GHz");
         sc = C_LISTEN;
@@ -312,6 +325,9 @@ static void draw_menu(void)
         if (i == MI_BRIGHT) snprintf(val, sizeof(val), "%d %%", s_brightness * 100 / 255);
         if (i == MI_FLIP) snprintf(val, sizeof(val), "%s", s_flip ? "gedreht" : "normal");
         if (i == MI_BP || i == MI_BPSTAT) snprintf(val, sizeof(val), "%s", s_c5.online ? "verbunden" : "offline");
+        if (i == MI_WIFI) snprintf(val, sizeof(val), "%.20s", !s_c5.online ? "--" : s_c5.wifi ? s_c5.ssid : "nicht verbunden");
+        if (i == MI_COMSET) snprintf(val, sizeof(val), "%s", !s_c5.online ? "--" : s_c5.com_state == COM_ST_ONLINE ? "verbunden" :
+                                     s_c5.com_state == COM_ST_OFF ? "aus" : s_c5.com_state == COM_ST_PIN ? "PIN falsch" : "sucht");
         if (val[0]) gfx_text_box(&font_m, 300, y, DISP_W - 330, ALIGN_RIGHT, val, sel ? C_ACCENT : C_DIM);
     }
 }
@@ -459,10 +475,449 @@ static void draw_fps(uint32_t frame)
     gfx_text_box(&font_s, 0, 212, DISP_W, ALIGN_CENTER, buf, C_DIM);
 }
 
+
+// ================================================================ Intercom
+static bool com_on_line(void) { return s_c5.online && s_c5.com_state == COM_ST_ONLINE; }
+
+static const char *com_state_text(int st)
+{
+    switch (st) {
+    case COM_ST_OFF:    return "ausgeschaltet";
+    case COM_ST_NOWIFI: return "wartet auf WLAN";
+    case COM_ST_SEARCH: return "sucht Server";
+    case COM_ST_PIN:    return "PIN abgelehnt";
+    case COM_ST_ONLINE: return "verbunden";
+    default:            return "Fehler";
+    }
+}
+
+// ---------------------------------------------------------------- Kanalliste (Hauptseite, wenn verbunden)
+static link_channel_t s_chl[LINK_MAX_CH];
+static int s_nchl, s_ch_sel, s_ch_top;
+#define CH_ROWS 5
+
+static void draw_channels(void)
+{
+    gfx_clear(C_BG);
+    draw_header();
+    s_nchl = link_get_channels(s_chl, LINK_MAX_CH, NULL);
+    const int items = s_nchl + 1;                         // letzte Zeile: Menue
+    s_ch_sel = clampv(s_ch_sel, 0, items - 1);
+    if (s_ch_sel < s_ch_top) s_ch_top = s_ch_sel;
+    if (s_ch_sel >= s_ch_top + CH_ROWS) s_ch_top = s_ch_sel - CH_ROWS + 1;
+    for (int i = s_ch_top; i < items && i < s_ch_top + CH_ROWS; i++) {
+        const int y = 37 + (i - s_ch_top) * 33;
+        const bool sel = i == s_ch_sel;
+        if (i == s_nchl) {
+            gfx_round_rect(8, y, DISP_W - 16, 31, 8, sel ? C_TILE_HI : C_BG);
+            gfx_text(&font_m, 36, y + 2, "Menü", sel ? C_ACCENT : C_DIM);
+            gfx_text_box(&font_s, 260, y + 6, DISP_W - 280, ALIGN_RIGHT, "WLAN, Server, Einstellungen", C_DIM);
+            continue;
+        }
+        const link_channel_t *c = &s_chl[i];
+        color_t bg = c->talk ? C_TALK_BG : (sel ? C_TILE_HI : C_TILE);
+        if (sel) {
+            gfx_round_rect(8, y, DISP_W - 16, 31, 8, C_TEXT);
+            gfx_round_rect(10, y + 2, DISP_W - 20, 27, 7, bg);
+        } else {
+            gfx_round_rect(8, y, DISP_W - 16, 31, 8, bg);
+        }
+        if (c->talkers > 0) gfx_round_rect(18, y + 10, 11, 11, 5, C_WARN);   // jemand spricht
+        gfx_text(&font_m, 36, y + 2, c->name, c->joined ? C_TEXT : C_DIM);
+        if (c->joined) draw_pill(262, y + 4, 84, 23, &font_s, "HÖRT", C_BG, C_LISTEN);
+        else draw_pill(262, y + 4, 84, 23, &font_s, "aus", C_DIM, RGB(50, 50, 58));
+        if (c->talk) draw_pill(352, y + 4, 72, 23, &font_s, "TALK", C_TEXT, C_TALK);
+        // Lautstaerke
+        gfx_fill_rect(432, y + 13, 56, 6, RGB(15, 15, 18));
+        gfx_fill_rect(432, y + 13, 56 * clampv(c->volume, 0, 100) / 100, 6, c->joined ? C_VOL : C_DIM);
+        char v[8];
+        snprintf(v, sizeof(v), "%d", c->volume);
+        gfx_text_box(&font_s, 488, y + 6, 36, ALIGN_RIGHT, v, C_DIM);
+    }
+    if (s_nchl == 0) gfx_text_box(&font_m, 0, 90, DISP_W, ALIGN_CENTER, "Keine Kanäle im Projekt", C_DIM);
+    gfx_hline(0, 206, DISP_W, C_LINE);
+    gfx_text_box(&font_s, 10, 214, 330, ALIGN_LEFT, "L: wählen · drücken: Hören · lang: Talk", C_DIM);
+    gfx_text_box(&font_s, 340, 214, DISP_W - 350, ALIGN_RIGHT, "R: Lautstärke", C_DIM);
+}
+
+static void handle_channels(const input_ev_t *ev)
+{
+    const int items = s_nchl + 1;
+    const int i = s_ch_sel;
+    const bool is_ch = i < s_nchl;
+    if (ev->type == EV_ENC1_TURN) {
+        s_ch_sel = clampv(s_ch_sel + ev->value, 0, items - 1);
+    } else if (ev->type == EV_ENC1_PRESS) {
+        if (!is_ch) { s_scr = SCR_MENU; s_menu_sel = 0; s_menu_top = 0; redraw(); return; }
+        link_channel(i, s_chl[i].joined ? "leave" : "join", 0);
+    } else if (ev->type == EV_ENC1_LONG || ev->type == EV_ENC2_LONG) {
+        if (is_ch) {
+            if (!s_chl[i].joined) link_channel(i, "join", 0);
+            else link_channel(i, "talk", !s_chl[i].talk);
+        }
+    } else if (ev->type == EV_ENC2_TURN && is_ch) {
+        link_channel(i, "vol", clampv(s_chl[i].volume + ev->value * 5, 0, 100));
+    } else if (ev->type == EV_ENC2_PRESS) {
+        s_scr = SCR_MENU; s_menu_sel = 0; s_menu_top = 0; redraw(); return;
+    }
+    draw_channels();
+}
+
+// ---------------------------------------------------------------- Texteingabe mit Zeichenrad
+enum { CS_FULL, CS_HOST, CS_DIGITS };
+enum { TX_WIFI_PASS, TX_COM_HOST, TX_COM_PORT, TX_COM_PIN };
+#define TX_SPECIAL 3                                       // 0 = OK, 1 = Löschen, 2 = Abbrechen
+static const char *const CS_GROUPS[3][4] = {
+    { "abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "0123456789", " .-_@!#$%&*+/=?:;,()[]{}<>^~|'\"\\`" },
+    { "abcdefghijklmnopqrstuvwxyz", "0123456789.-", NULL, NULL },
+    { "0123456789", NULL, NULL, NULL },
+};
+static const char *const CS_GROUP_NAMES[3][4] = {
+    { "abc", "ABC", "123", "#+=" }, { "abc", "123.-", NULL, NULL }, { "123", NULL, NULL, NULL },
+};
+static struct {
+    char title[48];
+    char buf[65];
+    int  max, cs, target, sel;
+    screen_t back;
+} s_tx;
+
+static int tx_count(void)
+{
+    int n = TX_SPECIAL;
+    for (int g = 0; g < 4 && CS_GROUPS[s_tx.cs][g]; g++) n += strlen(CS_GROUPS[s_tx.cs][g]);
+    return n;
+}
+
+static int tx_group_of(int idx, int *start)
+{
+    int n = TX_SPECIAL;
+    if (idx < TX_SPECIAL) { if (start) *start = 0; return -1; }
+    for (int g = 0; g < 4 && CS_GROUPS[s_tx.cs][g]; g++) {
+        int l = strlen(CS_GROUPS[s_tx.cs][g]);
+        if (idx < n + l) { if (start) *start = n; return g; }
+        n += l;
+    }
+    return -1;
+}
+
+static int tx_group_start(int g)
+{
+    int n = TX_SPECIAL;
+    for (int k = 0; k < g && CS_GROUPS[s_tx.cs][k]; k++) n += strlen(CS_GROUPS[s_tx.cs][k]);
+    return n;
+}
+
+static int tx_groups(void)
+{
+    int g = 0;
+    while (g < 4 && CS_GROUPS[s_tx.cs][g]) g++;
+    return g;
+}
+
+static char tx_char(int idx)
+{
+    int start;
+    int g = tx_group_of(idx, &start);
+    return g < 0 ? 0 : CS_GROUPS[s_tx.cs][g][idx - start];
+}
+
+static void tx_label(int idx, bool big, char *out, size_t n)
+{
+    static const char *const sp_big[TX_SPECIAL] = { "OK", "Löschen", "Abbruch" };
+    static const char *const sp_small[TX_SPECIAL] = { "OK", "<-", "X" };
+    if (idx < TX_SPECIAL) { snprintf(out, n, "%s", big ? sp_big[idx] : sp_small[idx]); return; }
+    char c = tx_char(idx);
+    if (c == ' ') snprintf(out, n, "%s", big ? "Leerz." : "_");
+    else snprintf(out, n, "%c", c);
+}
+
+static void text_open(const char *title, const char *init, int max, int cs, int target, screen_t back)
+{
+    snprintf(s_tx.title, sizeof(s_tx.title), "%s", title);
+    snprintf(s_tx.buf, sizeof(s_tx.buf), "%s", init ? init : "");
+    s_tx.max = max < (int)sizeof(s_tx.buf) - 1 ? max : (int)sizeof(s_tx.buf) - 1;
+    s_tx.cs = cs;
+    s_tx.target = target;
+    s_tx.back = back;
+    s_tx.sel = TX_SPECIAL;                                 // erstes Zeichen
+    s_scr = SCR_TEXT;
+    redraw();
+}
+
+static void draw_text_entry(void)
+{
+    gfx_clear(C_BG);
+    gfx_text_box(&font_m, 16, 8, DISP_W - 32, ALIGN_LEFT, s_tx.title, C_TEXT);
+    // Eingabefeld (bei langem Text das Ende zeigen)
+    gfx_round_rect(12, 42, DISP_W - 24, 46, 8, C_TILE);
+    const char *t = s_tx.buf;
+    while (*t && gfx_text_width(&font_l, t) > DISP_W - 70) t++;
+    int w = gfx_text(&font_l, 24, 47, t, C_TEXT);
+    gfx_fill_rect(24 + w + 2, 80, 16, 3, C_ACCENT);       // Cursor
+    char cnt[16];
+    snprintf(cnt, sizeof(cnt), "%d/%d", (int)strlen(s_tx.buf), s_tx.max);
+    gfx_text_box(&font_s, DISP_W - 90, 92, 76, ALIGN_RIGHT, cnt, C_DIM);
+    // Zeichenrad
+    const int cx = DISP_W / 2, cy = 112, n = tx_count();
+    char lb[16];
+    for (int k = -5; k <= 5; k++) {
+        int idx = s_tx.sel + k;
+        if (k == 0 || idx < 0 || idx >= n) continue;
+        tx_label(idx, false, lb, sizeof(lb));
+        int x = cx + k * 44 + (k > 0 ? 30 : -30);
+        gfx_text_box(&font_m, x - 20, cy + 14, 40, ALIGN_CENTER, lb, idx < TX_SPECIAL ? C_ACCENT : C_DIM);
+    }
+    tx_label(s_tx.sel, true, lb, sizeof(lb));
+    int bw = gfx_text_width(&font_l, lb) + 28;
+    if (bw < 56) bw = 56;
+    gfx_round_rect(cx - bw / 2, cy, bw, 50, 10, s_tx.sel < TX_SPECIAL ? C_ACCENT : C_TEXT);
+    gfx_text_box(&font_l, cx - bw / 2, cy + 7, bw, ALIGN_CENTER, lb, C_BG);
+    // Gruppen
+    int g = tx_group_of(s_tx.sel, NULL), ng = tx_groups();
+    int gx = 16;
+    for (int k = 0; k < ng; k++) {
+        const char *gn = CS_GROUP_NAMES[s_tx.cs][k];
+        int gw = gfx_text_width(&font_s, gn) + 16;
+        if (k == g) gfx_round_rect(gx, 176, gw, 22, 6, C_TILE_HI);
+        gfx_text(&font_s, gx + 8, 178, gn, k == g ? C_TEXT : C_DIM);
+        gx += gw + 6;
+    }
+    gfx_hline(0, 206, DISP_W, C_LINE);
+    gfx_text_box(&font_s, 10, 214, 360, ALIGN_LEFT, "L: drehen + drücken = Zeichen · lang = löschen", C_DIM);
+    gfx_text_box(&font_s, 360, 214, DISP_W - 370, ALIGN_RIGHT, "R: Gruppe", C_DIM);
+}
+
+// Intercom-Server: lokale Kopie, wird mit "Übernehmen" (oder beim Verlassen) an den C5 geschickt
+static struct {
+    int  on, port;
+    char host[48], pin[16];
+    bool dirty;
+    char msg[48];
+} s_cs;
+
+static char s_wifi_ssid_sel[33];
+static char s_wifi_msg[64];
+static int64_t s_wifi_msg_t;
+
+static void tx_finish(bool ok)
+{
+    if (ok) {
+        switch (s_tx.target) {
+        case TX_WIFI_PASS:
+            link_wifi(s_wifi_ssid_sel, s_tx.buf);
+            snprintf(s_wifi_msg, sizeof(s_wifi_msg), "Verbinde mit %.30s ...", s_wifi_ssid_sel);
+            s_wifi_msg_t = esp_timer_get_time();
+            break;
+        case TX_COM_HOST: snprintf(s_cs.host, sizeof(s_cs.host), "%s", s_tx.buf); s_cs.dirty = true; break;
+        case TX_COM_PORT: s_cs.port = clampv(atoi(s_tx.buf), 1, 65535); s_cs.dirty = true; break;
+        case TX_COM_PIN:  snprintf(s_cs.pin, sizeof(s_cs.pin), "%s", s_tx.buf); s_cs.dirty = true; break;
+        }
+    }
+    s_scr = s_tx.back;
+    redraw();
+}
+
+static void handle_text(const input_ev_t *ev)
+{
+    const int n = tx_count();
+    size_t len = strlen(s_tx.buf);
+    if (ev->type == EV_ENC1_TURN) {
+        s_tx.sel = clampv(s_tx.sel + ev->value, 0, n - 1);
+    } else if (ev->type == EV_ENC1_PRESS) {
+        if (s_tx.sel == 0) { tx_finish(true); return; }
+        if (s_tx.sel == 2) { tx_finish(false); return; }
+        if (s_tx.sel == 1) { if (len) s_tx.buf[len - 1] = 0; }
+        else if ((int)len < s_tx.max) { s_tx.buf[len] = tx_char(s_tx.sel); s_tx.buf[len + 1] = 0; }
+    } else if (ev->type == EV_ENC1_LONG) {
+        if (len) s_tx.buf[len - 1] = 0;
+    } else if (ev->type == EV_ENC2_TURN) {
+        int g = tx_group_of(s_tx.sel, NULL) + (ev->value > 0 ? 1 : -1);
+        s_tx.sel = g < 0 ? 0 : tx_group_start(clampv(g, 0, tx_groups() - 1));
+    } else if (ev->type == EV_ENC2_PRESS) {
+        tx_finish(true);
+        return;
+    }
+    draw_text_entry();
+}
+
+// ---------------------------------------------------------------- WLAN
+static link_ap_t s_aps[LINK_MAX_AP];
+static int s_naps, s_wsel, s_wtop;
+#define W_ROWS 5
+// Zeilen: 0 = Neu suchen, 1 = Band, 2.. = Netze, letzte = Zurück
+
+static void draw_wifi(void)
+{
+    gfx_clear(C_BG);
+    gfx_text(&font_l, 16, 6, "WLAN", C_TEXT);
+    char st[64];
+    color_t sc = C_DIM;
+    if (s_wifi_msg[0] && esp_timer_get_time() - s_wifi_msg_t < 8000000 && !s_c5.wifi) {
+        snprintf(st, sizeof(st), "%s", s_wifi_msg);
+        sc = C_WARN;
+    } else if (s_c5.wifi) {
+        snprintf(st, sizeof(st), "verbunden: %.24s (%d dBm)", s_c5.ssid, s_c5.rssi);
+        sc = C_LISTEN;
+    } else {
+        snprintf(st, sizeof(st), "%s", s_c5.online ? "nicht verbunden" : "Bodypack nicht verbunden");
+        sc = C_WARN;
+    }
+    gfx_text_box(&font_s, 120, 14, DISP_W - 136, ALIGN_RIGHT, st, sc);
+    gfx_hline(0, 46, DISP_W, C_LINE);
+    bool busy = link_scan_busy();
+    if (!busy) s_naps = link_get_scan(s_aps, LINK_MAX_AP);
+    const int items = 2 + (busy ? 1 : s_naps) + 1;
+    s_wsel = clampv(s_wsel, 0, items - 1);
+    if (s_wsel < s_wtop) s_wtop = s_wsel;
+    if (s_wsel >= s_wtop + W_ROWS) s_wtop = s_wsel - W_ROWS + 1;
+    for (int i = s_wtop; i < items && i < s_wtop + W_ROWS; i++) {
+        int y = 54 + (i - s_wtop) * 30;
+        bool sel = i == s_wsel;
+        if (sel) gfx_round_rect(8, y - 2, DISP_W - 16, 28, 6, C_TILE_HI);
+        char l[48] = "", v[40] = "";
+        color_t lc = sel ? C_TEXT : C_DIM;
+        if (i == 0) {
+            snprintf(l, sizeof(l), "%s", busy ? "suche ..." : "Neu suchen");
+            lc = sel ? C_ACCENT : C_DIM;
+        } else if (i == 1) {
+            snprintf(l, sizeof(l), "Band");
+            snprintf(v, sizeof(v), "%s", N_BAND[clampv(s_c5.band, 0, 2)]);
+        } else if (i == items - 1) {
+            snprintf(l, sizeof(l), "< Zurück");
+            lc = sel ? C_ACCENT : C_DIM;
+        } else if (busy) {
+            snprintf(l, sizeof(l), "Netzwerke werden gesucht ...");
+        } else {
+            const link_ap_t *a = &s_aps[i - 2];
+            snprintf(l, sizeof(l), "%.28s", a->ssid);
+            snprintf(v, sizeof(v), "%d dBm · %s", a->rssi, a->secure ? "Passwort" : "offen");
+            if (!strcmp(a->ssid, s_c5.wifi_ssid)) lc = sel ? C_LISTEN : RGB(30, 150, 70);
+        }
+        gfx_text(&font_m, 20, y, l, lc);
+        if (v[0]) gfx_text_box(&font_s, 300, y + 4, DISP_W - 320, ALIGN_RIGHT, v, sel ? C_ACCENT : C_DIM);
+    }
+    if (!busy && s_naps == 0) gfx_text_box(&font_s, 0, 214, DISP_W, ALIGN_CENTER,
+                                          "Keine Netze? Band auf 'Auto' stellen und neu suchen.", C_DIM);
+}
+
+static void handle_wifi(const input_ev_t *ev)
+{
+    bool busy = link_scan_busy();
+    const int items = 2 + (busy ? 1 : s_naps) + 1;
+    if (ev->type == EV_ENC1_TURN) {
+        s_wsel = clampv(s_wsel + ev->value, 0, items - 1);
+    } else if (ev->type == EV_ENC1_PRESS) {
+        if (s_wsel == 0) { if (!busy) link_scan(); }
+        else if (s_wsel == 1) { if (s_c5.have_settings) { bp_sync(); bp_change(BI_BAND, 1); } }
+        else if (s_wsel == items - 1) { s_scr = SCR_MENU; redraw(); return; }
+        else if (!busy) {
+            const link_ap_t *a = &s_aps[s_wsel - 2];
+            snprintf(s_wifi_ssid_sel, sizeof(s_wifi_ssid_sel), "%s", a->ssid);
+            if (a->secure) {
+                char t[48];
+                snprintf(t, sizeof(t), "Passwort für %.24s", a->ssid);
+                text_open(t, "", 63, CS_FULL, TX_WIFI_PASS, SCR_WIFI);
+                return;
+            }
+            link_wifi(a->ssid, "");
+            snprintf(s_wifi_msg, sizeof(s_wifi_msg), "Verbinde mit %.30s ...", a->ssid);
+            s_wifi_msg_t = esp_timer_get_time();
+        }
+    } else if (ev->type == EV_ENC2_PRESS || ev->type == EV_ENC1_LONG) {
+        s_scr = SCR_MENU;
+        redraw();
+        return;
+    }
+    draw_wifi();
+}
+
+// ---------------------------------------------------------------- Intercom-Server
+enum { CI_ON, CI_HOST, CI_PORT, CI_PIN, CI_APPLY, CI_BACK, CI_COUNT };
+
+static void comset_load(void)
+{
+    s_cs.on = s_c5.com_on;
+    s_cs.port = s_c5.com_port > 0 ? s_c5.com_port : 3002;
+    snprintf(s_cs.host, sizeof(s_cs.host), "%s", s_c5.com_host[0] ? s_c5.com_host : "nr-com.local");
+    snprintf(s_cs.pin, sizeof(s_cs.pin), "%s", s_c5.com_pin);
+    s_cs.dirty = false;
+    s_cs.msg[0] = 0;
+}
+
+static void comset_apply(void)
+{
+    link_com(s_cs.on, s_cs.port, s_cs.host, s_cs.pin);
+    s_cs.dirty = false;
+    snprintf(s_cs.msg, sizeof(s_cs.msg), "übernommen");
+}
+
+static int s_csel;
+
+static void draw_comset(void)
+{
+    gfx_clear(C_BG);
+    gfx_text(&font_l, 16, 6, "Intercom-Server", C_TEXT);
+    gfx_hline(0, 46, DISP_W, C_LINE);
+    // Status
+    char st[96];
+    color_t sc = s_c5.com_state == COM_ST_ONLINE ? C_LISTEN : C_WARN;
+    if (!s_c5.online) snprintf(st, sizeof(st), "Bodypack nicht verbunden");
+    else if (s_c5.com_state == COM_ST_ONLINE)
+        snprintf(st, sizeof(st), "verbunden als %.20s · %s · %d Kanäle", s_c5.com_user, s_c5.com_ip, s_c5.com_nch);
+    else snprintf(st, sizeof(st), "%s%s%.40s", com_state_text(s_c5.com_state), s_c5.com_msg[0] ? ": " : "", s_c5.com_msg);
+    gfx_text(&font_s, 16, 52, st, sc);
+    for (int i = 0; i < CI_COUNT; i++) {
+        int y = 76 + i * 22 + (i >= CI_APPLY ? 6 : 0);
+        bool sel = i == s_csel;
+        if (sel) gfx_round_rect(8, y - 1, DISP_W - 16, 22, 6, C_TILE_HI);
+        static const char *const lbl[CI_COUNT] = { "Intercom", "Server", "Port", "PIN", "Übernehmen und verbinden", "< Zurück" };
+        color_t lc = (i >= CI_APPLY) ? (sel ? C_ACCENT : C_DIM) : (sel ? C_TEXT : C_DIM);
+        if (i == CI_APPLY && s_cs.dirty) lc = C_WARN;
+        gfx_text(&font_s, 20, y + 1, lbl[i], lc);
+        char v[64] = "";
+        if (i == CI_ON) snprintf(v, sizeof(v), "%s", s_cs.on ? "ein" : "aus");
+        if (i == CI_HOST) snprintf(v, sizeof(v), "%s", s_cs.host);
+        if (i == CI_PORT) snprintf(v, sizeof(v), "%d", s_cs.port);
+        if (i == CI_PIN) snprintf(v, sizeof(v), "%s", s_cs.pin[0] ? s_cs.pin : "(keine)");
+        if (i == CI_APPLY && s_cs.msg[0] && !s_cs.dirty) snprintf(v, sizeof(v), "%s", s_cs.msg);
+        if (v[0]) gfx_text_box(&font_s, 200, y + 1, DISP_W - 220, ALIGN_RIGHT, v, sel ? C_ACCENT : C_DIM);
+    }
+}
+
+static void handle_comset(const input_ev_t *ev)
+{
+    if (ev->type == EV_ENC1_TURN) {
+        s_csel = clampv(s_csel + ev->value, 0, CI_COUNT - 1);
+    } else if (ev->type == EV_ENC1_PRESS) {
+        switch (s_csel) {
+        case CI_ON:   s_cs.on = !s_cs.on; s_cs.dirty = true; break;
+        case CI_HOST: text_open("Server (Name oder IP)", s_cs.host, 47, CS_HOST, TX_COM_HOST, SCR_COMSET); return;
+        case CI_PORT: { char p[8]; snprintf(p, sizeof(p), "%d", s_cs.port);
+                        text_open("Port (Standard 3002)", p, 5, CS_DIGITS, TX_COM_PORT, SCR_COMSET); return; }
+        case CI_PIN:  text_open("PIN des Bodypack-Benutzers", s_cs.pin, 15, CS_FULL, TX_COM_PIN, SCR_COMSET); return;
+        case CI_APPLY: comset_apply(); break;
+        case CI_BACK:
+            if (s_cs.dirty) comset_apply();                // Aenderungen nicht verlieren
+            s_scr = SCR_MENU; redraw(); return;
+        }
+    } else if (ev->type == EV_ENC2_PRESS || ev->type == EV_ENC1_LONG) {
+        if (s_cs.dirty) comset_apply();
+        s_scr = SCR_MENU;
+        redraw();
+        return;
+    }
+    draw_comset();
+}
+
 static void redraw(void)
 {
     switch (s_scr) {
-    case SCR_MAIN: draw_main(); break;
+    case SCR_MAIN: if (com_on_line()) draw_channels(); else draw_main(); break;
+    case SCR_DASH: draw_main(); break;
+    case SCR_WIFI: draw_wifi(); break;
+    case SCR_TEXT: draw_text_entry(); break;
+    case SCR_COMSET: draw_comset(); break;
     case SCR_MENU: draw_menu(); break;
     case SCR_INFO: draw_info(); break;
     case SCR_TEST: draw_test(); break;
@@ -478,7 +933,13 @@ static int clampi(int v, int lo, int hi) { return v < lo ? lo : v > hi ? hi : v;
 static void handle(const input_ev_t *ev)
 {
     switch (s_scr) {
+    case SCR_WIFI:   handle_wifi(ev); break;
+    case SCR_TEXT:   handle_text(ev); break;
+    case SCR_COMSET: handle_comset(ev); break;
     case SCR_MAIN:
+        if (com_on_line()) { handle_channels(ev); break; }
+        /* fallthrough */
+    case SCR_DASH:
         if (!s_c5.have_settings && (ev->type == EV_ENC1_TURN || ev->type == EV_ENC2_TURN ||
                                     ev->type == EV_ENC1_LONG || ev->type == EV_ENC2_LONG)) {
             break;                                          // ohne Bodypack nichts zu verstellen
@@ -521,6 +982,9 @@ static void handle(const input_ev_t *ev)
                 draw_menu();
                 gfx_invalidate();
                 break;
+            case MI_WIFI:   s_scr = SCR_WIFI; s_wsel = 0; s_wtop = 0; link_scan(); redraw(); break;
+            case MI_COMSET: s_scr = SCR_COMSET; s_csel = 0; comset_load(); redraw(); break;
+            case MI_DASH:   s_scr = SCR_DASH; redraw(); break;
             case MI_BP:     s_scr = SCR_BP; bp_sync(); redraw(); break;
             case MI_BPSTAT: s_scr = SCR_BPSTAT; redraw(); break;
             case MI_TEST: s_scr = SCR_TEST; redraw(); break;
@@ -594,8 +1058,10 @@ static void ui_task(void *arg)
                 draw_bp();
             } else if (s_scr == SCR_BPSTAT && (now / 100000) % 5 == 0) {
                 draw_bpstat();
-            } else if (s_scr == SCR_MAIN) {
-                draw_main();                               // Uebersicht mit 10 Hz
+            } else if (s_scr == SCR_MAIN || s_scr == SCR_DASH) {
+                redraw();                                  // Kanalliste bzw. Uebersicht mit 10 Hz
+            } else if ((s_scr == SCR_WIFI || s_scr == SCR_COMSET) && (now / 100000) % 5 == 0) {
+                redraw();                                  // Suche/Status mit 2 Hz
             }
         }
 
@@ -603,7 +1069,7 @@ static void ui_task(void *arg)
             last_bat = now;
             s_bat_mv = battery_mv();
             s_bat_pct = battery_percent();
-            if (s_scr == SCR_MAIN) draw_battery();
+            if (s_scr == SCR_MAIN || s_scr == SCR_DASH) draw_battery();
         }
         if (s_scr == SCR_INFO && now - last_info > 500000) {
             last_info = now;

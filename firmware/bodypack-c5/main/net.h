@@ -21,3 +21,13 @@ void      net_get_info(net_info_t *info);
 bool      net_is_connected(void);
 void      net_set_antenna(bool external);
 void      net_scan(void);
+
+typedef struct {
+    char    ssid[33];
+    int8_t  rssi;
+    uint8_t channel;
+    uint8_t secure;       // 1 = Passwort noetig
+} net_ap_t;
+
+int       net_scan_list(net_ap_t *out, int max);   // blockiert 2-4 s, staerkster AP je SSID, sortiert
+void      net_get_mac_hex(char out[13]);

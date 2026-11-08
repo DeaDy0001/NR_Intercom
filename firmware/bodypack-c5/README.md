@@ -170,6 +170,32 @@ gst-launch-1.0 udpsrc port=5006 caps="application/x-rtp,media=audio,clock-rate=4
 gst-launch-1.0 audiotestsrc is-live=true wave=sine freq=440 volume=0.3 ! audioconvert ! audioresample ! audio/x-raw,format=S16BE,rate=48000,channels=1 ! rtpL16pay pt=96 min-ptime=5000000 max-ptime=5000000 ! udpsink host=<BODYPACK-IP> port=5004
 ```
 
+### Test 6: Intercom (Kanäle, Talk) mit dem Mock-Server
+Bis das echte Gateway in NR_Com fertig ist ([Prompt für den Com-Dev](../../docs/prompt-com-dev.md),
+[API](../../docs/device-gateway-api.md)), spielt `tools/mock_gateway.py` den Server:
+6 Kanäle, simulierte Sprecher, und was du beim Talk sagst, kommt als „Mix“ zurück (Echo über WLAN).
+
+Auf dem PC (im selben WLAN/LAN, Windows-Firewall für Python erlauben):
+```bash
+py tools\mock_gateway.py
+```
+Die Ausgabe zeigt die PC-IP, z. B. `Am Bodypack als Server eintragen: 192.168.178.20  Port 3002`.
+
+Am S3 (alles mit **Drehgeber 1**: drehen = wählen, drücken = OK):
+1. **Menü → WLAN**: Netz wählen, Passwort mit dem Zeichenrad eingeben, auf **OK** drehen und drücken.
+   Taucht dein Netz nicht auf: **Band** auf „Auto“ stellen (Standard ist nur 5 GHz) und **Neu suchen**.
+2. **Menü → Intercom-Server**: Server = PC-IP (für das echte NR_Com später `nr-com.local`), Port 3002,
+   PIN `1234` (beim Mock), **Übernehmen und verbinden**.
+3. Sobald „verbunden“ dasteht, zeigt die Hauptseite die **Kanalliste**:
+   - drehen = Kanal wählen, **kurz drücken = Kanal betreten/verlassen** (grün HÖRT),
+   - **lang drücken = Talk** an/aus (rot), Drehgeber 2 drehen = Kanal-Lautstärke,
+   - gelber Punkt = dort spricht gerade jemand, letzte Zeile **Menü**.
+4. Talk in einem betretenen Kanal und sprechen: Du hörst dich mit der vollen Funk-Latenz zurück.
+   `status` und `com` in der C5-Konsole zeigen RTP-Pakete, Jitter, Verluste und die Kanäle.
+
+Dasselbe geht auch über die C5-Konsole: `wifi <ssid> <passwort>`, `com server <ip> 3002`, `com pin 1234`,
+`com` (Status und Kanalliste), `com join 0`, `com talk 0`, `com untalk 0`, `com vol 0 80`.
+
 ## 5. Was die Ergebnisse uns sagen
 
 Bitte die Ausgaben von `status` und `nettest` (aus verschiedenen Entfernungen) zurückschicken. Daraus ergeben sich:

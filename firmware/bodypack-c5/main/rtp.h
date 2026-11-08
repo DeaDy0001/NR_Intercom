@@ -33,3 +33,5 @@ void      rtp_get_stats(rtp_stats_t *st);
 void      rtp_reset_stats(void);
 void      rtp_update_target(void);   // nach Aenderung von host/port
 void      rtp_codec_changed(void);   // nach Aenderung von Codec/Bitrate/Komplexitaet/Frame
+void      rtp_set_target(const char *ip, uint16_t port);   // Ziel zur Laufzeit (Intercom), ohne Speichern
+uint32_t  rtp_get_ssrc(void);

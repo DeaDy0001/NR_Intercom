@@ -9,7 +9,7 @@
 static const char *TAG = "settings";
 #define SETTINGS_NS      "nrb"
 #define SETTINGS_KEY     "cfg"
-#define SETTINGS_VERSION 3
+#define SETTINGS_VERSION 4
 
 settings_t g_set;
 
@@ -42,6 +42,10 @@ void settings_reset(void)
     g_set.opus_cplx  = 5;
     g_set.opus_voip  = 0;
     g_set.gate_db    = -50;
+    strlcpy(g_set.com_host, "nr-com.local", sizeof(g_set.com_host));
+    g_set.com_port   = 3002;
+    g_set.com_pin[0] = 0;
+    g_set.com_on     = 1;
 }
 
 void settings_load(void)
@@ -65,7 +69,13 @@ void settings_load(void)
         // aelterer Stand: vorhandene Felder uebernehmen, neue Felder behalten ihre Standardwerte
         const settings_t def = g_set;   // Standardwerte (settings_reset ist schon gelaufen)
         memcpy(&g_set, &blob.s, len - hdr);
-        g_set.gate_db = def.gate_db;    // lag im alten Stand evtl. im Fuellbyte
+        if (blob.version < 3) g_set.gate_db = def.gate_db;   // lag im alten Stand evtl. im Fuellbyte
+        if (blob.version < 4) {                              // Intercom-Felder neu
+            memcpy(g_set.com_host, def.com_host, sizeof(g_set.com_host));
+            g_set.com_port = def.com_port;
+            memcpy(g_set.com_pin, def.com_pin, sizeof(g_set.com_pin));
+            g_set.com_on = def.com_on;
+        }
         ESP_LOGI(TAG, "Einstellungen von Version %lu uebernommen", (unsigned long)blob.version);
     } else {
         ESP_LOGW(TAG, "Einstellungen ungueltig/alt, nutze Standardwerte");

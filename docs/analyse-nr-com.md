@@ -43,6 +43,10 @@ Events `produce` und `consume` auch mit einem PlainTransport (`mediaService.js:3
 
 ## Geplanter Ablauf im Bodypack (nach der Server-Erweiterung)
 
+> **Überholt:** Der C5 (ohne PSRAM) kann weder TLS noch Socket.IO. Der aktuelle Plan ist ein schlankes
+> **Device-Gateway** im Server (HTTP + RTP): [device-gateway-api.md](device-gateway-api.md),
+> Prompt: [prompt-com-dev.md](prompt-com-dev.md). Der Abschnitt unten bleibt als Hintergrund stehen.
+
 ```
 WLAN → GET /api/projects/active → POST /auth/pin (eigener Benutzer "Bodypack 1")
      → WSS Socket.IO → register-user → Heartbeat alle 3 s

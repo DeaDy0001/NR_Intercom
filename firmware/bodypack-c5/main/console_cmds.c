@@ -11,6 +11,7 @@
 #include "net.h"
 #include "rtp.h"
 #include "nettest.h"
+#include "com.h"
 #include "driver/i2c_master.h"
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
@@ -434,6 +435,48 @@ static int cmd_i2ctest(int argc, char **argv)
     return 0;
 }
 
+static int cmd_com(int argc, char **argv)
+{
+    if (argc < 2) {
+        com_status_t st;
+        com_get_status(&st);
+        printf("Intercom: %s %s | Server %s:%u (%s), PIN %s, %d Kanaele, Benutzer '%s'\n",
+               com_state_name(st.state), st.msg, g_set.com_host, g_set.com_port,
+               st.server_ip[0] ? st.server_ip : "-", g_set.com_pin[0] ? "gesetzt" : "FEHLT", st.nch, st.user);
+        com_channel_t ch[COM_MAX_CH];
+        int n = com_get_channels(ch, COM_MAX_CH);
+        for (int i = 0; i < n; i++) {
+            printf("  %2d %-24s %s %s Lautst. %3d%%%s\n", i, ch[i].name, ch[i].joined ? "drin" : "    ",
+                   ch[i].talk ? "TALK" : "    ", ch[i].volume, ch[i].talkers ? "  (spricht jemand)" : "");
+        }
+        printf("com on|off | com server <name/ip> [port] | com pin <pin> | com join|leave|talk|untalk <nr> | com vol <nr> <0..100>\n");
+        return 0;
+    }
+    if (!strcmp(argv[1], "on") || !strcmp(argv[1], "off")) {
+        g_set.com_on = !strcmp(argv[1], "on");
+    } else if (!strcmp(argv[1], "server") && argc > 2) {
+        strlcpy(g_set.com_host, argv[2], sizeof(g_set.com_host));
+        if (argc > 3) g_set.com_port = (uint16_t)atoi(argv[3]);
+    } else if (!strcmp(argv[1], "pin") && argc > 2) {
+        strlcpy(g_set.com_pin, argv[2], sizeof(g_set.com_pin));
+    } else if (argc > 2 && (!strcmp(argv[1], "join") || !strcmp(argv[1], "leave"))) {
+        com_join(atoi(argv[2]), argv[1][0] == 'j');
+        return 0;
+    } else if (argc > 2 && (!strcmp(argv[1], "talk") || !strcmp(argv[1], "untalk"))) {
+        com_talk(atoi(argv[2]), argv[1][0] == 't');
+        return 0;
+    } else if (argc > 3 && !strcmp(argv[1], "vol")) {
+        com_volume(atoi(argv[2]), atoi(argv[3]));
+        return 0;
+    } else {
+        printf("unbekannt, 'com' ohne Argument zeigt die Hilfe\n");
+        return 1;
+    }
+    save();
+    com_restart();
+    return 0;
+}
+
 static int cmd_reg(int argc, char **argv)
 {
     if (argc < 3) { printf("reg <nr hex> <wert hex>  (WM8960 direkt schreiben)\n"); return 1; }
@@ -483,6 +526,7 @@ void console_cmds_register(void)
         { .command = "talk",    .help = "Talk: talk [on|off]", .func = cmd_talk },
         { .command = "nettest", .help = "Funk-Messung: nettest <pc-ip> [port] [s] [ms] [bytes]", .func = cmd_nettest },
         { .command = "i2cdiag", .help = "I2C-Diagnose: Pegel messen, SDA/SCL vertauscht testen", .func = cmd_i2cdiag },
+        { .command = "com",     .help = "Intercom (NR_Com): com | com server <ip> [port] | com pin <pin> | com on|off | com join <nr>", .func = cmd_com },
         { .command = "codec",   .help = "WM8960 neu einstellen (ohne Neustart)", .func = cmd_codec },
         { .command = "i2ctest", .help = "I2C-Qualitaet messen (100/50/20/10 kHz)", .func = cmd_i2ctest },
         { .command = "i2cscan", .help = "I2C-Bus absuchen (WM8960 = 0x1A)", .func = cmd_i2cscan },
