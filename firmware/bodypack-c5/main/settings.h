@@ -11,8 +11,11 @@ typedef enum {
 } audio_mode_t;
 
 typedef enum {
-    MIC_ONBOARD = 0,  // MEMS-Mikrofon auf dem WM8960-Board (LINPUT1)
-    MIC_JACK    = 1,  // Headset-Mikrofon ueber 3,5-mm-Buchse (RINPUT1)
+    // Waveshare-WM8960-Board: LINPUT1 = MEMS-Mikrofon "Left" (MIC2), RINPUT1 = MEMS-Mikrofon "Right" (MIC1).
+    // Die 3,5-mm-Buchse ist NUR Kopfhoerer (MICBIAS und Buchse sind nicht verbunden).
+    // Auf der eigenen Platine wird MIC_JACK der Headset-/XLR-Eingang.
+    MIC_ONBOARD = 0,  // LINPUT1 (Board-Mikrofon links)
+    MIC_JACK    = 1,  // RINPUT1 (Testboard: Board-Mikrofon rechts, eigene Platine: Headset)
     MIC_STEREO  = 2,  // Test: beide Eingaenge an, im Loop links = LINPUT1, rechts = RINPUT1
 } mic_src_t;
 

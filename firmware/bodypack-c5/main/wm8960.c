@@ -226,7 +226,8 @@ esp_err_t wm8960_init(i2c_master_bus_handle_t bus)
     // ADC: Hochpass an, DAC: nicht stumm
     wm8960_write(R_DACCTL1, 0x000);
     wm8960_write(R_DACCTL2, 0x000);
-    wm8960_write(R_ADDCTL1, 0x1C0);   // Standard (linker ADC -> linker Kanal)
+    // Standard (linker ADC -> linker Kanal) + TOEN/TOCLKSEL: Zeitlimit fuer die Nulldurchgangs-Erkennung
+    wm8960_write(R_ADDCTL1, 0x1C0 | 0x002 | 0x001);
     wm8960_write(R_LADC, 0x1C3);      // 0 dB
     wm8960_write(R_RADC, 0x1C3);
     wm8960_write(R_LDAC, 0x1FF);      // 0 dB
@@ -257,7 +258,7 @@ esp_err_t wm8960_set_mic(int src, int pga_db, int boost)   // src: 0 = L, 1 = R,
 
     // Pfad: INPUT1 an den invertierenden PGA-Eingang, PGA -> Boost-Mischer
     uint16_t path = 0x100 | 0x008 | ((uint16_t)boost << 4);
-    uint16_t on   = 0x100 | (uint16_t)vol;        // IPVU + Lautstaerke
+    uint16_t on   = 0x100 | 0x040 | (uint16_t)vol;   // IPVU + LIZC (erst im Nulldurchgang, kein Knacken) + Lautstaerke
     uint16_t mute = 0x100 | 0x080;                // IPVU + Stumm
 
     if (src == 2) {
@@ -288,7 +289,8 @@ esp_err_t wm8960_set_hp_volume(int percent)
         if (percent > 100) percent = 100;
         reg = 0x40 + (uint16_t)((percent - 1) * (0x7F - 0x40) / 99);   // ca. -57 .. +6 dB
     }
-    wm8960_write(R_LOUT1, 0x100 | reg);   // OUT1VU: beide Kanaele gleichzeitig uebernehmen
-    wm8960_write(R_ROUT1, 0x100 | reg);
+    // OUT1VU: beide Kanaele gleichzeitig, LO1ZC/RO1ZC: erst im Nulldurchgang (kein Tacken beim Drehen)
+    wm8960_write(R_LOUT1, 0x100 | 0x080 | reg);
+    wm8960_write(R_ROUT1, 0x100 | 0x080 | reg);
     return ESP_OK;
 }

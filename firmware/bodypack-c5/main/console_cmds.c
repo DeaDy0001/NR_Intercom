@@ -47,11 +47,11 @@ void console_print_status(void)
            CONFIG_NRB_PIN_I2C_SDA, CONFIG_NRB_PIN_I2C_SCL, (unsigned long)(wm8960_get_i2c_hz() / 1000),
            (unsigned long)wm8960_write_errors(), (unsigned long)wm8960_i2c_retries());
     printf("Audio: Modus %s, Mic %s (PGA %+d dB, Boost %d), Kopfhoerer %d%%, Mithoerton %d%%, Talk %s\n",
-           mode_name(g_set.mode), g_set.mic == MIC_ONBOARD ? "Board" : g_set.mic == MIC_JACK ? "Buchse" : "beide (Test)", g_set.pga_db,
+           mode_name(g_set.mode), g_set.mic == MIC_ONBOARD ? "links (LINPUT1)" : g_set.mic == MIC_JACK ? "rechts (RINPUT1)" : "beide (Test)", g_set.pga_db,
            g_set.boost, g_set.hp_vol, g_set.sidetone, g_talk ? "AN" : "aus");
     printf("       Pegel Mic %.1f dBFS, Ausgang %.1f dBFS, Bloecke %lu, I2S-Fehler %lu\n",
            as.mic_peak_db, as.out_peak_db, (unsigned long)as.blocks, (unsigned long)as.i2s_errors);
-    printf("       Effektivpegel Buchse %.1f dBFS, Board-Mic %.1f dBFS, Gate %s (%.0f dB)\n",
+    printf("       Effektivpegel rechts (RINPUT1) %.1f dBFS, links (LINPUT1) %.1f dBFS, Gate %s (%.0f dB)\n",
            as.rms_jack_db, as.rms_board_db,
            g_set.gate_db < 0 ? "an" : "aus", as.gate_gain_db);
     printf("       Uebersteuert %lu ms, I2S-Aussetzer Eingang %lu / Ausgang %lu\n", (unsigned long)as.clips,
@@ -142,7 +142,9 @@ static int cmd_mic(int argc, char **argv)
 {
     if (argc < 2) {
         printf("mic board|jack|both [pga_db -17..30] [boost 0..3]\n");
-        printf("  both = Test: beide Eingaenge an, im Loop links = Board (LINPUT1), rechts = Buchse (RINPUT1)\n");
+        printf("  board = LINPUT1 (Waveshare: Mikrofon 'Left'), jack = RINPUT1 (Waveshare: Mikrofon 'Right',\n");
+        printf("          eigene Platine: Headset), both = beide, im Loop links = LINPUT1, rechts = RINPUT1\n");
+        printf("  Hinweis: Die Buchse des Waveshare-Boards hat KEINEN Mikrofon-Anschluss.\n");
         printf("  boost: 0 = 0 dB, 1 = +13 dB, 2 = +20 dB, 3 = +29 dB\n");
         return 1;
     }
@@ -179,7 +181,7 @@ static int cmd_pegel(int argc, char **argv)
     if (secs < 1) secs = 1;
     if (secs > 30) secs = 30;
     printf("Pegelanzeige %d s (Effektivwert, ~0,5 s gemittelt). Erst still sein, dann sprechen.\n", secs);
-    printf("   Buchse    Board   Spitze   Gate   Uebersteuert  Aussetzer\n");
+    printf("   rechts    links   Spitze   Gate   Uebersteuert  Aussetzer\n");
     for (int i = 0; i < secs * 2; i++) {
         vTaskDelay(pdMS_TO_TICKS(500));
         audio_stats_t as;

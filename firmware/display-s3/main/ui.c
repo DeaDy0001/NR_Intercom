@@ -47,7 +47,7 @@ static const char *s_menu_names[MI_COUNT] = {
 
 // ---------------------------------------------------------------- Bodypack-Einstellungen (ESP32-C5)
 static const char *const N_MODE[]  = { "Aus", "Mithören (Loop)", "Testton 1 kHz", "Funk (RTP)" };
-static const char *const N_MIC[]   = { "Board-Mikrofon", "Headset-Buchse", "Beide (Test L/R)" };
+static const char *const N_MIC[]   = { "Board-Mic links", "Board-Mic rechts", "Beide (Test L/R)" };
 static const char *const N_BOOST[] = { "0 dB", "+13 dB", "+20 dB", "+29 dB" };
 static const char *const N_BAND[]  = { "Auto", "5 GHz", "2,4 GHz" };
 static const char *const N_ANT[]   = { "intern", "extern" };
@@ -379,7 +379,7 @@ static void draw_bpstat(void)
                  c->band_5g ? "5 GHz" : "2,4 GHz");
     else
         snprintf(l[2], 160, "WLAN: nicht verbunden (SSID %s)", c->ssid);
-    snprintf(l[3], 160, "Mikrofon: Buchse %.1f dBFS · Board %.1f dBFS", c->jack_db, c->board_db);
+    snprintf(l[3], 160, "Mikrofon: links %.1f dBFS · rechts %.1f dBFS", c->board_db, c->jack_db);
     snprintf(l[4], 160, "Spitze Mic %.1f dBFS · Ausgang %.1f dBFS", c->peak_db, c->out_db);
     snprintf(l[5], 160, "Gate dämpft gerade %.0f dB · übersteuert %lu ms · I2S-Aussetzer %lu",
              c->gate_gain_db < -0.5f ? -c->gate_gain_db : 0.0f, (unsigned long)c->clips, (unsigned long)c->xruns);

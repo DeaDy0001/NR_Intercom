@@ -103,7 +103,7 @@ static void audio_task(void *arg)
         }
         int64_t t0 = esp_timer_get_time();
 
-        // Mikrofon-Kanal waehlen: Board-Mic = links, Buchse = rechts
+        // Mikrofon-Kanal waehlen: LINPUT1 = linker I2S-Kanal, RINPUT1 = rechter
         const int ch = (g_set.mic == MIC_ONBOARD) ? 0 : 1;
         int32_t mpk = 0;
         int64_t sl = 0, sr = 0;

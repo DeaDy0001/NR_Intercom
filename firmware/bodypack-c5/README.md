@@ -88,10 +88,15 @@ scan                          Netze in der Umgebung mit Kanal und Signalstärke
 ## 4. Tests
 
 ### Test 1: Audio lokal
+
+> **Waveshare-WM8960-Board:** Die 3,5-mm-Buchse ist **nur ein Kopfhörer-Ausgang**. Laut Schaltplan sind nur die zwei
+> MEMS-Mikrofone auf dem Board angeschlossen (LINPUT1 = „Left“, RINPUT1 = „Right“); MICBIAS und der Mikrofon-Kontakt
+> der Buchse sind nicht verbunden. Ein Headset-Mikrofon (z. B. MMX 300) wird hier also **nicht** aufgenommen.
 ```text
 mode loop                 Mikrofon -> Kopfhörer
-mic board 0 1             Board-Mikrofon, PGA 0 dB, Boost +13 dB
-mic jack 20 2             Headset an der Buchse
+mic board 0 1             Board-Mikrofon "Left" (LINPUT1), PGA 0 dB, Boost +13 dB
+mic jack 0 1              Board-Mikrofon "Right" (RINPUT1); auf der eigenen Platine der Headset-Eingang
+mic both 0 1              Test: links ins linke Ohr, rechts ins rechte Ohr
 vol 60                    Lautstärke
 mode tone                 1-kHz-Testton
 pegel                     Pegel live: erst still sein (= Grundrauschen), dann sprechen
