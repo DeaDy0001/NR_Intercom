@@ -37,6 +37,8 @@ void app_main(void)
 
     if (led_init(CONFIG_NRB_PIN_LED) == ESP_OK) led_set(10, 10, 10);
 
+    // Der I2C-Treiber meldet jedes NACK dreizeilig; wm8960.c meldet selbst, was endgueltig scheitert
+    esp_log_level_set("i2c.master", ESP_LOG_NONE);
     wm8960_i2c_recover(CONFIG_NRB_PIN_I2C_SDA, CONFIG_NRB_PIN_I2C_SCL);
     i2c_master_bus_config_t bus_cfg = {
         .i2c_port = I2C_NUM_0,

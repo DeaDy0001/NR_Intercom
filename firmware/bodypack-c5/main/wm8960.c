@@ -47,6 +47,7 @@ static uint32_t s_hz = 50000;     // langsam = robuster bei fliegender Verdrahtu
 static uint16_t s_cache[56];
 static bool s_present;
 static uint32_t s_write_errors;
+static uint32_t s_retries;        // Wiederholungen = Mass fuer die I2C-Leitungsqualitaet
 
 bool wm8960_present(void)
 {
@@ -63,9 +64,10 @@ esp_err_t wm8960_write(uint8_t reg, uint16_t val)
     if (!s_dev) return ESP_ERR_INVALID_STATE;
     uint8_t buf[2] = { (uint8_t)((reg << 1) | ((val >> 8) & 1)), (uint8_t)(val & 0xFF) };
     esp_err_t err = ESP_FAIL;
-    for (int i = 0; i < 3; i++) {     // bis zu 3 Versuche
+    for (int i = 0; i < 8; i++) {     // bis zu 8 Versuche (Schreiben ist wiederholbar)
         err = i2c_master_transmit(s_dev, buf, sizeof(buf), 50);
         if (err == ESP_OK) break;
+        s_retries++;
     }
     if (err == ESP_OK) {
         if (reg < 56) s_cache[reg] = val & 0x1FF;
@@ -74,6 +76,11 @@ esp_err_t wm8960_write(uint8_t reg, uint16_t val)
         ESP_LOGE(TAG, "Schreiben R%02X fehlgeschlagen: %s", reg, esp_err_to_name(err));
     }
     return err;
+}
+
+uint32_t wm8960_i2c_retries(void)
+{
+    return s_retries;
 }
 
 uint32_t wm8960_get_i2c_hz(void)

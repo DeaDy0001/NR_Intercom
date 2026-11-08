@@ -15,6 +15,7 @@ uint32_t  wm8960_write_errors(void);
 esp_err_t wm8960_set_mic(int src, int pga_db, int boost);   // src: 0 = Board-Mic (L), 1 = Buchse (R)
 esp_err_t wm8960_set_hp_volume(int percent);                // 0 = stumm
 esp_err_t wm8960_write(uint8_t reg, uint16_t val);
+uint32_t  wm8960_i2c_retries(void);                       // Anzahl Wiederholungen seit Start
 uint32_t  wm8960_get_i2c_hz(void);
 void      wm8960_set_i2c_hz(uint32_t hz);                   // gilt ab dem naechsten wm8960_init
 int       wm8960_i2c_test(i2c_master_bus_handle_t bus, uint32_t hz, int n, int *probe_ok);
