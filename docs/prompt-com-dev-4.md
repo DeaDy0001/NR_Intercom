@@ -12,7 +12,7 @@ Zwei offene Punkte:
    Das Gerät empfängt den Mix lückenlos (7709 Pakete, ein Strom, Jitter 0,3 ms, keine Verluste),
    die Pakete sind im Mittel 56 Byte groß, dekodieren aber zu ca. -84 dBFS, also Stille.
    Gleichzeitig spricht ein Browser-Benutzer (anderer Benutzer als das Bodypack) im selben Kanal mit
-   offenem Mikrofon. Der Decoder im Gerät ist geprüft (Mock-Server-Echo kommt hörbar an).
+   offenem Mikrofon. Der Decoder im Gerät meldet keine Fehler (0 fehlerhafte Pakete, keine Unterläufe).
    Bitte prüfen, während der Browser-User spricht:
     - GET /device/v1/status: enthält audio.mixer.inputs des Bodypack-Users den Producer des
       Browser-Users? Ist der dort stummgeschaltet (Volume 0, setUserMicMuted, channel_volume)?
