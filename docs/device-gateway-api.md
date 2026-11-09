@@ -97,6 +97,7 @@ Fehler: `401` → Sitzung unbekannt oder abgelaufen, das Gerät meldet sich neu 
 { "token": "9f2c…", "cmd": "leave",  "channel": 3 }
 { "token": "9f2c…", "cmd": "talk",   "channel": 3, "value": 1 }
 { "token": "9f2c…", "cmd": "volume", "channel": 3, "value": 80 }
+{ "token": "9f2c…", "cmd": "speaking", "value": 1 }
 ```
 Antwort `200 {"ok":true,"rev":18}`, Fehler `400/401/404 {"error":"…"}`.
 
@@ -106,6 +107,7 @@ Antwort `200 {"ok":true,"rev":18}`, Fehler `400/401/404 {"error":"…"}`.
 | `leave` | `leaveChannel {channelId}` | |
 | `talk` | `setChannelMicMute {channelId, muted: !value}` | inkl. `userMicMuteChanged` und Sprech-Anzeige wie beim Browser |
 | `volume` | `setChannelSettings {channelId, settings:{channel_volume: value/100}}` | |
+| `speaking` | `speakingStatusChanged {isSpeaking: !!value}` | **ohne** `channel`. Das Gerät meldet 1, solange Talk an ist und sein Mikrofon-Gate offen ist (es wird gerade gesprochen), sonst 0. Nur bei Änderung, höchstens ca. 20× pro Sekunde. Für die Sprechanzeige (grünes Licht) im Browser. |
 
 ### `POST /device/v1/logout`
 `{ "token": "…" }` → `200 {"ok":true}`. Räumt auf wie ein Socket-Disconnect.

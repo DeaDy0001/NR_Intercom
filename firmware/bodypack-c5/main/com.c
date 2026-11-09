@@ -21,7 +21,7 @@
 static const char *TAG = "com";
 
 typedef struct {
-    char cmd[8];
+    char cmd[10];
     int  ch_id;
     int  value;
 } cmd_t;
@@ -350,12 +350,28 @@ static void cmd_task(void *arg)
     static char resp[160];
     char url[96], body[160];
     cmd_t c;
+    bool speaking_sent = false;
     while (1) {
-        xQueueReceive(s_q, &c, portMAX_DELAY);
+        // Sprech-Anzeige (gruenes Licht im Browser): "spricht", solange Talk an und das Mikrofon-Gate offen ist
+        if (xQueueReceive(s_q, &c, pdMS_TO_TICKS(50)) != pdTRUE) {
+            audio_stats_t as;
+            audio_get_stats(&as);
+            bool speaking = s_st.state == COM_ONLINE && g_talk &&
+                            (g_set.gate_db < 0 ? as.gate_gain_db > -3.0f : as.mic_peak_db > -45.0f);
+            if (speaking == speaking_sent || !s_token[0]) {
+                if (!s_token[0]) speaking_sent = false;
+                continue;
+            }
+            speaking_sent = speaking;
+            c = (cmd_t){ .cmd = "speaking", .ch_id = -1, .value = speaking };
+        }
         if (!s_token[0]) continue;
         snprintf(url, sizeof(url), "%s/cmd", s_base);
-        snprintf(body, sizeof(body), "{\"token\":\"%s\",\"cmd\":\"%s\",\"channel\":%d,\"value\":%d}", s_token,
-                 c.cmd, c.ch_id, c.value);
+        if (c.ch_id < 0)
+            snprintf(body, sizeof(body), "{\"token\":\"%s\",\"cmd\":\"%s\",\"value\":%d}", s_token, c.cmd, c.value);
+        else
+            snprintf(body, sizeof(body), "{\"token\":\"%s\",\"cmd\":\"%s\",\"channel\":%d,\"value\":%d}", s_token,
+                     c.cmd, c.ch_id, c.value);
         int st = http_req(url, body, resp, sizeof(resp), 3000);
         if (st == 401) s_relogin = true;
         if (st != 200) ESP_LOGW(TAG, "Befehl %s Kanal %d: HTTP %d %s", c.cmd, c.ch_id, st, resp);

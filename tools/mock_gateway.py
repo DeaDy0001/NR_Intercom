@@ -148,6 +148,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(200, {"ok": True})
         if u.path == "/device/v1/cmd":
             cmd, ch, val = b.get("cmd"), b.get("channel"), b.get("value")
+            if cmd == "speaking":                       # Sprech-Anzeige, ohne Kanal
+                log(f"{s['name']}: spricht {'JA' if val else 'nein'}")
+                return self.send_json(200, {"ok": True, "rev": rev})
             if ch not in s["ch"]:
                 return self.send_json(404, {"error": "channel"})
             name = next(c["name"] for c in CHANNELS if c["id"] == ch)
