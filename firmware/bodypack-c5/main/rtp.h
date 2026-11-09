@@ -25,6 +25,8 @@ typedef struct {
     uint32_t rx_ssrc_changes; // Wechsel auf einen neuen Strom (z. B. nach mixerRebuilt)
     uint32_t rx_rtcp;         // RTCP-Pakete (rtcpMux), ignoriert
     uint32_t rx_ssrc;         // SSRC des abgespielten Stroms
+    uint32_t rx_payload_bytes;// Summe der Nutzdaten (Opus) -> mittlere Paketgroesse
+    float    rx_peak_db;      // Spitzenpegel des dekodierten Empfangs (letzte ~0,5 s)
     uint32_t jb_depth_ms;     // aktuelle Fuellung des Jitterbuffers
     float    jitter_ms;       // RFC-3550-Jitter
     uint32_t enc_us_avg, enc_us_max;   // Opus-Encoder Rechenzeit pro Paket

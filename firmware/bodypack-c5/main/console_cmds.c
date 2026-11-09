@@ -71,6 +71,8 @@ void console_print_status(void)
            (unsigned long)rs.tx_packets, (unsigned long)rs.tx_bytes, (unsigned long)rs.rx_packets,
            (unsigned long)rs.rx_lost, (unsigned long)rs.rx_fec, (unsigned long)rs.rx_late,
            (unsigned long)rs.rx_dropped, (unsigned long)rs.rx_resyncs, (unsigned long)rs.rx_bad);
+    printf("       Empfang: Pegel %.1f dBFS, Paketgroesse im Mittel %lu Byte (unter ~10 Byte = der Server schickt Stille)\n",
+           rs.rx_peak_db, (unsigned long)(rs.rx_packets ? rs.rx_payload_bytes / rs.rx_packets : 0));
     printf("       Strom SSRC %08lx, Stromwechsel %lu, fremde Pakete %lu (zweiter Strom!), RTCP %lu\n",
            (unsigned long)rs.rx_ssrc, (unsigned long)rs.rx_ssrc_changes, (unsigned long)rs.rx_foreign,
            (unsigned long)rs.rx_rtcp);

@@ -44,3 +44,6 @@ CONFIG_LWIP_IRAM_OPTIMIZATION=n
 
 # CPU-Last messen (status: "CPU: Last x %")
 CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS=y
+
+# Flash im QIO-Modus: doppelte Lesegeschwindigkeit fuer den Code-Cache (Opus + WLAN aus dem Flash)
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y

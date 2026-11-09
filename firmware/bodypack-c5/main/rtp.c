@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include <string.h>
 #include "rtp.h"
 #include "audio.h"
@@ -56,6 +57,7 @@ static uint32_t s_tx_ts, s_tx_ssrc;
 static uint32_t s_rx_ssrc;
 static bool     s_rx_ssrc_valid;
 static int64_t  s_rx_last_us;
+static float    s_rx_peak;
 static uint32_t s_cand_ssrc;                 // moeglicher neuer Strom
 static int      s_cand_n;
 
@@ -112,6 +114,7 @@ void rtp_get_stats(rtp_stats_t *st)
         if (s_jb[i].used) depth += s_jb[i].nsamp;
     }
     st->jb_depth_ms = depth * 1000 / AUDIO_RATE;
+    st->rx_peak_db = s_rx_peak > 1e-6f ? 20.0f * log10f(s_rx_peak) : -120.0f;
     st->jitter_ms = s_jitter * 1000.0f / AUDIO_RATE;
     st->enc_us_avg = s_enc_n ? (uint32_t)(s_enc_sum / s_enc_n) : 0;
     st->dec_us_avg = s_dec_n ? (uint32_t)(s_dec_sum / s_dec_n) : 0;
@@ -274,6 +277,7 @@ static void rx_task(void *arg)
 
         xSemaphoreTake(s_lock, portMAX_DELAY);
         s_st.rx_packets++;
+        s_st.rx_payload_bytes += plen;
         if (!s_have_seq) {
             s_next_seq = seq;
             s_have_seq = true;
@@ -403,6 +407,10 @@ static void codec_task(void *arg)
         if (level <= AUDIO_PLAY_FILL) {
             int n = play_one(out);
             if (n > 0) {
+                int32_t pk = 0;                    // Pegel des Empfangs (Diagnose: kommt Ton oder Stille?)
+                for (int i = 0; i < n; i++) { int32_t a = out[i] < 0 ? -out[i] : out[i]; if (a > pk) pk = a; }
+                float p = pk / 32768.0f;
+                s_rx_peak = p > s_rx_peak ? p : s_rx_peak * 0.9f;
                 xStreamBufferSend(g_play_stream, out, n * sizeof(int16_t), 0);
                 busy = true;
             }
