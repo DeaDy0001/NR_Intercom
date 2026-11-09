@@ -9,7 +9,14 @@ setlocal EnableExtensions EnableDelayedExpansion
 title NR Intercom - C5 Funk/Audio flashen
 cd /d "%~dp0"
 
-set "BIN=%~dp0bin\nr-bodypack-c5.bin"
+rem Bootloader, Partitionstabelle und Programm einzeln schreiben. Der Bereich
+rem 0x9000-0xFFFF (gespeicherte Einstellungen: WLAN, Passwort, PIN ...) bleibt
+rem dabei unberuehrt. Die Komplett-Datei nr-bodypack-c5.bin (ab 0x0) ist nur fuer das
+rem Flashen im Browser gedacht und setzt alle Einstellungen zurueck.
+set "BOOT=%~dp0bin\nr-bodypack-c5-bootloader.bin"
+set "PART=%~dp0bin\nr-bodypack-c5-partitions.bin"
+set "BIN=%~dp0bin\nr-bodypack-c5-app.bin"
+set "BOOTADDR=0x2000"
 set "CHIP=esp32c5"
 
 echo.
@@ -19,6 +26,8 @@ echo  ================================================
 echo.
 
 if not exist "%BIN%" goto :no_bin
+if not exist "%BOOT%" goto :no_bin
+if not exist "%PART%" goto :no_bin
 
 rem ---------------------------------------------------------------- esptool suchen
 set "ESPCMD="
@@ -34,7 +43,10 @@ if not defined ESPCMD (
 )
 if not defined ESPCMD goto :no_esptool
 echo  esptool: %ESPCMD%
-echo  Datei  : %BIN%
+echo  Dateien: %BOOT%
+echo          %PART%
+echo          %BIN%
+echo  (gespeicherte Einstellungen bleiben erhalten)
 echo.
 
 rem ---------------------------------------------------------------- COM-Port waehlen
@@ -65,13 +77,13 @@ rem ---------------------------------------------------------------- Flashen
 echo.
 echo  Flashe auf !PORT! ...
 echo.
-%ESPCMD% --chip %CHIP% --port !PORT! --baud 921600 write_flash 0x0 "%BIN%"
+%ESPCMD% --chip %CHIP% --port !PORT! --baud 921600 write_flash %BOOTADDR% "%BOOT%" 0x8000 "%PART%" 0x10000 "%BIN%"
 if not errorlevel 1 goto :ok
 
 echo.
 echo  Schneller Versuch fehlgeschlagen, versuche es langsamer ...
 echo.
-%ESPCMD% --chip %CHIP% --port !PORT! --baud 115200 write_flash 0x0 "%BIN%"
+%ESPCMD% --chip %CHIP% --port !PORT! --baud 115200 write_flash %BOOTADDR% "%BOOT%" 0x8000 "%PART%" 0x10000 "%BIN%"
 if not errorlevel 1 goto :ok
 
 echo.
@@ -122,7 +134,8 @@ echo.
 echo  Loesung: Arduino IDE oeffnen, Werkzeuge - Board - Boardverwalter,
 echo  "esp32 by Espressif" installieren, dann diese Datei erneut starten.
 echo  Alternativ ohne Installation im Browser flashen:
-echo     https://espressif.github.io/esptool-js/   Datei bei Adresse 0x0
+echo     https://espressif.github.io/esptool-js/   Datei nr-bodypack-c5.bin bei Adresse 0x0
+echo     (Achtung: setzt WLAN und alle Einstellungen zurueck)
 goto :ende
 
 :ende

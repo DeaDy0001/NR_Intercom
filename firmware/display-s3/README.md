@@ -47,6 +47,12 @@ Nichts umlöten: Die Drehgeber bleiben, wie sie laut dem bisherigen Sketch im NR
 ## 2. Flashen
 
 ### Variante 0: Doppelklick (Windows mit Arduino IDE)
+
+> **Einstellungen bleiben erhalten:** `flash-c5.bat` / `flash-s3.bat` schreiben Bootloader, Partitionstabelle
+> und Programm einzeln (`*-bootloader.bin`, `*-partitions.bin`, `*-app.bin`). Der Speicherbereich mit WLAN,
+> Passwort, PIN und allen Einstellungen (0x9000–0xFFFF) wird dabei **nicht** überschrieben.
+> Die Komplett-Datei `*.bin` (ab Adresse 0x0, für das Flashen im Browser) setzt dagegen alles zurück.
+> Nach einem eigenen Build: `sh tools/export_bins.sh`.
 1. In der Arduino IDE muss das Paket **„esp32 by Espressif“** installiert sein (Werkzeuge → Board → Boardverwalter).
 2. S3-Board per USB-C anschließen. Den **seriellen Monitor der Arduino IDE schließen**, er blockiert sonst den Port.
 3. **`firmware/flash-s3.bat`** doppelklicken. Das Skript findet esptool selbst, zeigt die COM-Ports und fragt nach dem Port.

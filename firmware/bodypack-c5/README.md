@@ -56,6 +56,12 @@ die richtige Lösung kommt mit der eigenen Platine.
 ## 2. Flashen
 
 ### Variante 0: Doppelklick (Windows mit Arduino IDE)
+
+> **Einstellungen bleiben erhalten:** `flash-c5.bat` / `flash-s3.bat` schreiben Bootloader, Partitionstabelle
+> und Programm einzeln (`*-bootloader.bin`, `*-partitions.bin`, `*-app.bin`). Der Speicherbereich mit WLAN,
+> Passwort, PIN und allen Einstellungen (0x9000–0xFFFF) wird dabei **nicht** überschrieben.
+> Die Komplett-Datei `*.bin` (ab Adresse 0x0, für das Flashen im Browser) setzt dagegen alles zurück.
+> Nach einem eigenen Build: `sh tools/export_bins.sh`.
 1. Arduino IDE: Paket **„esp32 by Espressif“ ab Version 3.3** (ältere esptool-Versionen kennen den C5 nicht).
 2. C5-Zero per USB-C anschließen, seriellen Monitor schließen.
 3. **`firmware/flash-c5.bat`** doppelklicken, COM-Port wählen.
