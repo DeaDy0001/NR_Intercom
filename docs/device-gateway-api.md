@@ -123,7 +123,9 @@ Antwort `200 {"ok":true,"rev":18}`, Fehler `400/401/404 {"error":"…"}`.
 **Server → Gerät**
 - Der Mix-Minus des Benutzers (`mixedProducerId`) als RTP an `<geräte-ip>:<rtpPort>`.
 - Payload-Typ beliebig (vom Router vergeben, z. B. 100). Das Gerät dekodiert jeden PT außer 96 als Opus.
-- Nach `mixerRebuilt` darf sich SSRC/Sequenz ändern, das Gerät synchronisiert neu.
+- Nach `mixerRebuilt` darf sich SSRC/Sequenz ändern, das Gerät synchronisiert neu. Es spielt immer nur
+  **einen** Strom: Ein neuer SSRC wird übernommen, sobald 3 Pakete in Folge von ihm kommen (ohne Paket des
+  alten dazwischen) oder der alte 300 ms still ist. Der Server schickt höchstens einen Strom gleichzeitig.
 
 **Server-intern (mediasoup)**
 - `PlainTransport`: `listenIp {ip:'0.0.0.0', announcedIp:<LAN-IP wie bei createWebRtcTransport>}`, `rtcpMux:true`,

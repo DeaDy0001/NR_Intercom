@@ -56,6 +56,8 @@ static uint32_t s_tx_ts, s_tx_ssrc;
 static uint32_t s_rx_ssrc;
 static bool     s_rx_ssrc_valid;
 static int64_t  s_rx_last_us;
+static uint32_t s_cand_ssrc;                 // moeglicher neuer Strom
+static int      s_cand_n;
 
 void rtp_update_target(void)
 {
@@ -229,12 +231,21 @@ static void rx_task(void *arg)
         // Jitterbuffer bei jedem Paket neu synchronisieren und nichts mehr ausgeben.
         const uint32_t ssrc = ((uint32_t)buf[8] << 24) | (buf[9] << 16) | (buf[10] << 8) | buf[11];
         const int64_t now_us = esp_timer_get_time();
+        // Wechsel auf einen neuen Strom (z. B. nach mixerRebuilt): sofort, wenn der alte 300 ms still ist,
+        // oder schon nach 3 Paketen des neuen in Folge ohne ein Paket des alten dazwischen (~30 ms).
+        // Kommen zwei Stroeme verschraenkt an, setzt jedes Paket des alten den Zaehler zurueck.
         if (ssrc != s_rx_ssrc) {
-            if (s_rx_ssrc_valid && now_us - s_rx_last_us < 300000) { s_st.rx_foreign++; continue; }
-            s_rx_ssrc = ssrc;                      // erster Strom oder alter Strom seit 300 ms still
+            if (ssrc == s_cand_ssrc) s_cand_n++;
+            else { s_cand_ssrc = ssrc; s_cand_n = 1; }
+            bool old_silent = !s_rx_ssrc_valid || now_us - s_rx_last_us >= 300000;
+            if (!old_silent && s_cand_n < 3) { s_st.rx_foreign++; continue; }
+            s_rx_ssrc = ssrc;
             if (s_rx_ssrc_valid) s_st.rx_ssrc_changes++;
             s_rx_ssrc_valid = true;
             s_st.rx_ssrc = ssrc;
+            s_cand_n = 0;
+        } else {
+            s_cand_n = 0;                          // alter Strom lebt noch -> Kandidat verwerfen
         }
         s_rx_last_us = now_us;
         const uint8_t *payload = buf + hdr;
