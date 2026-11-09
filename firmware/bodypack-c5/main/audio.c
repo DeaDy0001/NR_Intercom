@@ -90,6 +90,7 @@ static void audio_task(void *arg)
         esp_err_t err = i2s_channel_read(s_rx, in, sizeof(in), &got, pdMS_TO_TICKS(100));
         if (err != ESP_OK || got != sizeof(in)) {
             s_st.i2s_errors++;
+            if (err != ESP_ERR_TIMEOUT) vTaskDelay(1);   // nie ohne Pause kreisen (Watchdog, WLAN)
             if (err == ESP_ERR_TIMEOUT) {
                 static int64_t last_warn;
                 int64_t now = esp_timer_get_time();

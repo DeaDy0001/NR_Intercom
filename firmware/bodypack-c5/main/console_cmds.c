@@ -57,8 +57,10 @@ void console_print_status(void)
            g_set.gate_db < 0 ? "an" : "aus", as.gate_gain_db);
     printf("       Uebersteuert %lu ms, I2S-Aussetzer Eingang %lu / Ausgang %lu\n", (unsigned long)as.clips,
            (unsigned long)as.rx_overflows, (unsigned long)as.tx_underruns);
-    printf("RTP  : Ziel %s:%u, lokal %u, Codec %s, Paket %d ms, Jitterbuffer Ziel %d ms (aktuell %lu ms)\n",
-           g_set.host[0] ? g_set.host : "-", g_set.port, g_set.local_port,
+    char tgt[24];
+    rtp_target_str(tgt, sizeof(tgt));
+    printf("RTP  : Ziel %s, lokal %u, Codec %s, Paket %d ms, Jitterbuffer Ziel %d ms (aktuell %lu ms)\n",
+           tgt, g_set.local_port,
            g_set.codec == CODEC_OPUS ? "Opus" : "L16", g_set.frame_ms, g_set.jb_ms,
            (unsigned long)rs.jb_depth_ms);
     if (g_set.codec == CODEC_OPUS) {
@@ -69,6 +71,9 @@ void console_print_status(void)
            (unsigned long)rs.tx_packets, (unsigned long)rs.tx_bytes, (unsigned long)rs.rx_packets,
            (unsigned long)rs.rx_lost, (unsigned long)rs.rx_fec, (unsigned long)rs.rx_late,
            (unsigned long)rs.rx_dropped, (unsigned long)rs.rx_resyncs, (unsigned long)rs.rx_bad);
+    printf("       Strom SSRC %08lx, Stromwechsel %lu, fremde Pakete %lu (zweiter Strom!), RTCP %lu\n",
+           (unsigned long)rs.rx_ssrc, (unsigned long)rs.rx_ssrc_changes, (unsigned long)rs.rx_foreign,
+           (unsigned long)rs.rx_rtcp);
     printf("       Jitter %.2f ms, Unterlauf %lu, Sendepuffer voll %lu\n", rs.jitter_ms,
            (unsigned long)as.play_underruns, (unsigned long)as.tx_overflows);
     printf("CPU  : Opus-Encoder %lu us (max %lu), Decoder %lu us (max %lu) pro Paket, Audio max %lu us/ms\n",

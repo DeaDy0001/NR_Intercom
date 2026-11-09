@@ -247,7 +247,7 @@ void link_get(c5_state_t *st)
 {
     xSemaphoreTake(s_lock, portMAX_DELAY);
     *st = s_st;
-    st->online = s_last_rx && (esp_timer_get_time() - s_last_rx) < 1000000;
+    st->online = s_last_rx && (esp_timer_get_time() - s_last_rx) < 2500000;   // kurze Pausen des C5 (Suche, Last) tolerieren
     xSemaphoreGive(s_lock);
 }
 

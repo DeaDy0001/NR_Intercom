@@ -9,7 +9,7 @@
 //   GND gemeinsam
 
 typedef struct {
-    bool  online;          // in der letzten Sekunde Daten vom C5 empfangen
+    bool  online;          // in den letzten 2,5 s Daten vom C5 empfangen
     bool  have_settings;
     // Einstellungen (S-Zeile)
     int   mode, mic, pga, boost, vol, side, gate, band, ant, codec, kbps, frame, jb, latch;

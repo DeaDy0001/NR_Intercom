@@ -21,6 +21,10 @@ typedef struct {
     uint32_t rx_dropped;      // verworfen, um Latenz abzubauen
     uint32_t rx_resyncs;
     uint32_t rx_bad;          // unbekannter Payload-Typ / Decoder-Fehler
+    uint32_t rx_foreign;      // Pakete eines zweiten, gleichzeitigen Stroms (andere SSRC) -> verworfen
+    uint32_t rx_ssrc_changes; // Wechsel auf einen neuen Strom (z. B. nach mixerRebuilt)
+    uint32_t rx_rtcp;         // RTCP-Pakete (rtcpMux), ignoriert
+    uint32_t rx_ssrc;         // SSRC des abgespielten Stroms
     uint32_t jb_depth_ms;     // aktuelle Fuellung des Jitterbuffers
     float    jitter_ms;       // RFC-3550-Jitter
     uint32_t enc_us_avg, enc_us_max;   // Opus-Encoder Rechenzeit pro Paket
@@ -34,4 +38,5 @@ void      rtp_reset_stats(void);
 void      rtp_update_target(void);   // nach Aenderung von host/port
 void      rtp_codec_changed(void);   // nach Aenderung von Codec/Bitrate/Komplexitaet/Frame
 void      rtp_set_target(const char *ip, uint16_t port);   // Ziel zur Laufzeit (Intercom), ohne Speichern
+void      rtp_target_str(char *out, int max);          // aktuelles Ziel "ip:port" oder "-"
 uint32_t  rtp_get_ssrc(void);

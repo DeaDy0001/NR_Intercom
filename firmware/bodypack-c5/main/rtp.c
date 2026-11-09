@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include "rtp.h"
 #include "audio.h"
@@ -52,6 +53,9 @@ static TaskHandle_t s_tx_task;
 static OpusDecoder *s_dec;
 static uint16_t s_tx_seq;
 static uint32_t s_tx_ts, s_tx_ssrc;
+static uint32_t s_rx_ssrc;
+static bool     s_rx_ssrc_valid;
+static int64_t  s_rx_last_us;
 
 void rtp_update_target(void)
 {
@@ -77,6 +81,14 @@ void rtp_set_target(const char *ip, uint16_t port)
     if (inet_pton(AF_INET, ip, &s_dst.sin_addr) != 1) return;
     s_dst_valid = true;
     ESP_LOGI(TAG, "RTP-Ziel (Intercom): %s:%u", ip, port);
+}
+
+void rtp_target_str(char *out, int max)
+{
+    if (!s_dst_valid) { snprintf(out, max, "-"); return; }
+    char ip[16];
+    inet_ntop(AF_INET, &s_dst.sin_addr, ip, sizeof(ip));
+    snprintf(out, max, "%s:%u", ip, ntohs(s_dst.sin_port));
 }
 
 uint32_t rtp_get_ssrc(void)
@@ -212,6 +224,19 @@ static void rx_task(void *arg)
         if (plen <= 0) continue;
         if (plen > MAX_PAYLOAD) { s_st.rx_bad++; continue; }   // z. B. L16 mit mehr als 5 ms
         const uint8_t pt = buf[1] & 0x7F;
+        if (pt >= 64 && pt <= 95) { s_st.rx_rtcp++; continue; }   // RTCP (SR/RR/SDES/BYE) ueber rtcpMux
+        // Nur EINEN Strom abspielen: Kommen gleichzeitig zwei Stroeme (andere SSRC) an, wuerde der
+        // Jitterbuffer bei jedem Paket neu synchronisieren und nichts mehr ausgeben.
+        const uint32_t ssrc = ((uint32_t)buf[8] << 24) | (buf[9] << 16) | (buf[10] << 8) | buf[11];
+        const int64_t now_us = esp_timer_get_time();
+        if (ssrc != s_rx_ssrc) {
+            if (s_rx_ssrc_valid && now_us - s_rx_last_us < 300000) { s_st.rx_foreign++; continue; }
+            s_rx_ssrc = ssrc;                      // erster Strom oder alter Strom seit 300 ms still
+            if (s_rx_ssrc_valid) s_st.rx_ssrc_changes++;
+            s_rx_ssrc_valid = true;
+            s_st.rx_ssrc = ssrc;
+        }
+        s_rx_last_us = now_us;
         const uint8_t *payload = buf + hdr;
         int nsamp;
         if (pt == RTP_PT_L16) {
