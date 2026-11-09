@@ -20,6 +20,7 @@ static const char *TAG = "link";
 #define LINK_UART   UART_NUM_1
 #define LINK_BAUD   115200
 
+volatile int g_cpu_load = -1;   // CPU-Last in % (aus der Laufzeit des Idle-Tasks), -1 = unbekannt
 static int64_t s_save_at;       // 0 = nichts zu speichern
 static bool    s_send_settings = true;
 static bool    s_send_channels = true;
@@ -147,10 +148,10 @@ static void send_live(void)
     char b[260];
     snprintf(b, sizeof(b),
              "L jack=%.1f board=%.1f peak=%.1f out=%.1f gateg=%.0f talk=%d codecok=%d wifi=%d rssi=%d ch=%d "
-             "g5=%d clip=%lu xrun=%lu ip=%s ssid=%s\n",
+             "g5=%d clip=%lu xrun=%lu cpu=%d ip=%s ssid=%s\n",
              as.rms_jack_db, as.rms_board_db, as.mic_peak_db, as.out_peak_db, as.gate_gain_db, g_talk ? 1 : 0,
              wm8960_present() ? 1 : 0, ni.connected ? 1 : 0, ni.rssi, ni.channel, ni.band_5g ? 1 : 0,
-             (unsigned long)as.clips, (unsigned long)(as.rx_overflows + as.tx_underruns),
+             (unsigned long)as.clips, (unsigned long)(as.rx_overflows + as.tx_underruns), g_cpu_load,
              ni.connected ? ni.ip : "-", g_set.ssid[0] ? g_set.ssid : "-");
     // Leerzeichen in der SSID wuerden das Format stoeren
     for (char *p = strstr(b, "ssid="); p && *p && *p != '\n'; p++) if (*p == ' ') *p = '_';
@@ -285,6 +286,18 @@ static void link_task(void *arg)
             }
         }
         int64_t now = esp_timer_get_time();
+        static int64_t last_cpu;
+        static uint32_t idle0;
+        if (now - last_cpu >= 1000000) {               // CPU-Last einmal pro Sekunde
+            uint32_t idle = ulTaskGetIdleRunTimeCounter();
+            if (last_cpu) {
+                int64_t dt = now - last_cpu;
+                int load = 100 - (int)((int64_t)(idle - idle0) * 100 / dt);
+                g_cpu_load = load < 0 ? 0 : load > 100 ? 100 : load;
+            }
+            idle0 = idle;
+            last_cpu = now;
+        }
         if (s_do_disc) {
             s_do_disc = false;
             do_disc();

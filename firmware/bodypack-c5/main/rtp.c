@@ -448,8 +448,10 @@ esp_err_t rtp_init(void)
     }
     rtp_update_target();
     // Opus braucht viel Stack (Variable-Length-Arrays). Am PC gemessen: Encoder 21-34 KB, Decoder 12-15 KB.
-    if (xTaskCreate(rx_task, "rtp_rx", 4096, NULL, configMAX_PRIORITIES - 3, NULL) != pdPASS ||
-        xTaskCreate(codec_task, "codec", 32 * 1024, NULL, configMAX_PRIORITIES - 3, &s_tx_task) != pdPASS) {
+    // Prioritaet unter dem Netzwerk-Stack (tiT = 18): bei CPU-Ueberlast stottert hoechstens das Audio,
+    // Verbindung zum Server und zum Display bleiben bestehen (vorher: Watchdog, Sitzung abgelaufen)
+    if (xTaskCreate(rx_task, "rtp_rx", 4096, NULL, 17, NULL) != pdPASS ||
+        xTaskCreate(codec_task, "codec", 32 * 1024, NULL, 16, &s_tx_task) != pdPASS) {
         ESP_LOGE(TAG, "zu wenig RAM fuer RTP-Tasks (frei: %u Byte)", (unsigned)esp_get_free_heap_size());
         return ESP_ERR_NO_MEM;
     }

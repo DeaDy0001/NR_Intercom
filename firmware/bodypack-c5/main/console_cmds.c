@@ -76,8 +76,9 @@ void console_print_status(void)
            (unsigned long)rs.rx_rtcp);
     printf("       Jitter %.2f ms, Unterlauf %lu, Sendepuffer voll %lu\n", rs.jitter_ms,
            (unsigned long)as.play_underruns, (unsigned long)as.tx_overflows);
-    printf("CPU  : Opus-Encoder %lu us (max %lu), Decoder %lu us (max %lu) pro Paket, Audio max %lu us/ms\n",
-           (unsigned long)rs.enc_us_avg, (unsigned long)rs.enc_us_max, (unsigned long)rs.dec_us_avg,
+    extern volatile int g_cpu_load;
+    printf("CPU  : Last %d %%, Opus-Encoder %lu us (max %lu), Decoder %lu us (max %lu) pro Paket, Audio max %lu us/ms\n",
+           g_cpu_load, (unsigned long)rs.enc_us_avg, (unsigned long)rs.enc_us_max, (unsigned long)rs.dec_us_avg,
            (unsigned long)rs.dec_us_max, (unsigned long)as.proc_us_max);
     printf("Stack: Codec-Task frei %lu Byte (von 32 KB)\n", (unsigned long)rs.codec_stack_free);
     printf("RAM  : frei %u Byte, minimal %u Byte\n\n", (unsigned)esp_get_free_heap_size(),
