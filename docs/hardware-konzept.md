@@ -296,9 +296,17 @@ Das entlastet auch das Funknetz für die mobilen Bodypacks.
 ### Schaltplan der Station
 [`img/schaltplan-basisstation-linien.svg`](img/schaltplan-basisstation-linien.svg) (Linien-Plan, erzeugt mit
 `tools/schematic_station.py`):
-- **Strom:** USB-C-Netzteil 5 V / 3 A (nur Strom), Sicherung, TVS-Diode. Die 5 V gehen über einen strombegrenzten
-  Lastschalter **TPS2557** an den Federstift, damit ein Kurzschluss an den offenen Kontakten nichts zerstört
-  (rote LED = Fehler). Später möglich: PoE-Modul statt Netzteil, dann reicht ein Kabel für Strom und LAN.
+- **Strom: USB-C oder PoE.** Entweder ein USB-C-Netzteil 5 V / 3 A (nur Strom, mit Sicherung und TVS-Diode) oder
+  **PoE über das Netzwerkkabel**: Ein fertiges PoE-Modul (U5, IEEE 802.3at, 5 V ≥ 2,5 A, galvanisch getrennt)
+  macht aus den 48 V am Kabel 5 V. Ein Umschalter **TPS2116** (U6, derselbe Baustein wie im Bodypack) wählt die
+  Quelle, beide gleichzeitig sind erlaubt. Dann reicht **ein Kabel für Strom, Laden und LAN**.
+- **Leistung bei PoE:** Laden mit 2 A plus Station sind ca. 12 W, das braucht **PoE+ (802.3at)** am Switch.
+  An einem älteren 802.3af-Switch (ca. 13 W am Kabel, nach dem Wandler weniger) den Strom an den Kontakten auf
+  ca. 1,5 A begrenzen (R_ILIM). Der Lader im Bodypack regelt bei sinkender Spannung selbst herunter, er lädt
+  dann nur langsamer.
+- **RJ45:** Die Buchse muss PoE-fähig sein (Mittelanzapfungen der Kabelseite herausgeführt, für Modus A und B).
+- Die 5 V gehen über einen strombegrenzten Lastschalter **TPS2557** an den Federstift, damit ein Kurzschluss an den
+  offenen Kontakten nichts zerstört (rote LED = Fehler).
 - **3,3 V:** AP2112K-3.3 nur für den W5500.
 - **LAN:** W5500 mit 25-MHz-Quarz, Abschluss der Leitungspaare lt. WIZnet-Referenz, RJ45-Buchse mit Übertrager und LEDs.
   /SCS hat einen Pull-up, ohne Bodypack ist der Chip abgewählt. /INT bleibt offen (Abfrage-Modus).
