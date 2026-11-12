@@ -25,6 +25,18 @@ REPO = os.path.normpath(os.path.join(HERE, ".."))
 BIN_DIR = os.path.join(REPO, "firmware", "bin")
 PORTS_FILE = os.path.join(HERE, ".nrtool-ports.json")
 IS_WIN = os.name == "nt"
+SELF = os.path.abspath(__file__)
+
+
+def file_hash(path):
+    try:
+        with open(path, "rb") as f:
+            return hash(f.read())
+    except OSError:
+        return None
+
+
+SELF_HASH = file_hash(SELF)     # Stand beim Start: aendert git pull das Werkzeug, startet es sich neu
 
 BOARDS = {
     "c5": {"chip": "esp32c5", "name": "nr-bodypack-c5", "boot": "0x2000", "title": "Bodypack ESP32-C5 (Funk/Audio)"},
@@ -141,6 +153,17 @@ def git_pull():
         warn("  git pull hat nicht geklappt (lokale Aenderungen?). Es wird der vorhandene Stand geflasht.")
         return False
     return True
+
+
+def pull_then(next_cmd):
+    """git pull; hat sich dabei dieses Werkzeug geaendert, mit der neuen Version weitermachen."""
+    git_pull()
+    if file_hash(SELF) != SELF_HASH:
+        info("  Das Werkzeug selbst wurde aktualisiert - starte die neue Version ...")
+        rc = subprocess.call([sys.executable, SELF, "--continue"] + ([next_cmd] if next_cmd else []))
+        sys.exit(rc)
+    if next_cmd:
+        handle(next_cmd)
 
 
 # ---------------------------------------------------------------- Flashen
@@ -379,17 +402,17 @@ def handle(line):
     elif cmd == "status":
         overview()
     elif cmd == "pull":
-        git_pull()
+        pull_then(None)
     elif cmd == "update":
-        git_pull()
+        pull_then("flash-all")
+    elif cmd == "flash-all":            # intern: nach dem Neustart von 'update'
         flash("c5")
         flash("s3")
     elif cmd in BOARDS:
         board = cmd
         sub = parts[1].lower() if len(parts) > 1 else "help"
         if sub == "update":
-            git_pull()
-            flash(board)
+            pull_then(f"{board} flash")
         elif sub == "flash":
             flash(board)
         elif sub == "monitor":
@@ -415,10 +438,15 @@ def main():
     if IS_WIN:
         os.system("")      # Farben im Fenster aktivieren
     args = sys.argv[1:]
-    if args:               # auch direkt aufrufbar, z. B.: nrtool.py c5 update
+    if args and args[0] == "--continue":   # Neustart nach eigenem Update: Befehl fortsetzen, dann normal weiter
+        print("\n  NR Intercom - Werkzeug (neue Version)   ('help' zeigt alle Befehle)\n")
+        if len(args) > 1:
+            handle(" ".join(args[1:]))
+    elif args:             # auch direkt aufrufbar, z. B.: nrtool.py c5 update
         handle(" ".join(args))
         return
-    print("\n  NR Intercom - Werkzeug   ('help' zeigt alle Befehle)\n")
+    else:
+        print("\n  NR Intercom - Werkzeug   ('help' zeigt alle Befehle)\n")
     while True:
         try:
             line = input("nr> ")
