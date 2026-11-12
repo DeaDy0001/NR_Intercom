@@ -7,6 +7,7 @@
 // - Bedienung ueber USB-Konsole (help) und 4 Tasten
 
 #include "nvs_flash.h"
+#include "soc/lp_aon_reg.h"
 #include "esp_log.h"
 #include "esp_console.h"
 #include "esp_system.h"
@@ -30,6 +31,9 @@ i2c_master_bus_handle_t g_i2c_bus;
 
 void app_main(void)
 {
+    // Flash-Modus-Anforderung ('download') ueberlebt einen Reset: sofort loeschen, sonst startet der C5
+    // nach dem naechsten Reset wieder in den Flash-Modus statt ins Programm
+    REG_SET_FIELD(LP_AON_SYS_CFG_REG, LP_AON_FORCE_DOWNLOAD_BOOT, 0);
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());

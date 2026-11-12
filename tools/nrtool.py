@@ -42,8 +42,11 @@ def file_hash(path):
 SELF_HASH = file_hash(SELF)     # Stand beim Start: aendert git pull das Werkzeug, startet es sich neu
 
 BOARDS = {
-    "c5": {"chip": "esp32c5", "name": "nr-bodypack-c5", "boot": "0x2000", "title": "Bodypack ESP32-C5 (Funk/Audio)"},
-    "s3": {"chip": "esp32s3", "name": "nr-display-s3", "boot": "0x0", "title": "Display ESP32-S3"},
+    # force: Register + Maske der Flash-Modus-Anforderung ('download'), die einen Reset ueberlebt
+    "c5": {"chip": "esp32c5", "name": "nr-bodypack-c5", "boot": "0x2000", "title": "Bodypack ESP32-C5 (Funk/Audio)",
+           "force": ("0x600B1034", "0x60000000")},     # LP_AON_SYS_CFG_REG, LP_AON_FORCE_DOWNLOAD_BOOT
+    "s3": {"chip": "esp32s3", "name": "nr-display-s3", "boot": "0x0", "title": "Display ESP32-S3",
+           "force": ("0x6000812C", "0x1")},            # RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT
 }
 CTRL_Q, CTRL_C, CTRL_R = "\x11", "\x03", "\x12"
 
@@ -59,6 +62,8 @@ HELP = """
     c5 monitor       Konsole des C5 (Log mitlesen, Befehle tippen). Zurueck mit Strg+Q
     s3 monitor       Log des S3. Zurueck mit Strg+Q
     c5 reset         C5 neu starten, ebenso: s3 reset
+    c5 rescue        Board bleibt nach dem Flashen dunkel (haengt im Flash-Modus)? Das holt es raus.
+                     Alternativ: USB-Kabel 3 s abziehen und wieder anstecken.
 
     status           ALLES auf einen Blick: Firmware-Stand am PC, Ports, Zustand von C5 und S3
     c5 status        nur der C5 (WLAN, Audio, RTP, CPU, RAM, Intercom), ebenso: s3 status
@@ -179,6 +184,27 @@ def pull_then(next_cmd):
 
 
 # ---------------------------------------------------------------- Flashen
+def rescue(board):
+    """Board haengt im Flash-Modus (LED aus, keine Verbindung): Anforderung loeschen und normal starten."""
+    try:
+        import esptool
+    except ImportError:
+        warn("  esptool fehlt. Einmalig: py -m pip install esptool")
+        return
+    port = port_for(board)
+    if not port:
+        return
+    b = BOARDS[board]
+    major = int(str(getattr(esptool, "__version__", "5")).split(".")[0] or 5)
+    info(f"  {board.upper()}: loesche die Flash-Modus-Anforderung und starte normal ...")
+    try:
+        esptool.main(["--chip", b["chip"], "--port", port, "--before", "no-reset" if major >= 5 else "no_reset",
+                      "write-mem" if major >= 5 else "write_mem", b["force"][0], "0", b["force"][1]])
+        info("  erledigt. Startet es trotzdem nicht: USB-Kabel 3 s abziehen und wieder anstecken.")
+    except (SystemExit, Exception) as e:
+        warn(f"  hat nicht geklappt ({e}). Dann: USB-Kabel 3 s abziehen und wieder anstecken.")
+
+
 def flash(board):
     try:
         import esptool
@@ -202,12 +228,14 @@ def flash(board):
     cmd = "write-flash" if major >= 5 else "write_flash"
     no_reset = "no-reset" if major >= 5 else "no_reset"
 
-    def run(baud, before=None):
+    def run(baud, before=None, after=None, command=None):
         argv = ["--chip", b["chip"], "--port", port, "--baud", str(baud)]
         if before:
             argv += ["--before", before]
+        if after:
+            argv += ["--after", after]
         try:
-            esptool.main(argv + [cmd] + args)
+            esptool.main(argv + (command or [cmd] + args))
             return True
         except SystemExit as e:
             return e.code in (0, None)
@@ -235,7 +263,10 @@ def flash(board):
         while time.time() < t_end and port not in [p.device for p in list_ports.comports()]:
             time.sleep(0.3)
         time.sleep(0.5)
-        ok = run(921600, no_reset) or run(115200, no_reset)
+        ok = run(921600, no_reset, no_reset) or run(115200, no_reset, no_reset)
+        # Flash-Modus-Anforderung loeschen, dann normal neu starten (sonst startet das Board wieder im Flash-Modus)
+        if ok:
+            run(115200, no_reset, None, ["write-mem" if major >= 5 else "write_mem", b["force"][0], "0", b["force"][1]])
     if ok:
         info(f"  {board.upper()} fertig geflasht, startet neu. Einstellungen bleiben erhalten.")
         return True
@@ -656,6 +687,8 @@ def handle(line):
             monitor(board)
         elif sub == "reset":
             reset(board)
+        elif sub == "rescue":
+            rescue(board)
         elif sub == "port":
             if len(parts) < 3:
                 print(f"  {board.upper()}: {load_ports().get(board, 'noch nicht festgelegt')}")
