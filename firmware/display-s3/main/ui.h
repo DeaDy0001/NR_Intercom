@@ -7,3 +7,4 @@
 //               Beide kurz = Menue.
 //   Menue: Helligkeit, Display drehen, Testbild, FPS-Test, Info.
 esp_err_t ui_start(void);
+void      ui_print_status(void);   // Zustand fuer die USB-Konsole (Befehl "status")

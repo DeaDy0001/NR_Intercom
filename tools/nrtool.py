@@ -45,8 +45,10 @@ HELP = """
     s3 monitor       Log des S3. Zurueck mit Strg+Q
     c5 reset         C5 neu starten, ebenso: s3 reset
 
+    status           ALLES auf einen Blick: Firmware-Stand am PC, Ports, Zustand von C5 und S3
+    c5 status        nur der C5 (WLAN, Audio, RTP, CPU, RAM, Intercom), ebenso: s3 status
     c5 <befehl>      einen Befehl am C5 ausfuehren und die Antwort zeigen, z. B.
-                     c5 status    c5 com    c5 help    c5 rxgain 18    c5 com find
+                     c5 com    c5 help    c5 rxgain 18    c5 com find    (am S3: s3 help, s3 status)
 
     ports            angeschlossene COM-Ports anzeigen
     c5 port COM6     COM-Port fuer den C5 festlegen, ebenso: s3 port COM5
@@ -104,11 +106,13 @@ def show_ports():
         print(f"  {p.device:8s} {p.description}{mark}")
 
 
-def port_for(board):
+def port_for(board, ask=True):
     port = load_ports().get(board)
     present = [p.device for p in list_ports.comports()]
     if port and port in present:
         return port
+    if not ask:
+        return None
     if port:
         warn(f"  {board.upper()}: gespeicherter Port {port} ist gerade nicht da.")
     show_ports()
@@ -208,10 +212,11 @@ def reset(board):
         warn(f"  {port} nicht erreichbar: {e}")
 
 
-def run_command(board, command, seconds):
-    """Befehl an die C5-Konsole schicken, Antwort anzeigen."""
-    port = port_for(board)
+def run_command(board, command, seconds, ask=True):
+    """Befehl an die Konsole von C5 oder S3 schicken, Antwort anzeigen."""
+    port = port_for(board, ask)
     if not port:
+        warn(f"  {board.upper()}: kein Port (eingesteckt? '{board} port COMx' festlegen)")
         return
     try:
         s = open_serial(port)
@@ -336,6 +341,26 @@ def monitor(board):
     info("  Monitor beendet.")
 
 
+# ---------------------------------------------------------------- Gesamtstatus
+def overview():
+    info("  ===== PC / Firmware-Dateien =====")
+    try:
+        g = lambda *a: subprocess.run(["git", "-C", REPO] + list(a), capture_output=True, text=True).stdout.strip()
+        print(f"  Repository: Branch {g('rev-parse', '--abbrev-ref', 'HEAD')}, Stand {g('log', '-1', '--format=%h %cd %s', '--date=format:%d.%m. %H:%M')}")
+    except FileNotFoundError:
+        print("  Repository: git nicht gefunden")
+    for b in BOARDS.values():
+        p = os.path.join(BIN_DIR, b["name"] + "-app.bin")
+        if os.path.exists(p):
+            print(f"  {b['name']}-app.bin: {time.strftime('%d.%m. %H:%M', time.localtime(os.path.getmtime(p)))}, "
+                  f"{os.path.getsize(p) // 1024} KB")
+    info("  ===== Ports =====")
+    show_ports()
+    for board in ("c5", "s3"):
+        info(f"  ===== {BOARDS[board]['title']} =====")
+        run_command(board, "status", 3, ask=False)
+
+
 # ---------------------------------------------------------------- Befehlszeile
 def handle(line):
     try:
@@ -351,6 +376,8 @@ def handle(line):
         print(HELP)
     elif cmd == "ports":
         show_ports()
+    elif cmd == "status":
+        overview()
     elif cmd == "pull":
         git_pull()
     elif cmd == "update":
@@ -375,8 +402,6 @@ def handle(line):
             else:
                 save_port(board, norm_port(parts[2]))
                 info(f"  {board.upper()} benutzt jetzt {norm_port(parts[2])}")
-        elif board == "s3":
-            warn("  Der S3 hat keine Befehle. Moeglich: s3 update | s3 flash | s3 monitor | s3 reset | s3 port")
         else:
             rest = " ".join(parts[1:])
             seconds = 6 if parts[1].lower() in ("scan", "nettest", "pegel", "i2ctest", "i2cdiag") else 2.5

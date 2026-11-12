@@ -351,6 +351,7 @@ static void cmd_task(void *arg)
     char url[96], body[160];
     cmd_t c;
     bool speaking_sent = false;
+    bool speaking_supported = true;      // Server kennt 'speaking' nicht -> nicht mehr schicken (Anzeige ueber Talk)
     while (1) {
         // Sprech-Anzeige (gruenes Licht im Browser): "spricht", solange Talk an und das Mikrofon-Gate offen ist
         if (xQueueReceive(s_q, &c, pdMS_TO_TICKS(50)) != pdTRUE) {
@@ -358,10 +359,8 @@ static void cmd_task(void *arg)
             audio_get_stats(&as);
             bool speaking = s_st.state == COM_ONLINE && g_talk &&
                             (g_set.gate_db < 0 ? as.gate_gain_db > -3.0f : as.mic_peak_db > -45.0f);
-            if (speaking == speaking_sent || !s_token[0]) {
-                if (!s_token[0]) speaking_sent = false;
-                continue;
-            }
+            if (!s_token[0]) { speaking_sent = false; speaking_supported = true; continue; }   // neue Sitzung: neu pruefen
+            if (!speaking_supported || speaking == speaking_sent) continue;
             speaking_sent = speaking;
             c = (cmd_t){ .cmd = "speaking", .ch_id = -1, .value = speaking };
         }
@@ -374,6 +373,11 @@ static void cmd_task(void *arg)
                      c.cmd, c.ch_id, c.value);
         int st = http_req(url, body, resp, sizeof(resp), 3000);
         if (st == 401) s_relogin = true;
+        if (st == 400 && !strcmp(c.cmd, "speaking")) {
+            speaking_supported = false;
+            ESP_LOGI(TAG, "Server kennt 'speaking' nicht: Sprechanzeige laeuft dort ueber Talk");
+            continue;
+        }
         if (st != 200) ESP_LOGW(TAG, "Befehl %s Kanal %d: HTTP %d %s", c.cmd, c.ch_id, st, resp);
     }
 }

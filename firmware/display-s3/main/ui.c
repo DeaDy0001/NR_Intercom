@@ -14,6 +14,7 @@
 #include "esp_heap_caps.h"
 #include "esp_chip_info.h"
 #include "esp_idf_version.h"
+#include "esp_app_desc.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -1179,4 +1180,41 @@ esp_err_t ui_start(void)
     display_set_flip(s_flip);
     xTaskCreate(ui_task, "ui", 6144, NULL, 5, NULL);
     return ESP_OK;
+}
+
+// ---------------------------------------------------------------- Konsole: status
+void ui_print_status(void)
+{
+    static const char *const scr_names[] = { "Hauptseite", "Menü", "Info", "Testbild", "FPS-Test", "Bodypack-Einstellungen",
+                                            "Bodypack-Status", "Audio-Übersicht", "WLAN", "Texteingabe",
+                                            "Intercom-Server", "Server-Suche" };
+    c5_state_t c;
+    link_get(&c);
+    const esp_app_desc_t *ad = esp_app_get_description();
+    int e1, e2;
+    input_raw_counts(&e1, &e2);
+    printf("\n=== NR Display (ESP32-S3) === Firmware %s, gebaut %s %s, Laufzeit %llu s\n", ad->version, ad->date, ad->time,
+           (unsigned long long)(esp_timer_get_time() / 1000000));
+    printf("Anzeige: Seite '%s', Helligkeit %d %%, %s, Akku %d mV (%d %%)\n",
+           (int)s_scr < (int)(sizeof(scr_names) / sizeof(scr_names[0])) ? scr_names[s_scr] : "?",
+           s_brightness * 100 / 255, s_flip ? "gedreht" : "normal", battery_mv(), battery_percent());
+    printf("Drehgeber: Rohzaehler 1 = %d, 2 = %d\n", e1, e2);
+    printf("C5-Verbindung (UART): %s, %lu Zeilen empfangen\n", c.online ? "OK" : "KEINE (GPIO4->GP3, GPIO10<-GP2, GND?)",
+           (unsigned long)c.lines);
+    if (c.online) {
+        printf("C5: WLAN %s%s (%d dBm), Codec %s, Talk %s, Mic %.1f dBFS, Ausgang %.1f dBFS, CPU-Last siehe 'c5 status'\n",
+               c.wifi ? "verbunden mit " : "nicht verbunden", c.wifi ? c.ssid : "", c.rssi, c.codec_ok ? "ok" : "FEHLT",
+               c.talk ? "AN" : "aus", c.mic == 1 ? c.jack_db : c.board_db, c.out_db);
+        printf("Intercom: %s%s%s, Server %s, Benutzer '%s', %d Kanaele\n", com_state_text(c.com_state),
+               c.com_msg[0] ? " - " : "", c.com_msg, c.com_ip[0] ? c.com_ip : "-", c.com_user, c.com_nch);
+        link_channel_t ch[LINK_MAX_CH];
+        int n = link_get_channels(ch, LINK_MAX_CH, NULL);
+        for (int i = 0; i < n; i++) {
+            printf("   %2d %-24s %s %s Lautst. %3d%s\n", i, ch[i].name, ch[i].joined ? "HOERT" : "aus  ",
+                   ch[i].talk ? "TALK" : "    ", ch[i].volume, ch[i].talkers ? "  (jemand spricht)" : "");
+        }
+    }
+    printf("RAM: intern frei %u KB, PSRAM frei %u KB\n\n",
+           (unsigned)(heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024),
+           (unsigned)(heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024));
 }

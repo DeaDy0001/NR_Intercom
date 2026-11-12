@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "esp_console.h"
+#include "esp_timer.h"
+#include "esp_app_desc.h"
 #include "esp_system.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -34,7 +36,9 @@ void console_print_status(void)
     net_get_info(&ni);
     audio_get_stats(&as);
     rtp_get_stats(&rs);
-    printf("\n=== NR Bodypack (ESP32-C5) ===\n");
+    const esp_app_desc_t *ad = esp_app_get_description();
+    printf("\n=== NR Bodypack (ESP32-C5) === Firmware %s, gebaut %s %s, Laufzeit %llu s\n", ad->version, ad->date,
+           ad->time, (unsigned long long)(esp_timer_get_time() / 1000000));
     printf("WLAN : %s", ni.connected ? "verbunden" : "nicht verbunden");
     if (ni.connected) {
         printf(" '%s' IP %s, %s Kanal %d, RSSI %d dBm, AP %02x:%02x:%02x:%02x:%02x:%02x",
@@ -83,8 +87,21 @@ void console_print_status(void)
            g_cpu_load, (unsigned long)rs.enc_us_avg, (unsigned long)rs.enc_us_max, (unsigned long)rs.dec_us_avg,
            (unsigned long)rs.dec_us_max, (unsigned long)as.proc_us_max);
     printf("Stack: Codec-Task frei %lu Byte (von 32 KB)\n", (unsigned long)rs.codec_stack_free);
-    printf("RAM  : frei %u Byte, minimal %u Byte\n\n", (unsigned)esp_get_free_heap_size(),
+    printf("RAM  : frei %u Byte, minimal %u Byte\n", (unsigned)esp_get_free_heap_size(),
            (unsigned)esp_get_minimum_free_heap_size());
+    com_status_t cs;
+    com_get_status(&cs);
+    printf("Com  : %s%s%s | Server %s:%u (%s), PIN %s, Benutzer '%s', %d Kanaele\n", com_state_name(cs.state),
+           cs.msg[0] ? " - " : "", cs.msg, g_set.com_host, g_set.com_port, cs.server_ip[0] ? cs.server_ip : "-",
+           g_set.com_pin[0] ? "gesetzt" : "FEHLT", cs.user, cs.nch);
+    com_channel_t ch[COM_MAX_CH];
+    int n = com_get_channels(ch, COM_MAX_CH);
+    for (int i = 0; i < n; i++) {
+        if (!ch[i].joined && !ch[i].talkers) continue;   // nur Kanaele mit etwas Interessantem
+        printf("       %2d %-24s %s %s Lautst. %3d%%%s\n", i, ch[i].name, ch[i].joined ? "drin" : "    ",
+               ch[i].talk ? "TALK" : "    ", ch[i].volume, ch[i].talkers ? "  (jemand spricht)" : "");
+    }
+    printf("\n");
 }
 
 static int cmd_status(int argc, char **argv)
