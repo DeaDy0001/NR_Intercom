@@ -339,10 +339,10 @@ def testaufbau():
 
     # ---------------- S3 <-> C5: GND + UART (vorbereitet)
     s.wire("S3.H2_8", "C5.GND", color=C["gnd"], label="GND gemeinsam (S3 ↔ C5)", at=(890, p("S3.H2_8")[1]))
-    s.wire("S3.H2_10", "C5.GP2", [(930, p("S3.H2_10")[1]), (930, p("C5.GP2")[1])], C["uart"],
-           label="UART S3-TX → C5-RX", at=(1060, p("C5.GP2")[1]))
-    s.wire("S3.H2_9", "C5.GP3", [(900, p("S3.H2_9")[1]), (900, p("C5.GP3")[1])], C["uart"],
-           label="UART C5-TX → S3-RX", at=(1060, p("C5.GP3")[1]))
+    s.wire("S3.H2_10", "C5.GP3", [(930, p("S3.H2_10")[1]), (930, p("C5.GP3")[1])], C["uart"],
+           label="UART S3-TX (GPIO4) → C5-RX (GP3)", at=(1060, p("C5.GP3")[1]))
+    s.wire("S3.H2_9", "C5.GP2", [(900, p("S3.H2_9")[1]), (900, p("C5.GP2")[1])], C["uart"],
+           label="UART C5-TX (GP2) → S3-RX (GPIO10)", at=(1060, p("C5.GP2")[1]))
 
     # ---------------- Drehgeber am S3
     s.module("E1", 110, 340, 180, "Drehgeber 1", "KY-040 · links", [],
@@ -387,7 +387,7 @@ def testaufbau():
         "• Beide Boards einzeln per USB-C versorgen (PC oder USB-Netzteil). GND zwischen S3 und C5 verbinden.",
         "• WM8960: CLK/WS gibt es doppelt (Pin 5/13, 6/14), je ein Draht genügt. RXMCLK/TXMCLK NICHT anschließen.",
         "• KY-040: Pins nach Beschriftung auf dem Modul stecken (Reihenfolge im Plan ist zur Übersicht sortiert).",
-        "• UART S3 ↔ C5 ist vorbereitet. Die Firmware dafür folgt, die Kabel können schon gesteckt werden.",
+        "• UART S3 ↔ C5 über Kreuz: S3 GPIO4 → C5 GP3, C5 GP2 → S3 GPIO10 (läuft, Bodypack-Menü am S3).",
         "• Rot beschriftete S3-Pins frei lassen (PSRAM, Display-Reset, BOOT, Akku, USB).",
     ], "Hinweise", size=15)
     s.legend(1950, 940, [(C["pwr"], "3,3 V"), (C["gnd"], "GND"), (C["i2c"], "I2C Codec-Steuerung"),
@@ -404,7 +404,7 @@ def testaufbau():
 # Variante B: eigene Traegerplatine (Entwurf V0.1)
 # =====================================================================================
 def platine():
-    s = Svg(3660, 2600, "NR Bodypack · Variante B: Trägerplatine V0.1 (Entwurf, nicht für die Fertigung freigegeben)",
+    s = Svg(3660, 3080, "NR Bodypack · Variante B: Trägerplatine V0.2 (Entwurf, S3 2,8″ + Basisstation, nicht für die Fertigung freigegeben)",
             "IC-Pins mit Namen (Pin-Nummern aus dem EasyEDA/LCSC-Symbol übernehmen). Gleiche Netznamen in Fähnchen = "
             "gleiche Leitung. Werte mit * vor dem Layout gegen das Datenblatt prüfen.")
     U = "used"
@@ -485,8 +485,14 @@ def platine():
     for pin, name in (("U2.D1P", "C5_USB_DP"), ("U2.D1M", "C5_USB_DM"), ("U2.D2P", "S3_USB_DP"),
                       ("U2.D2M", "S3_USB_DM")):
         to_flag(pin, name, C["usb"], 40)
-    s.note(60, 850, ["Ein USB-C für alles: Laden (über U3) und Flashen/Konsole beider ESP32 über den Hub.",
-                     "Die USB-C-Buchsen auf den Modulen bleiben unbenutzt."], size=14)
+    s.module("U15", 880, 310, 220, "U15 TPS2116", "5 V: USB / Station",
+             [("IN1", "", "VIN1", U), ("IN2", "", "VIN2", U), ("PR1", "", "PR1 lt. DB*", "nc"), ("GND", "", "GND", U)],
+             [("OUT", "", "VOUT", U), ("ST", "", "ST", "nc")], pitch=40, top=64, nums=False)
+    to_flag("U15.IN1", "VBUS", C["pwr"], 40); to_flag("U15.IN2", "DOCK_5V", C["pwr"], 40); to_gnd("U15.GND")
+    to_flag("U15.OUT", "VBUS_CHG", C["pwr"], 30)
+    s.note(60, 850, ["Ein USB-C für alles: Laden (über U15 → U3) und Flashen/Konsole beider ESP32 über den Hub.",
+                     "In der Basisstation lädt U15 aus deren 5 V (DOCK_5V). Die USB-C-Buchsen der Module bleiben unbenutzt."],
+           size=14)
 
     # ======================================================================= B · Laden + Akku
     s.block(1130, 100, 1300, 840, "B · Laderegler mit Power-Path, 2× 18650 parallel, Schutz, Ladezustand")
@@ -497,7 +503,7 @@ def platine():
              [("SW", "", "SW", U), ("BTST", "", "BTST", U), ("SYS", "", "SYS", U), ("BAT", "", "BAT", U),
               ("SDA", "", "SDA", U), ("SCL", "", "SCL", U), ("INT", "", "/INT", U), ("STAT", "", "STAT", U),
               ("QON", "", "/QON", U), ("DSEL", "", "DSEL", "nc")], pitch=50, top=70, nums=False)
-    to_flag("U3.VBUS", "VBUS", C["pwr"], 120); under("U3.VBUS", "C3 1 µF → GND", 10)
+    to_flag("U3.VBUS", "VBUS_CHG", C["pwr"], 120); under("U3.VBUS", "C3 1 µF → GND", 10)
     to_text("U3.PMID", "C4 10 µF → GND")
     to_flag("U3.REGN", "REGN", C["pwr"], 120); under("U3.REGN", "C5 4,7 µF → GND", 10)
     to_text("U3.ILIM", "R3 R_ILIM* → GND")
@@ -642,50 +648,67 @@ def platine():
     s.module("C5", 420, 1040, 220, "J2 ESP32-C5-Zero", "2× 9 Buchsenleiste", c5l, c5r, pitch=60, top=70)
     to_gnd("C5.GND")
     to_flag("C5.3V3", "+3V3", C["pwr"], 140); under("C5.3V3", "C44 10 µF → GND", 20)
-    for k, (name, col) in {"GP0": ("T1", C["btn"]), "GP1": ("T2", C["btn"]), "GP2": ("UART_S3_TX", C["uart"]),
-                           "GP3": ("UART_C5_TX", C["uart"]), "GP4": ("I2S_BCLK", C["i2s"]),
+    for k, (name, col) in {"GP0": ("DOCK_CS", C["btn"]), "GP1": ("DOCK_MISO", C["btn"]),
+                           "GP2": ("UART_C5_TX", C["uart"]), "GP3": ("UART_S3_TX", C["uart"]), "GP4": ("I2S_BCLK", C["i2s"]),
                            "GP5": ("I2S_WS", C["i2s"])}.items():
         to_flag(f"C5.{k}", name, col, 60)
-    for k, (name, col) in {"GP11": ("T4", C["btn"]), "GP12": ("T3", C["btn"]), "GP13": ("C5_USB_DM", C["usb"]),
+    for k, (name, col) in {"GP11": ("DOCK_SCK", C["btn"]), "GP12": ("DOCK_MOSI", C["btn"]), "GP13": ("C5_USB_DM", C["usb"]),
                            "GP14": ("C5_USB_DP", C["usb"]), "GP10": ("SCL_A", C["i2c"]), "GP9": ("SDA_A", C["i2c"]),
                            "GP8": ("I2S_DOUT", C["i2sd"]), "GP7": ("LED_DATA", C["led"]),
                            "GP6": ("I2S_DIN", C["i2sd"])}.items():
         to_flag(f"C5.{k}", name, col, 60)
     s.note(60, 1660, ["C5 ist I2S-Master (BCLK/WS zum Codec). Codec-PLL nutzt BCLK, kein MCLK nötig.",
-                      "I2C-A (GP9/GP10): Codec U9 (0x18) + I/O-Expander U10 (0x20), Pull-ups R14/R15 4,7 k → +3V3.",
+                      "I2C-A (GP9/GP10): Codec U9 (0x18) + I/O-Expander U10 (0x20, auch Tasten T1–T4), Pull-ups R14/R15 4,7 k.",
+                      "GP0/GP1/GP11/GP12: SPI zur Basisstation (W5500 dort), über R50–R53 33 Ω und ESD U14 an J7.",
                       "IPEX-Antenne nach oben aus dem Gehäuse führen. Modul-USB-C nicht benutzen."], size=13)
 
     # ======================================================================= E · S3
-    s.block(1050, 960, 1000, 820, "E · ESP32-S3 AMOLED (gesteckt): Display, Drehgeber, Akku")
-    h1n = {9: ("ENC1_A", C["enc"]), 10: ("ENC1_B", C["enc"]), 11: ("ENC1_SW", C["enc"]),
-           12: ("ENC2_A", C["enc2"]), 14: ("ENC2_SW", C["enc2"]), 15: ("S3_USB_DM", C["usb"]),
-           16: ("S3_USB_DP", C["usb"]), 17: ("PWR_KEY", C["btn"]), 6: ("BAT_ALRT", C["i2c"])}
-    h2n = {2: ("VSYS", C["pwr"]), 7: ("ENC2_B", C["enc2"]), 9: ("UART_C5_TX", C["uart"]),
-           10: ("UART_S3_TX", C["uart"]), 12: ("SDA_S3", C["i2c"]), 14: ("SCL_S3", C["i2c"]),
-           15: ("BQ_INT", C["i2c"])}
-    h1 = ["GP43", "GP44", "GND", "GP0", "GP1 BAT", "GP2", "GP3", "GND", "GP11", "GP12", "GP13", "GP14", "GND",
-          "GP15", "GP19 D−", "GP20 D+", "GP21", "GND", "GP26", "GP33"]
-    h2 = ["VBUS", "VSYS", "GND", "3V3_EN", "3V3", "GP17", "GP16", "GND", "GP10", "GP4", "CHIP_UP", "GP40 SDA",
-          "GND", "GP39 SCL", "GP38", "GP37", "GP36", "GND", "GP35", "GP34"]
+    s.block(1050, 960, 1000, 820, "E · ESP32-S3-Touch-LCD-2.8B (gesteckt): Display + Touch, Drehgeber, Akku")
+    ln = {3: ("SDA_S3", C["i2c"]), 4: ("SCL_S3", C["i2c"]), 5: ("S3_EXP_INT", C["i2c"]), 8: ("S3_USB_DP", C["usb"]),
+          9: ("S3_USB_DM", C["usb"]), 12: ("VSYS", C["pwr"])}
+    rn = {3: ("UART_S3_TX", C["uart"]), 4: ("UART_C5_TX", C["uart"])}
+    lp = ["GND", "3V3", "GP15 SDA", "GP7 SCL", "GP16", "GP4 BAT-ADC", "GP0 BOOT", "GP20 D+", "GP19 D−", "GND", "VCC",
+          "5V*"]
+    rp = ["GND", "3V3", "GP43 TX", "GP44 RX", "GP37 PSRAM", "GP36 PSRAM", "GP35 PSRAM", "GP34 PSRAM", "GP33 PSRAM",
+          "GND", "BAT (frei)", "5V"]
 
     def st3(n, lab, used):
         return U if (n in used or lab == "GND") else "nc"
 
-    s.module("S3", 1400, 1000, 300, "J3/J4 ESP32-S3 AMOLED", "2× 20 Buchsenleiste",
-             [(f"H1_{i + 1}", f"H1-{i + 1}", t, st3(i + 1, t, h1n)) for i, t in enumerate(h1)],
-             [(f"H2_{i + 1}", f"H2-{i + 1}", t, st3(i + 1, t, h2n)) for i, t in enumerate(h2)], pitch=32, top=64)
-    for i, t in enumerate(h1):
+    s.module("S3", 1400, 1000, 300, "J3/J4 ESP32-S3-Touch-LCD-2.8B", "2× 12 Buchsenleiste",
+             [(f"L{i + 1}", f"L{i + 1}", t, st3(i + 1, t, ln)) for i, t in enumerate(lp)],
+             [(f"R{i + 1}", f"R{i + 1}", t, st3(i + 1, t, rn)) for i, t in enumerate(rp)], pitch=30, top=64)
+    for i, t in enumerate(lp):
         if t == "GND":
-            to_gnd(f"S3.H1_{i + 1}", 24)
-    for i, t in enumerate(h2):
+            to_gnd(f"S3.L{i + 1}", 24)
+    for i, t in enumerate(rp):
         if t == "GND":
-            to_gnd(f"S3.H2_{i + 1}", 24)
-    for n, (name, col) in h1n.items():
-        to_flag(f"S3.H1_{n}", name, col, 50)
-    for n, (name, col) in h2n.items():
-        to_flag(f"S3.H2_{n}", name, col, 50)
-    s.note(1080, 1720, ["S3 über VSYS versorgt (LDO auf dem Board). Akku-Anschluss des Boards bleibt leer.",
-                        "I2C-S3 (GP39/40): Lader U3 (0x6A), Ladezustand U5 (0x36), IMU/Touch auf dem Board."], size=13)
+            to_gnd(f"S3.R{i + 1}", 24)
+    for n, (name, col) in ln.items():
+        to_flag(f"S3.L{n}", name, col, 50)
+    for n, (name, col) in rn.items():
+        to_flag(f"S3.R{n}", name, col, 50)
+    s.module("U16", 1500, 1450, 260, "U16 TCA9555", "I/O-Expander S3, I2C 0x27",
+             [("VCC", "", "VCC", U), ("SDA", "", "SDA", U), ("SCL", "", "SCL", U), ("ADDR", "", "A0–A2", U),
+              ("INT", "", "/INT", U), ("GND", "", "GND", U)],
+             [("P00", "", "P00", U), ("P01", "", "P01", U), ("P02", "", "P02", U), ("P03", "", "P03", U),
+              ("P04", "", "P04", U), ("P05", "", "P05", U), ("P06", "", "P06", U), ("P07", "", "P07", U),
+              ("P10", "", "P10", U), ("P11", "", "P11", U)], pitch=26, top=60, nums=False)
+    to_flag("U16.VCC", "+3V3", C["pwr"], 50); to_flag("U16.SDA", "SDA_S3", C["i2c"], 50)
+    to_flag("U16.SCL", "SCL_S3", C["i2c"], 50); to_flag("U16.ADDR", "+3V3", C["pwr"], 50)
+    to_flag("U16.INT", "S3_EXP_INT", C["i2c"], 50); to_gnd("U16.GND")
+    for pin, name, col in (("U16.P00", "ENC1_A", C["enc"]), ("U16.P01", "ENC1_B", C["enc"]),
+                           ("U16.P02", "ENC1_SW", C["enc"]), ("U16.P03", "ENC2_A", C["enc2"]),
+                           ("U16.P04", "ENC2_B", C["enc2"]), ("U16.P05", "ENC2_SW", C["enc2"]),
+                           ("U16.P06", "PWR_KEY", C["btn"]), ("U16.P07", "BQ_INT", C["i2c"]),
+                           ("U16.P10", "BAT_ALRT", C["i2c"]), ("U16.P11", "DOCK_DET", C["btn"])):
+        to_flag(pin, name, col, 20)
+    s.note(1070, 1470, ["S3_EXP_INT: R60 10 k → +3V3, C45 100 nF an VCC.",
+                        "5V*: Speisung aus VSYS – lt. Board-Schaltplan",
+                        "prüfen. BAT nicht nutzen, falls das Board",
+                        "einen eigenen Lader hat.",
+                        "I2C-S3: U3 0x6A, U5 0x36, U16 0x27 + Touch",
+                        "und Bausteine des Boards (Adressen prüfen)."], size=12)
 
     # ======================================================================= F · Codec
     s.block(2070, 960, 1560, 820, "F · Audio-Codec TLV320AIC3204 + I/O-Expander")
@@ -716,17 +739,20 @@ def platine():
     to_flag("U9.IN1L", "MIC_TO_CODEC", C["ana"], 50)
     to_flag("U9.LOL", "LINE_L", C["ana"], 50); to_flag("U9.LOR", "LINE_R", C["ana"], 50)
 
-    s.module("U10", 3230, 1240, 240, "U10 TCA9534", "I/O-Expander, I2C 0x20",
+    s.module("U10", 3230, 1200, 240, "U10 TCA9555", "I/O-Expander C5, I2C 0x20",
              [("VCC", "", "VCC", U), ("SDA", "", "SDA", U), ("SCL", "", "SCL", U), ("ADDR", "", "A0–A2", U),
               ("GND", "", "GND", U)],
-             [("P0", "", "P0", U), ("P1", "", "P1", U), ("P2", "", "P2", U), ("P3", "", "P3", U), ("P4", "", "P4", U),
-              ("P5", "", "P5", U), ("P6", "", "P6", "nc"), ("P7", "", "P7", "nc")], pitch=40, top=64, nums=False)
+             [("P0", "", "P00", U), ("P1", "", "P01", U), ("P2", "", "P02", U), ("P3", "", "P03", U), ("P4", "", "P04", U),
+              ("P5", "", "P05", U), ("P10", "", "P10", U), ("P11", "", "P11", U), ("P12", "", "P12", U),
+              ("P13", "", "P13", U)], pitch=34, top=64, nums=False)
     to_flag("U10.VCC", "+3V3", C["pwr"], 70); small(p("U10.VCC")[0] - 70, p("U10.VCC")[1] + 18, "C22 100 nF", anchor="end")
     to_flag("U10.SDA", "SDA_A", C["i2c"], 70); to_flag("U10.SCL", "SCL_A", C["i2c"], 70)
     to_gnd("U10.ADDR"); to_gnd("U10.GND")
     for pin, name, col in (("U10.P0", "P48_SW", C["p48"]), ("U10.P1", "GAIN_HI", C["ana"]),
                            ("U10.P2", "HP_EN", C["ana"]), ("U10.P3", "CODEC_RST", C["i2c"]),
-                           ("U10.P4", "ANA_EN", C["i2c"]), ("U10.P5", "P48_EN", C["p48"])):
+                           ("U10.P4", "ANA_EN", C["i2c"]), ("U10.P5", "P48_EN", C["p48"]),
+                           ("U10.P10", "T1", C["btn"]), ("U10.P11", "T2", C["btn"]), ("U10.P12", "T3", C["btn"]),
+                           ("U10.P13", "T4", C["btn"])):
         to_flag(pin, name, col, 20)
 
     # ======================================================================= G · Mikrofon
@@ -839,7 +865,28 @@ def platine():
         col = C["enc"] if i == 0 else C["enc2"]
         for j, n in enumerate(nets):
             s.flag(2830 + j * 200, yy, n, col)
-        small(2810, yy + 26, f"ENC{i + 1}: A, B und Taster je 10 k Pull-up → +3V3 und 10 nF → GND · C-Pin und Taster-Pin 2 → GND")
+        small(2810, yy + 26, f"ENC{i + 1}: A, B, Taster je 10 k → +3V3, 10 nF → GND, an U16 (S3) · C-Pin/Taster-Pin 2 → GND")
+
+    # ======================================================================= J · Andock-Kontakte
+    s.block(30, 2600, 1940, 440, "J · Andock-Kontakte zur Basisstation (W5500 + RJ45 + 5 V-Netzteil in der Station)")
+    s.module("J7", 90, 2660, 230, "J7 Kontaktflächen", "vergoldet, zu Federstiften", [],
+             [("SCK", "", "SCK", U), ("MOSI", "", "MOSI", U), ("MISO", "", "MISO", U), ("CS", "", "CS", U),
+              ("V5", "", "5V Station", U), ("DET", "", "DET (GND in Station)", U), ("GND", "", "GND", U)],
+             pitch=46, top=60, nums=False)
+    for pin, net in (("J7.SCK", "DOCK_SCK"), ("J7.MOSI", "DOCK_MOSI"), ("J7.MISO", "DOCK_MISO"), ("J7.CS", "DOCK_CS")):
+        x, y = p(pin)
+        s.line([(x, y), (x + 40, y)], C["btn"])
+        e = s.resistor(x + 120, y, "R" + str(50 + ("SCK", "MOSI", "MISO", "CS").index(pin.split(".")[1])), "33 Ω",
+                       color=C["btn"])
+        s.line([(x + 40, y), (x + 120, y)], C["btn"]); s.line([e, (e[0] + 30, y)], C["btn"])
+        s.flag(e[0] + 30, y, net, C["btn"])
+    to_flag("J7.V5", "DOCK_5V", C["pwr"], 60); small(p("J7.V5")[0] + 10, p("J7.V5")[1] + 18, "C46 10 µF → GND")
+    to_flag("J7.DET", "DOCK_DET", C["btn"], 60); to_gnd("J7.GND", 20)
+    s.note(900, 2660, ["U14 TPD4E05U06 (ESD, 4-fach) direkt an J7 auf SCK/MOSI/MISO/CS,",
+                       "dahinter R50–R53 33 Ω zum C5. DOCK_DET: Pull-up im TCA9555, Station zieht auf GND.",
+                       "Station: W5500 (SPI → 100-Mbit-LAN) + RJ45 mit Übertrager + 5 V/3 A, Federstifte geführt.",
+                       "Firmware: Station erkannt → LAN starten, Sitzung beim Gateway FORTSETZEN (kein Ab-/Anmelden),",
+                       "WLAN optional aus. Herausgenommen → zurück auf WLAN, wieder fortsetzen."], size=13)
 
     s.legend(1350, 2420, [(C["pwr"], "Versorgung"), (C["i2c"], "I2C / Steuerung"), (C["i2s"], "I2S-Takte"),
                           (C["i2sd"], "I2S-Daten")], size=13)

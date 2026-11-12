@@ -166,16 +166,20 @@ Die Tastenbelegung wird im Gerät gespeichert. Sie wird am Display über die Dre
 
 ## 7. Pin-Belegung (Planung)
 
-**ESP32-C5-Zero (Funk + Audio)**, so wie im Prototyp verdrahtet und in der Firmware hinterlegt:
+**ESP32-C5-Zero (Funk + Audio).** Prototyp = so wie heute auf dem Tisch verdrahtet, Platine = Schaltplan Variante B:
 
-| Funktion | Pins C5-Zero |
-|---|---|
-| I2S zum Codec: BCLK, WS, DIN (Mic), DOUT (Kopfhörer) | GP4, GP5, GP6, GP8 |
-| I2C (Codec, I/O-Expander für Phantom, Verstärkung, Kopfhörer-Mute) | GP9 (SDA), GP10 (SCL) |
-| UART zum S3 | GP2 (TX), GP3 (RX) |
-| Taste 1–4 | GP0, GP1, GP12, GP11 |
-| Antennen-Umschalter (auf dem Modul) / RGB-LED (auf dem Modul, später LED-Kette) | GP26 / GP27 |
-| **frei** (z. B. für die Basisstation, Abschnitt 11) | GP7, GP23, GP24, GP25 (GP7 und GP25 sind Strapping-Pins → Beschaltung prüfen) |
+| Funktion | Prototyp | Platine (V0.2) |
+|---|---|---|
+| I2S zum Codec: BCLK, WS, DIN (Mic), DOUT (Kopfhörer) | GP4, GP5, GP6, GP8 | gleich |
+| I2C (Codec, I/O-Expander U10) | GP9 (SDA), GP10 (SCL) | gleich |
+| UART zum S3 | GP2 (TX) → S3 RX, GP3 (RX) ← S3 TX | gleich (TX/RX gekreuzt) |
+| Taste 1–4 | GP0, GP1, GP12, GP11 | **über U10 TCA9555** (P10–P13, 0x20, alle 5 ms abgefragt) |
+| Basisstation (SPI zum W5500) | – | **GP11 SCK, GP12 MOSI, GP1 MISO, GP0 CS** |
+| Antennen-Umschalter / RGB-LED-Kette | GP26 / GP27 | gleich |
+| frei | GP7, GP23, GP24, GP25 | gleich (Strapping-Pins GP7/GP25 bleiben unbeschaltet) |
+
+Die Tasten wandern auf der Platine an den I/O-Expander (der hat interne Pull-ups, Abfrage ohne Interrupt reicht
+für Tasten völlig). Dadurch werden vier „normale“ Pins frei, und die Basisstation braucht keine Strapping-Pins.
 
 **ESP32-S3-Touch-LCD-2.8B (Display + Bedienung).** Das RGB-Display belegt fast alle Pins des S3, auf den
 Stiftleisten sind nur noch wenige frei. Deshalb laufen die Drehgeber über einen I/O-Expander am I2C-Bus:
@@ -183,8 +187,8 @@ Stiftleisten sind nur noch wenige frei. Deshalb laufen die Drehgeber über einen
 | Funktion | Pin am 2,8″-Board | Hinweis |
 |---|---|---|
 | UART zum C5 | GPIO43 (TX) → C5 GP3, GPIO44 (RX) ← C5 GP2 | Konsole des S3 läuft über USB, UART0-Pins sind frei |
-| I2C (gemeinsam mit Touch GT911 und den Bausteinen des Boards) | GPIO15 (SDA), GPIO7 (SCL) | dazu auf der Trägerplatine: **TCA9534** (0x27) für die Drehgeber, **MAX17048** (0x36), **BQ25895** (0x6A) |
-| Interrupt vom TCA9534 (Drehgeber bewegt) | GPIO16 | Drehgeber werden bei jeder Änderung über I2C gelesen |
+| I2C (gemeinsam mit Touch GT911 und den Bausteinen des Boards) | GPIO15 (SDA), GPIO7 (SCL) | dazu auf der Trägerplatine: **U16 TCA9555** (0x27) für Drehgeber, Ein/Aus-Taste, Lader-/Akku-Alarm und Station-Erkennung, **MAX17048** (0x36), **BQ25895** (0x6A) |
+| Interrupt vom TCA9555 (Drehgeber bewegt) | GPIO16 | Drehgeber werden bei jeder Änderung über I2C gelesen |
 | Akku-Messung des Boards | GPIO4 | nicht genutzt, die Akku-Anzeige kommt vom MAX17048 |
 | PSRAM | GPIO33–37 | belegt, nicht verwenden |
 
@@ -196,7 +200,7 @@ Stiftleisten sind nur noch wenige frei. Deshalb laufen die Drehgeber über einen
 - Wie das Display initialisiert wird (ST7701 über SPI, evtl. über den I/O-Expander des Boards) → Firmware.
 
 **Firmware für das 2,8″-Board (nach dem Eintreffen):** RGB-Display-Treiber (ST7701), Touch (GT911),
-Oberfläche im Hochformat 480 × 640 (mehr Platz für Kanäle), Drehgeber über den TCA9534.
+Oberfläche im Hochformat 480 × 640 (mehr Platz für Kanäle), Drehgeber über den TCA9555 (U16).
 
 ## 8. Akku und Laufzeit
 
@@ -278,16 +282,25 @@ Das entlastet auch das Funknetz für die mobilen Bodypacks.
 - **W5500** (bewährter Netzwerk-Chip mit eingebautem 100-Mbit-Ethernet, wird von ESP-IDF direkt unterstützt) sitzt
   **in der Station**, am Bodypack sind nur 4 SPI-Leitungen + Erkennung + 5 V + GND auf Kontaktflächen.
   So bleibt das Bodypack leicht, und ohne Station verbraucht der Netzwerk-Teil keinen Strom.
-- Am C5-Zero sind dafür genau 4 Pins frei (GP7, GP23, GP24, GP25). Der W5500 läuft dann ohne Interrupt-Leitung
-  (Abfrage-Modus, das kann der ESP-IDF-Treiber). Die Strapping-Pins GP7/GP25 brauchen beim Start die richtigen Pegel,
-  das wird im Schaltplan geprüft. Reicht es nicht, nimmt eine spätere Platine ein C5-Modul mit mehr Pins.
-- **Laden:** Die 5 V der Station gehen über einen Strom-Umschalter (z. B. TPS2116) parallel zur USB-C-Buchse an den Lader.
+- Am C5-Zero laufen die SPI-Leitungen über **GP11 (SCK), GP12 (MOSI), GP1 (MISO), GP0 (CS)**. Die waren im Prototyp
+  die Tasten; auf der Platine hängen die Tasten am I/O-Expander U10. Der W5500 läuft ohne Interrupt-Leitung
+  (Abfrage-Modus, das kann der ESP-IDF-Treiber).
+- **Erkennung:** Der DET-Kontakt liegt in der Station auf GND und geht im Bodypack an U16 (P11, interner Pull-up).
+- **USB-C und Station funktionieren beide.** Ein Strom-Umschalter **U15 TPS2116** wählt zwischen USB-C-VBUS (VIN1)
+  und den 5 V der Station (VIN2) und gibt das Ergebnis (VBUS_CHG) an den Lader. Die Daten von USB-C (Hub → Flashen
+  und Konsole beider ESP32) sind davon unabhängig, man kann also auch in der Station per USB flashen.
+  Beide 5-V-Quellen gleichzeitig sind erlaubt, der TPS2116 verhindert Rückströme zwischen ihnen.
 - **Kontakte:** vergoldete Flächen am Bodypack, Federstifte (Pogo-Pins) in der Station, mechanisch geführt.
   Serienwiderstände und ESD-Schutz an den SPI-Leitungen im Bodypack.
 
-### Was die Firmware macht
-- Station erkannt → Netzwerk über den W5500 starten (DHCP), beim NR_Com-Gateway **neu anmelden** (neue IP).
-  Kanäle und Einstellungen bleiben (das Gateway hält sie pro Benutzer). Die Umschaltpause liegt geschätzt unter 1 s.
-- Optional WLAN im Dock abschalten (spart Funkzeit für die anderen) oder verbunden lassen (schnelleres Zurückschalten).
-- Aus der Station genommen → zurück auf WLAN, wieder neu anmelden.
-- Am Server ist dafür **nichts** zu ändern, das Gateway nimmt die neue Adresse beim Login.
+### Was die Firmware macht (ohne Ab- und Anmelden)
+- Station erkannt → Netzwerk über den W5500 starten (DHCP). Danach **setzt das Bodypack seine Sitzung fort**
+  (`POST /device/v1/resume` mit dem bisherigen Token und der neuen Adresse), es meldet sich **nicht** ab und wieder an.
+  Für die anderen Benutzer passiert nichts: kein Verlassen/Beitreten, kein Ton, der Benutzer bleibt online und in seinen
+  Kanälen. Nur das Audio läuft ab dann über die neue Adresse. Die Umschaltpause liegt geschätzt unter 1 s.
+- Aus der Station genommen → zurück auf WLAN, wieder fortsetzen (resume).
+- Der Server hält eine **Gnadenfrist**: Meldet sich ein Gerät 15 s nicht, ruht die Sitzung nur (kein Ereignis an die
+  Browser). Erst nach 60 s (einstellbar) wird es wirklich abgemeldet. Ein Funkloch, ein AP-Wechsel oder ein Neustart
+  des Bodypacks (Login mit derselben Geräte-ID übernimmt die Sitzung) bleibt so für alle unsichtbar.
+- Auf dem Bodypack ist das schon eingebaut (auch für Funklöcher und neue IP im WLAN). **Am Server muss der Com-Dev
+  das umsetzen:** [`docs/prompt-com-dev-6.md`](prompt-com-dev-6.md), API in [`device-gateway-api.md`](device-gateway-api.md).
