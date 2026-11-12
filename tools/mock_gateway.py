@@ -126,10 +126,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(401, {"error": "pin"})
             token = secrets.token_hex(16)
             with lock:
+                old = None
                 for t in [t for t, s in sessions.items() if s["deviceId"] == b.get("deviceId")]:
-                    del sessions[t]
+                    old = sessions.pop(t)              # gleiche deviceId: Sitzung UEBERNEHMEN, nicht neu
                 s = new_session(b.get("deviceId", "?"), b.get("deviceName", "Bodypack"), ip,
                                 int(b.get("rtpPort", 5004)), int(b.get("ssrc", 0)))
+                if old:
+                    s["ch"] = old["ch"]
+                    log(f"Login {s['name']}: bestehende Sitzung uebernommen (kein Ab-/Anmelden)")
                 if args.autojoin:
                     s["ch"][1]["joined"] = True
                 sessions[token] = s
@@ -140,6 +144,15 @@ class Handler(BaseHTTPRequestHandler):
         s = self.session(b.get("token", ""))
         if not s:
             return self.send_json(401, {"error": "token"})
+        if u.path == "/device/v1/resume":
+            with lock:
+                old_ip = s["ip"]
+                s["ip"], s["rtpPort"] = ip, int(b.get("rtpPort", s["rtpPort"]))
+                s["ssrc"] = int(b.get("ssrc", s["ssrc"]))
+                s["suspended"] = False
+            log(f"Resume {s['name']}: {old_ip} -> {ip} (Kanaele bleiben, kein Ab-/Anmelden)")
+            return self.send_json(200, {"token": b.get("token"), "user": {"id": 7, "name": f"{s['name']} (Mock)"},
+                                        "rtp": {"port": args.rtp_port}, "pollMs": 5000, "resumed": True})
         if u.path == "/device/v1/logout":
             with lock:
                 sessions.pop(b.get("token"), None)
@@ -232,13 +245,18 @@ def sim_loop():
 
 
 def reaper():
-    """Sitzungen ohne Lebenszeichen nach 15 s entfernen (wie das echte Gateway)."""
+    """15 s ohne Lebenszeichen: Sitzung ruht (bleibt in den Kanaelen, kein Abmelden).
+    Erst nach der Gnadenfrist (Standard 60 s) wird wirklich abgemeldet."""
     while True:
         time.sleep(1)
         with lock:
-            dead = [t for t, s in sessions.items() if time.time() - s["last"] > 15]
+            for s in sessions.values():
+                if not s.get("suspended") and time.time() - s["last"] > 15:
+                    s["suspended"] = True
+                    log(f"{s['name']}: keine Verbindung - Sitzung ruht, wartet bis {args.grace} s")
+            dead = [t for t, s in sessions.items() if time.time() - s["last"] > args.grace]
             for t in dead:
-                log(f"Zeitueberschreitung: {sessions[t]['name']} getrennt")
+                log(f"Gnadenfrist vorbei: {sessions[t]['name']} abgemeldet")
                 del sessions[t]
             if dead:
                 bump()
@@ -262,6 +280,7 @@ def main():
     p.add_argument("--rtp-port", type=int, default=40000, help="RTP-Port (Standard 40000)")
     p.add_argument("--disc-port", type=int, default=3010, help="UDP-Port der Server-Suche (Standard 3010)")
     p.add_argument("--pin", default="1234", help="PIN fuer den Login (Standard 1234)")
+    p.add_argument("--grace", type=int, default=60, help="Sekunden, die eine unterbrochene Sitzung wartet (Standard 60)")
     p.add_argument("--no-sim", action="store_true", help="keine simulierten Sprecher")
     p.add_argument("--autojoin", action="store_true", help="nach dem Login automatisch in Kanal 'Regie'")
     args = p.parse_args()

@@ -297,6 +297,7 @@ static bool parse_state(const char *json, uint32_t *rev)
     return true;
 }
 
+// Sitzung endgueltig beenden (nur bei Aenderung von Server/PIN, Intercom aus oder abgelaufener Sitzung)
 static void go_offline(void)
 {
     xSemaphoreTake(s_lock, portMAX_DELAY);
@@ -307,6 +308,43 @@ static void go_offline(void)
     xSemaphoreGive(s_lock);
     s_token[0] = 0;
     rtp_update_target();          // zurueck auf das manuell eingestellte RTP-Ziel
+}
+
+static char s_sess_ip[16];        // eigene IP, unter der die Sitzung laeuft (Wechsel -> fortsetzen)
+static char s_srv_ip[16];         // Server der laufenden Sitzung
+static uint16_t s_srv_port;
+
+static void my_ip(char out[16])
+{
+    net_info_t ni;
+    net_get_info(&ni);
+    strlcpy(out, ni.connected ? ni.ip : "", 16);
+}
+
+// Sitzung fortsetzen statt neu anmelden: nach Funkloch, AP-Wechsel, Wechsel WLAN <-> LAN (Basisstation).
+// Der Server leitet nur das Audio auf die neue Adresse um, ohne Verlassen/Beitreten bei den anderen.
+// 1 = fortgesetzt, 0 = Sitzung unbekannt (-> neu anmelden), -1 = Server nicht erreichbar
+static int resume(uint16_t *rtp_port)
+{
+    static char resp[384];
+    char url[96], body[160];
+    snprintf(url, sizeof(url), "%s/resume", s_base);
+    snprintf(body, sizeof(body), "{\"token\":\"%s\",\"rtpPort\":%u,\"ssrc\":%lu}", s_token, g_set.local_port,
+             (unsigned long)rtp_get_ssrc());
+    int st = http_req(url, body, resp, sizeof(resp), 4000);
+    if (st == 401 || st == 404) return 0;        // abgelaufen bzw. Server kennt 'resume' (noch) nicht
+    if (st != 200) return -1;
+    cJSON *root = cJSON_Parse(resp);
+    const cJSON *tok = root ? cJSON_GetObjectItem(root, "token") : NULL;
+    const cJSON *rtp = root ? cJSON_GetObjectItem(root, "rtp") : NULL;
+    const cJSON *port = rtp ? cJSON_GetObjectItem(rtp, "port") : NULL;
+    int ok = cJSON_IsNumber(port) ? 1 : 0;
+    if (ok) {
+        *rtp_port = (uint16_t)port->valueint;
+        if (cJSON_IsString(tok)) strlcpy(s_token, tok->valuestring, sizeof(s_token));
+    }
+    cJSON_Delete(root);
+    return ok;
 }
 
 // ---------------------------------------------------------------- Befehle
@@ -440,23 +478,45 @@ static void com_task(void *arg)
         if (!g_set.com_pin[0]) { set_state(COM_PIN_WRONG, "keine PIN eingetragen"); nap(2000); continue; }
 
         const bool autom = !strcmp(g_set.com_host, COM_HOST_AUTO);
-        set_state(COM_SEARCH, autom ? "suche im Netzwerk" : g_set.com_host);
         uint16_t http_port;
-        if (!find_server(ip, &http_port)) {
+        if (s_token[0] && s_srv_ip[0]) {               // laufende Sitzung: direkt zum bekannten Server, ohne Suche
+            strlcpy(ip, s_srv_ip, sizeof(ip));
+            http_port = s_srv_port;
+        } else if (set_state(COM_SEARCH, autom ? "suche im Netzwerk" : g_set.com_host), !find_server(ip, &http_port)) {
             set_state(COM_SEARCH, autom ? "kein Server im Netzwerk gefunden" : "Servername nicht gefunden");
             nap(2000);
             continue;
         }
         snprintf(s_base, sizeof(s_base), "http://%s:%u/device/v1", ip, http_port);
         snprintf(url, sizeof(url), "%s/hello", s_base);
-        if (http_req(url, NULL, buf, sizeof(buf), 3000) != 200) {
+        if (!s_token[0] && http_req(url, NULL, buf, sizeof(buf), 3000) != 200) {
             set_state(COM_SEARCH, "Server antwortet nicht");
             nap(3000);
             continue;
         }
 
         uint16_t rtp_port = 0;
-        if (!login(ip, &rtp_port)) { nap(s_st.state == COM_PIN_WRONG ? 10000 : 3000); continue; }
+        bool resumed = false;
+        if (s_token[0] && !strcmp(s_srv_ip, ip)) {      // laufende Sitzung beim selben Server fortsetzen
+            int rs = resume(&rtp_port);
+            if (rs == 1) {
+                resumed = true;
+                ESP_LOGI(TAG, "Sitzung fortgesetzt (kein Ab-/Anmelden)");
+            } else if (rs == 0) {
+                ESP_LOGW(TAG, "Sitzung nicht mehr bekannt, melde neu an");
+                go_offline();
+            } else {
+                set_state(COM_SEARCH, "Server antwortet nicht");
+                nap(1000);
+                continue;
+            }
+        }
+        if (!resumed) {
+            if (!login(ip, &rtp_port)) { nap(s_st.state == COM_PIN_WRONG ? 10000 : 3000); continue; }
+            strlcpy(s_srv_ip, ip, sizeof(s_srv_ip));
+            s_srv_port = http_port;
+        }
+        my_ip(s_sess_ip);
 
         // Audio: Opus an den PlainTransport des Servers, Mix kommt auf unserem RTP-Port zurueck
         if (g_set.codec != CODEC_OPUS) { g_set.codec = CODEC_OPUS; rtp_codec_changed(); }
@@ -466,21 +526,34 @@ static void com_task(void *arg)
 
         uint32_t since = 0;
         int fails = 0;
+        bool expired = false;
         while (!s_restart && !s_relogin && g_set.com_on) {
+            char now_ip[16];
+            my_ip(now_ip);
+            if (now_ip[0] && strcmp(now_ip, s_sess_ip)) {   // neue eigene Adresse (z. B. Basisstation) -> fortsetzen
+                ESP_LOGI(TAG, "eigene Adresse %s -> %s, setze Sitzung fort", s_sess_ip, now_ip);
+                break;
+            }
             snprintf(url, sizeof(url), "%s/state?token=%s&since=%lu&wait=5000", s_base, s_token, (unsigned long)since);
             int st = http_req(url, NULL, buf, sizeof(buf), 9000);
             if (st == 200 && parse_state(buf, &since)) { fails = 0; continue; }
-            if (st == 401) { ESP_LOGW(TAG, "Sitzung abgelaufen, neu anmelden"); break; }
-            if (++fails >= 3) { set_state(COM_SEARCH, "Verbindung verloren"); break; }
+            if (st == 401) { ESP_LOGW(TAG, "Sitzung abgelaufen, neu anmelden"); expired = true; break; }
+            if (++fails >= 3) { set_state(COM_SEARCH, "Verbindung unterbrochen, setze fort ..."); break; }
             nap(1000);
         }
-        if (s_restart && s_token[0]) {                 // Abmelden, damit der Server sofort aufraeumt
-            char body[80];
-            snprintf(url, sizeof(url), "%s/logout", s_base);
-            snprintf(body, sizeof(body), "{\"token\":\"%s\"}", s_token);
-            http_req(url, body, buf, 64, 2000);
+        if (s_restart || !g_set.com_on) {            // Server/PIN geaendert oder Intercom aus: echt abmelden
+            if (s_token[0]) {
+                char body[80];
+                snprintf(url, sizeof(url), "%s/logout", s_base);
+                snprintf(body, sizeof(body), "{\"token\":\"%s\"}", s_token);
+                http_req(url, body, buf, 64, 2000);
+            }
+            go_offline();
+            s_srv_ip[0] = 0;
+        } else if (expired || s_relogin) {
+            go_offline();
         }
-        go_offline();
+        // sonst: Token und Kanalliste bleiben, naechster Durchlauf setzt die Sitzung fort
     }
 }
 

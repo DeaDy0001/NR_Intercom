@@ -109,6 +109,24 @@ Antwort `200 {"ok":true,"rev":18}`, Fehler `400/401/404 {"error":"…"}`.
 | `volume` | `setChannelSettings {channelId, settings:{channel_volume: value/100}}` | |
 | `speaking` | `speakingStatusChanged {isSpeaking: !!value}` | **ohne** `channel`. Das Gerät meldet 1, solange Talk an ist und sein Mikrofon-Gate offen ist (es wird gerade gesprochen), sonst 0. Nur bei Änderung, höchstens ca. 20× pro Sekunde. Für die Sprechanzeige (grünes Licht) im Browser. |
 
+### `POST /device/v1/resume`  (Sitzung fortsetzen, ohne Ab- und Anmelden)
+```json
+{ "token": "9f2c…", "rtpPort": 5004, "ssrc": 305419896 }
+```
+Nach einem Funkloch, einem AP-Wechsel mit neuer IP oder dem Wechsel **WLAN ↔ LAN (Basisstation)**.
+Der Server übernimmt die neue Geräte-Adresse (IP aus der TCP-Verbindung, `rtpPort` aus dem Body) und leitet das Audio
+um. **Kanäle, Talk-Zustand und Online-Status bleiben, es gibt keine Verlassen-/Beitreten-Ereignisse und keine Töne
+bei den anderen Benutzern.**
+Antwort `200` wie beim Login (`token` ggf. dasselbe, `rtp.port` ggf. neu), zusätzlich `"resumed": true`.
+`401` → Sitzung nicht mehr bekannt (Gnadenfrist abgelaufen) → normaler Login.
+
+### Gnadenfrist und Übernahme
+- **15 s ohne Aufruf:** Die Sitzung **ruht**. Kein RTP mehr, aber der Benutzer bleibt online und in seinen Kanälen.
+  Kein Ereignis an die Browser.
+- **Erst nach der Gnadenfrist (Standard 60 s, einstellbar)** wird aufgeräumt wie bei einem Socket-Disconnect.
+- **Login mit derselben `deviceId`** (z. B. nach einem Neustart des Geräts, das Token ist dann weg) übernimmt die
+  bestehende Sitzung **an Ort und Stelle**: neues Token, neue Adresse, Kanäle bleiben, keine Verlassen-/Beitreten-Ereignisse.
+
 ### `POST /device/v1/logout`
 `{ "token": "…" }` → `200 {"ok":true}`. Räumt auf wie ein Socket-Disconnect.
 
