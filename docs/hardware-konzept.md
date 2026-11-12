@@ -1,4 +1,8 @@
-# Hardware-Konzept Bodypack (Version 2)
+# Hardware-Konzept Bodypack (Stand 3)
+
+> **Stand 3 (November 2026):** Display wird das **Waveshare ESP32-S3-Touch-LCD-2.8B** (2,8″, 480 × 640, Touch).
+> Akku bleibt **2× 18650** (flacher LiPo erst in einer späteren Version). Neu: Messwerte vom Prototyp (Abschnitt 1a),
+> Pin-Plan für das 2,8″-Board (Abschnitt 7) und die **Basisstation** mit LAN und Laden (Abschnitt 11).
 
 Anforderungen:
 - guter Empfang, **20+ Bodypacks**, möglichst geringe Latenz
@@ -17,7 +21,7 @@ Anforderungen:
 |---|---|
 | Funk | WLAN **5 GHz, Wi-Fi 6** mit **ESP32-C5** |
 | Funk-Modul | **Waveshare ESP32-C5-Zero(-M)**, gesteckt, mit **IPEX-Anschluss für externe Antenne** ✅ |
-| Display + Bedienung | **Waveshare ESP32-S3 AMOLED**, gesteckt (vorhanden) |
+| Display + Bedienung | **Waveshare ESP32-S3-Touch-LCD-2.8B** (2,8″ IPS 480 × 640, Touch), gesteckt. Bisheriges 1,91″-AMOLED nur noch zum Testen |
 | Aufteilung | **C5 = Funk, Audio, Opus, NR_Com-Protokoll, die 4 Tasten**; **S3 = Display, Drehgeber, Menü, Akku-Anzeige** |
 | Mikrofon | Neutrik-**Kombibuchse XLR/6,35 mm** → rauscharmer symmetrischer Mic-Vorverstärker (+20…+60 dB) → Codec |
 | Phantomspeisung | per Software **Aus / P48** (optional P12/P24), Boost-Wandler auf der Platine |
@@ -25,6 +29,26 @@ Anforderungen:
 | Codec | TI **TLV320AIC3204** (ADC/DAC + DSP für EQ/AGC/Limiter + Mithörton) |
 | Akku | **2× 18650 parallel** (ca. 22–24 Wh), ca. **15–22 h** |
 | Netz | mind. **2–3 APs** für 20+ Bodypacks, eigene 5-GHz-SSID, Roaming |
+| Server-Anbindung | **NR_Com Device-Gateway** (HTTP + RTP/Opus) → [device-gateway-api.md](device-gateway-api.md) |
+| Updates | **über WLAN** (OTA, zwei Programmbereiche, automatischer Rücksprung) mit `NR-Intercom.bat` |
+| Später | **Basisstation**: Bodypack einstecken → Audio über LAN statt WLAN, gleichzeitig laden (Abschnitt 11) |
+
+---
+
+## 1a. Gemessen am Prototyp (C5-Zero + WM8960 + S3-AMOLED, gegen NR_Com)
+
+| Messung | Wert | Bewertung |
+|---|---|---|
+| Mikrofon → eigener Kopfhörer (Mithören) | ca. 5–6 ms | ✅ klingt natürlich |
+| CPU C5 ohne Talk / mit Talk (Opus 48 kbit/s, Komplexität 2) | **20 % / 65 %** | ⚠️ ausreichend, aber nur ca. 35 % Reserve |
+| Opus-Encoder / Decoder pro 10-ms-Paket | ca. 3,9 ms / 2,3 ms | Engpass ist der Encoder (kein DSP im C5) |
+| Freier RAM C5 im Betrieb | ca. 32 KB (Spitzen bis nahe 0, behoben durch kleinere Puffer) | ⚠️ knapp, wird weiter beobachtet |
+| Jitter im WLAN (5 GHz, RSSI −65…−80 dBm) | 5–10 ms | ✅ |
+| Flash-Belegung C5 | 1,46 MB von 1,875 MB je Programmbereich | ✅ |
+
+Weitere CPU-Reserve ist per Software möglich (Opus-Komplexität 0, häufig genutzter Code im internen RAM).
+Falls einmal deutlich mehr Rechenleistung nötig wird (z. B. Rauschunterdrückung mit zwei Mikrofonen), ist die
+saubere Lösung eine spätere Version mit **ESP32-P4 + C5** (P4 für Display, Audio und Signalverarbeitung, C5 bleibt 5-GHz-Funk).
 
 ---
 
@@ -82,14 +106,15 @@ Die Firmware wird von Anfang an so aufgebaut, dass die Oberfläche später auf d
  (Kopfhörer)             │                                                                           ▼│
                          │   Taster 1–4 (frei programmierbar, mit RGB-LED) ──────────────► [ESP32-C5-Zero]──IPEX──► Antenne
                          │                                                                    │ UART
-                         │   Drehgeber 1+2 ──────────────► [ESP32-S3 AMOLED, gesteckt] ◄──────┘
-                         │                                  Display, Menü, Akku-Anzeige
+                         │   Drehgeber 1+2 ─► I/O-Expander ─I2C─► [ESP32-S3-Touch-LCD-2.8B] ◄──┘
+                         │                                  Display + Touch, Menü, Akku-Anzeige
                          │   USB-C (Laden) ─► Lader mit Power-Path ─► 2× 18650 parallel
                          │                       ├─► Buck-Boost 3,3 V ─► C5, Codec, Logik
                          │                       ├─► ±5 V (rauscharm) ─► Mic-Vorverstärker, Kopfhörer-Verstärker
                          │                       ├─► Boost 48 V ─► Phantomspeisung
                          │                       └─► VSYS ─► S3-Board
                          │   Akku-Anzeige (MAX17048), Soft-Power-Taster
+                         │   Andock-Kontakte (später): 5 V Laden + LAN zur Basisstation
                          └────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -141,21 +166,37 @@ Die Tastenbelegung wird im Gerät gespeichert. Sie wird am Display über die Dre
 
 ## 7. Pin-Belegung (Planung)
 
-**ESP32-C5-Zero (Funk + Audio):**
+**ESP32-C5-Zero (Funk + Audio)**, so wie im Prototyp verdrahtet und in der Firmware hinterlegt:
 
-| Funktion | Pins |
+| Funktion | Pins C5-Zero |
 |---|---|
-| I2S zum Codec (BCLK, WS, DOUT, DIN) | 4 |
-| I2C (Codec, I/O-Expander für Phantom, Verstärkung, Kopfhörer-Mute) | 2 |
-| UART zum S3 | 2 |
-| Taste 1–4 | 4 |
-| LED-Kette (SK6812) | 1 |
-| **Summe** | **13 von 17** (USB bleibt frei zum Flashen) |
+| I2S zum Codec: BCLK, WS, DIN (Mic), DOUT (Kopfhörer) | GP4, GP5, GP6, GP8 |
+| I2C (Codec, I/O-Expander für Phantom, Verstärkung, Kopfhörer-Mute) | GP9 (SDA), GP10 (SCL) |
+| UART zum S3 | GP2 (TX), GP3 (RX) |
+| Taste 1–4 | GP0, GP1, GP12, GP11 |
+| Antennen-Umschalter (auf dem Modul) / RGB-LED (auf dem Modul, später LED-Kette) | GP26 / GP27 |
+| **frei** (z. B. für die Basisstation, Abschnitt 11) | GP7, GP23, GP24, GP25 (GP7 und GP25 sind Strapping-Pins → Beschaltung prüfen) |
 
-**ESP32-S3 AMOLED (Display):** UART zum C5 (2), Reset/Boot des C5 (2), Drehgeber (6), I2C für Akku-Anzeige und Lader (vorhandener Bus GPIO39/40), Soft-Power (2).
-Ohne I2S fallen alle bisherigen Pin-Konflikte weg (PSRAM-Pins 33–37, Display-Reset GPIO17 bleiben frei).
+**ESP32-S3-Touch-LCD-2.8B (Display + Bedienung).** Das RGB-Display belegt fast alle Pins des S3, auf den
+Stiftleisten sind nur noch wenige frei. Deshalb laufen die Drehgeber über einen I/O-Expander am I2C-Bus:
 
----
+| Funktion | Pin am 2,8″-Board | Hinweis |
+|---|---|---|
+| UART zum C5 | GPIO43 (TX) → C5 GP3, GPIO44 (RX) ← C5 GP2 | Konsole des S3 läuft über USB, UART0-Pins sind frei |
+| I2C (gemeinsam mit Touch GT911 und den Bausteinen des Boards) | GPIO15 (SDA), GPIO7 (SCL) | dazu auf der Trägerplatine: **TCA9534** (0x27) für die Drehgeber, **MAX17048** (0x36), **BQ25895** (0x6A) |
+| Interrupt vom TCA9534 (Drehgeber bewegt) | GPIO16 | Drehgeber werden bei jeder Änderung über I2C gelesen |
+| Akku-Messung des Boards | GPIO4 | nicht genutzt, die Akku-Anzeige kommt vom MAX17048 |
+| PSRAM | GPIO33–37 | belegt, nicht verwenden |
+
+**Vor dem Platinen-Layout mit dem Schaltplan des 2,8″-Boards prüfen:**
+- I2C-Adressen der Bausteine auf dem Board (Touch, I/O-Expander, ggf. Lagesensor/RTC). Der BQ25895 (0x6A) darf
+  nicht mit einem Lagesensor (oft 0x6A/0x6B) kollidieren, sonst einen zweiten Bus oder einen anderen Lader nehmen.
+- **Stromversorgung des Boards:** Hat das Board einen eigenen Laderegler am BAT-Anschluss, das Board **nicht** über
+  BAT speisen (der Lader würde sonst gegen unsere Zellen arbeiten), sondern über den 5-V- bzw. VCC-Pin.
+- Wie das Display initialisiert wird (ST7701 über SPI, evtl. über den I/O-Expander des Boards) → Firmware.
+
+**Firmware für das 2,8″-Board (nach dem Eintreffen):** RGB-Display-Treiber (ST7701), Touch (GT911),
+Oberfläche im Hochformat 480 × 640 (mehr Platz für Kanäle), Drehgeber über den TCA9534.
 
 ## 8. Akku und Laufzeit
 
@@ -194,14 +235,59 @@ Mit Server-Tuning und 5 GHz sind ca. **75–100 ms** realistisch. Der eigene Mit
 
 ---
 
-## 10. Vorgehen
+## 10. Vorgehen (Stand)
 
-1. **Prototyp auf dem Tisch:**
-   - ESP32-C5-Zero + vorhandenes S3-AMOLED-Board
-   - zum Start der WM8960 oder ein AIC3204-Testboard
-   - einfacher Mic-Vorverstärker für das BPHS1
-   - Messen: Opus-Rechenlast und Speicher auf dem C5, Latenz, Paketverlust, Stromverbrauch, Funk-Reichweite
-2. **Server:** PlainTransport-Erweiterung und Latenz-Tuning durch den Com-Dev
-3. **Trägerplatine V1** in EasyEDA, gefertigt und bestückt bei JLCPCB (Analogteil mit Abschirmung)
-4. **Gehäuse:** Antenne oben, Akkufach, Gürtelclip, Buchsen unten oder seitlich
-5. **Funknetz** aufbauen und messen (siehe [funknetz-planung.md](funknetz-planung.md)), dann Feldtest mit mehreren Geräten
+1. ✅ **Prototyp auf dem Tisch:** C5-Zero + WM8960 + S3-AMOLED: Audio, WLAN, Opus, Intercom mit NR_Com in beide Richtungen,
+   Bedienung am Display, Updates über WLAN, Werkzeug `NR-Intercom.bat`
+2. ✅ **Server:** Device-Gateway in NR_Com (Branch des Com-Devs), offen: grüner Sprech-Punkt im Browser
+3. **2,8″-Board:** bestellen, Schaltplan prüfen (Abschnitt 7), Display-Firmware portieren
+4. **Mikrofon-Eingang testen:** AIC3204-Testboard + Mic-Vorverstärker für das BPHS1 (das WM8960-Board hat keinen Headset-Eingang)
+5. **Trägerplatine V1** in EasyEDA (Werte mit * gegen die Datenblätter prüfen), gefertigt und bestückt bei JLCPCB,
+   Andock-Kontakte gleich mit vorsehen (Abschnitt 11)
+6. **Gehäuse:** Antenne oben, Akkufach 2× 18650, Gürtelclip, Buchsen unten oder seitlich, Kontaktfläche für die Basisstation
+7. **Funknetz** aufbauen und messen (siehe [funknetz-planung.md](funknetz-planung.md)), dann Feldtest mit mehreren Geräten
+8. **Basisstation** (Abschnitt 11)
+
+---
+
+## 11. Basisstation: LAN statt WLAN und gleichzeitig laden
+
+Idee: Bei Produktion und Livebetrieb steckt das Bodypack in einer Station am Platz (Regie, Tonpult, Kamera).
+Dann läuft das Audio **über ein Netzwerkkabel** statt über WLAN, und der Akku wird **gleichzeitig geladen**.
+Das entlastet auch das Funknetz für die mobilen Bodypacks.
+
+### Warum nicht einfach ein USB-Netzwerkadapter?
+- Der **C5 kann kein USB-Host** sein. Er hat nur USB für Konsole und Flashen, einen USB-Netzwerkadapter kann er nicht betreiben.
+- Der **S3** könnte zwar USB-Host sein, aber sein USB-Anschluss ist auf dem 2,8″-Board die Buchse fürs Flashen.
+  Host und Laden über dieselbe Buchse ist schwierig (die Stromrichtung auf VBUS wäre falsch herum), und das Audio
+  müsste dann vom S3 über die UART zum C5. Das geht, ist aber kompliziert und fehleranfällig.
+
+### Empfohlen: Andock-Kontakte mit einem kleinen Netzwerk-Chip
+```
+ Bodypack (Trägerplatine)                          Basisstation
+ ┌───────────────────────────┐   Federkontakte   ┌────────────────────────────────┐
+ │ C5  SCK  ─────────────────┼── ● ●  ──────────┼─ W5500 (Netzwerk-Chip mit PHY) ─┼─ RJ45 ─► Switch / NR_Com
+ │     MOSI ─────────────────┼── ●              │                                │
+ │     MISO ─────────────────┼── ●              │                                │
+ │     CS   ─────────────────┼── ●              │                                │
+ │ Erkennung (gesteckt?) ────┼── ●  ──────────┼─ GND                           │
+ │ Lader-Eingang ◄───────────┼── ● 5 V ◄──────┼─ Netzteil 5 V / 3 A            │
+ │ GND ──────────────────────┼── ● ●  ──────────┼─ GND                           │
+ └───────────────────────────┘                  └────────────────────────────────┘
+```
+- **W5500** (bewährter Netzwerk-Chip mit eingebautem 100-Mbit-Ethernet, wird von ESP-IDF direkt unterstützt) sitzt
+  **in der Station**, am Bodypack sind nur 4 SPI-Leitungen + Erkennung + 5 V + GND auf Kontaktflächen.
+  So bleibt das Bodypack leicht, und ohne Station verbraucht der Netzwerk-Teil keinen Strom.
+- Am C5-Zero sind dafür genau 4 Pins frei (GP7, GP23, GP24, GP25). Der W5500 läuft dann ohne Interrupt-Leitung
+  (Abfrage-Modus, das kann der ESP-IDF-Treiber). Die Strapping-Pins GP7/GP25 brauchen beim Start die richtigen Pegel,
+  das wird im Schaltplan geprüft. Reicht es nicht, nimmt eine spätere Platine ein C5-Modul mit mehr Pins.
+- **Laden:** Die 5 V der Station gehen über einen Strom-Umschalter (z. B. TPS2116) parallel zur USB-C-Buchse an den Lader.
+- **Kontakte:** vergoldete Flächen am Bodypack, Federstifte (Pogo-Pins) in der Station, mechanisch geführt.
+  Serienwiderstände und ESD-Schutz an den SPI-Leitungen im Bodypack.
+
+### Was die Firmware macht
+- Station erkannt → Netzwerk über den W5500 starten (DHCP), beim NR_Com-Gateway **neu anmelden** (neue IP).
+  Kanäle und Einstellungen bleiben (das Gateway hält sie pro Benutzer). Die Umschaltpause liegt geschätzt unter 1 s.
+- Optional WLAN im Dock abschalten (spart Funkzeit für die anderen) oder verbunden lassen (schnelleres Zurückschalten).
+- Aus der Station genommen → zurück auf WLAN, wieder neu anmelden.
+- Am Server ist dafür **nichts** zu ändern, das Gateway nimmt die neue Adresse beim Login.
