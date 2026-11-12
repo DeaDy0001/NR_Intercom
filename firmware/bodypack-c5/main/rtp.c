@@ -58,6 +58,7 @@ static uint32_t s_rx_ssrc;
 static bool     s_rx_ssrc_valid;
 static int64_t  s_rx_last_us;
 static float    s_rx_peak;
+static bool     s_dec_idle;                  // letztes Paket war Stille (nicht dekodiert)
 static uint32_t s_cand_ssrc;                 // moeglicher neuer Strom
 static int      s_cand_n;
 
@@ -315,6 +316,18 @@ static int decode_slot(const jb_slot_t *sl, int16_t *out)
         }
         memcpy(s_l16_last, out, sl->nsamp * sizeof(int16_t));
         return sl->nsamp;
+    }
+    // Stille-Pakete (TOC + hoechstens 2 Byte, z. B. 3 Byte vom NR_Com-Mixer) nicht dekodieren:
+    // spart ~1,5 ms CPU pro 10 ms. Beim naechsten echten Paket startet der Decoder sauber neu.
+    if (sl->len <= 3) {
+        memset(out, 0, sl->nsamp * sizeof(int16_t));
+        s_dec_idle = true;
+        s_st.rx_silence++;
+        return sl->nsamp;
+    }
+    if (s_dec_idle) {
+        opus_decoder_ctl(s_dec, OPUS_RESET_STATE);
+        s_dec_idle = false;
     }
     int64_t t0 = esp_timer_get_time();
     int n = opus_decode(s_dec, sl->data, sl->len, out, MAX_FRAME_SAMP, 0);

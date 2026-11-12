@@ -187,18 +187,47 @@ def flash(board):
         args += [addr, path]
     major = int(str(getattr(esptool, "__version__", "5")).split(".")[0] or 5)
     cmd = "write-flash" if major >= 5 else "write_flash"
-    for baud in (921600, 115200):
-        info(f"  flashe {b['title']} auf {port} ({baud} Baud) ...")
+    no_reset = "no-reset" if major >= 5 else "no_reset"
+
+    def run(baud, before=None):
+        argv = ["--chip", b["chip"], "--port", port, "--baud", str(baud)]
+        if before:
+            argv += ["--before", before]
         try:
-            esptool.main(["--chip", b["chip"], "--port", port, "--baud", str(baud), cmd] + args)
-            info(f"  {board.upper()} fertig geflasht, startet neu. Einstellungen bleiben erhalten.")
+            esptool.main(argv + [cmd] + args)
             return True
         except SystemExit as e:
-            if e.code in (0, None):
-                return True
+            return e.code in (0, None)
         except Exception as e:
             warn(f"  Fehler: {e}")
-    warn("  FLASHEN FEHLGESCHLAGEN. Arduino-Monitor zu? Sonst: BOOT halten, kurz RESET, BOOT loslassen, nochmal.")
+            return False
+
+    # 1) normal: esptool setzt das Board ueber USB selbst in den Flash-Modus
+    info(f"  flashe {b['title']} auf {port} ...")
+    ok = run(921600)
+    # 2) sonst per Befehl: die Firmware startet selbst in den Flash-Modus (ohne BOOT-Taste)
+    if not ok:
+        info("  automatischer Reset hat nicht geklappt - schalte das Board per Befehl in den Flash-Modus ...")
+        try:
+            s = open_serial(port)
+            time.sleep(0.2)
+            s.write(b"\ndownload\n")
+            time.sleep(0.3)
+            s.close()
+        except Exception as e:
+            warn(f"  konnte den Befehl nicht senden: {e}")
+        # Board startet neu, der USB-Port verschwindet kurz und kommt wieder
+        t_end = time.time() + 8
+        time.sleep(1.5)
+        while time.time() < t_end and port not in [p.device for p in list_ports.comports()]:
+            time.sleep(0.3)
+        time.sleep(0.5)
+        ok = run(921600, no_reset) or run(115200, no_reset)
+    if ok:
+        info(f"  {board.upper()} fertig geflasht, startet neu. Einstellungen bleiben erhalten.")
+        return True
+    warn("  FLASHEN FEHLGESCHLAGEN. Monitor der Arduino IDE / ein zweites Fenster offen?")
+    warn("  Notfalls von Hand: BOOT halten, kurz RESET druecken, BOOT loslassen, dann nochmal 'flash'.")
     return False
 
 

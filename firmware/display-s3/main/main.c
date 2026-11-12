@@ -16,8 +16,23 @@
 #include "ui.h"
 #include "link.h"
 #include "esp_console.h"
+#include "esp_system.h"
+#include "soc/rtc_cntl_reg.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 static const char *TAG = "main";
+
+// Flash-Modus ohne BOOT-Taste (fuer NR-Intercom.bat)
+static int cmd_download(int argc, char **argv)
+{
+    printf("Starte in den Flash-Modus (Download) ...\n");
+    fflush(stdout);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
+    esp_restart();
+    return 0;
+}
 
 static int cmd_status(int argc, char **argv)
 {
@@ -51,6 +66,9 @@ void app_main(void)
         const esp_console_cmd_t st = { .command = "status", .help = "Zustand von Display, C5-Verbindung und Intercom",
                                        .func = cmd_status };
         esp_console_cmd_register(&st);
+        const esp_console_cmd_t dl = { .command = "download", .help = "Flash-Modus (Update ohne BOOT-Taste)",
+                                       .func = cmd_download };
+        esp_console_cmd_register(&dl);
         esp_console_start_repl(repl);
     }
 

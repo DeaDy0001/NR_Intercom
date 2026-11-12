@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "esp_console.h"
+#include "soc/lp_aon_reg.h"
 #include "esp_timer.h"
 #include "esp_app_desc.h"
 #include "esp_system.h"
@@ -75,8 +76,9 @@ void console_print_status(void)
            (unsigned long)rs.tx_packets, (unsigned long)rs.tx_bytes, (unsigned long)rs.rx_packets,
            (unsigned long)rs.rx_lost, (unsigned long)rs.rx_fec, (unsigned long)rs.rx_late,
            (unsigned long)rs.rx_dropped, (unsigned long)rs.rx_resyncs, (unsigned long)rs.rx_bad);
-    printf("       Empfang: Pegel %.1f dBFS, Paketgroesse im Mittel %lu Byte (unter ~10 Byte = der Server schickt Stille)\n",
-           rs.rx_peak_db, (unsigned long)(rs.rx_packets ? rs.rx_payload_bytes / rs.rx_packets : 0));
+    printf("       Empfang: Pegel %.1f dBFS, Paketgroesse im Mittel %lu Byte, davon Stille-Pakete %lu (ohne Decoder)\n",
+           rs.rx_peak_db, (unsigned long)(rs.rx_packets ? rs.rx_payload_bytes / rs.rx_packets : 0),
+           (unsigned long)rs.rx_silence);
     printf("       Strom SSRC %08lx, Stromwechsel %lu, fremde Pakete %lu (zweiter Strom!), RTCP %lu\n",
            (unsigned long)rs.rx_ssrc, (unsigned long)rs.rx_ssrc_changes, (unsigned long)rs.rx_foreign,
            (unsigned long)rs.rx_rtcp);
@@ -519,6 +521,17 @@ static int cmd_com(int argc, char **argv)
     return 0;
 }
 
+// Flash-Modus ohne BOOT-Taste: Download-Boot erzwingen und neu starten (fuer NR-Intercom.bat)
+static int cmd_download(int argc, char **argv)
+{
+    printf("Starte in den Flash-Modus (Download) ...\n");
+    fflush(stdout);
+    vTaskDelay(pdMS_TO_TICKS(100));
+    REG_SET_FIELD(LP_AON_SYS_CFG_REG, LP_AON_FORCE_DOWNLOAD_BOOT, 1);   // 01 = Download ueber UART/USB
+    esp_restart();
+    return 0;
+}
+
 static int cmd_reg(int argc, char **argv)
 {
     if (argc < 3) { printf("reg <nr hex> <wert hex>  (WM8960 direkt schreiben)\n"); return 1; }
@@ -570,6 +583,7 @@ void console_cmds_register(void)
         { .command = "nettest", .help = "Funk-Messung: nettest <pc-ip> [port] [s] [ms] [bytes]", .func = cmd_nettest },
         { .command = "i2cdiag", .help = "I2C-Diagnose: Pegel messen, SDA/SCL vertauscht testen", .func = cmd_i2cdiag },
         { .command = "com",     .help = "Intercom (NR_Com): com | com server <ip> [port] | com pin <pin> | com on|off | com join <nr>", .func = cmd_com },
+        { .command = "download", .help = "Flash-Modus (Update ohne BOOT-Taste, nutzt NR-Intercom.bat)", .func = cmd_download },
         { .command = "codec",   .help = "WM8960 neu einstellen (ohne Neustart)", .func = cmd_codec },
         { .command = "i2ctest", .help = "I2C-Qualitaet messen (100/50/20/10 kHz)", .func = cmd_i2ctest },
         { .command = "i2cscan", .help = "I2C-Bus absuchen (WM8960 = 0x1A)", .func = cmd_i2cscan },
