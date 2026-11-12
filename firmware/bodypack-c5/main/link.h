@@ -11,3 +11,4 @@
 //
 // Namen: mode mic pga boost vol side gate band ant codec kbps frame jb latch
 esp_err_t link_init(void);
+void      link_s3_ota(const char *url);   // S3-Update anstossen: URL + WLAN-Zugang an den S3

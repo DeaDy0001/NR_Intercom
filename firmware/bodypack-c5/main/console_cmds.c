@@ -15,6 +15,8 @@
 #include "rtp.h"
 #include "nettest.h"
 #include "com.h"
+#include "ota.h"
+#include "esp_ota_ops.h"
 #include "driver/i2c_master.h"
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
@@ -38,8 +40,10 @@ void console_print_status(void)
     audio_get_stats(&as);
     rtp_get_stats(&rs);
     const esp_app_desc_t *ad = esp_app_get_description();
-    printf("\n=== NR Bodypack (ESP32-C5) === Firmware %s, gebaut %s %s, Laufzeit %llu s\n", ad->version, ad->date,
-           ad->time, (unsigned long long)(esp_timer_get_time() / 1000000));
+    const esp_partition_t *run = esp_ota_get_running_partition();
+    printf("\n=== NR Bodypack (ESP32-C5) === Firmware %s, gebaut %s %s, Laufzeit %llu s, Bereich %s, S3 %s\n",
+           ad->version, ad->date, ad->time, (unsigned long long)(esp_timer_get_time() / 1000000),
+           run ? run->label : "?", ota_s3_version()[0] ? ota_s3_version() : "?");
     printf("WLAN : %s", ni.connected ? "verbunden" : "nicht verbunden");
     if (ni.connected) {
         printf(" '%s' IP %s, %s Kanal %d, RSSI %d dBm, AP %02x:%02x:%02x:%02x:%02x:%02x",
@@ -522,6 +526,14 @@ static int cmd_com(int argc, char **argv)
 }
 
 // Flash-Modus ohne BOOT-Taste: Download-Boot erzwingen und neu starten (fuer NR-Intercom.bat)
+static int cmd_otacode(int argc, char **argv)
+{
+    if (argc < 2) { printf("otacode <code>  Update-Code fuer Updates ueber WLAN (aktuell '%s')\n", g_set.ota_code); return 1; }
+    strlcpy(g_set.ota_code, argv[1], sizeof(g_set.ota_code));
+    save();
+    return 0;
+}
+
 static int cmd_download(int argc, char **argv)
 {
     printf("Starte in den Flash-Modus (Download) ...\n");
@@ -583,6 +595,7 @@ void console_cmds_register(void)
         { .command = "nettest", .help = "Funk-Messung: nettest <pc-ip> [port] [s] [ms] [bytes]", .func = cmd_nettest },
         { .command = "i2cdiag", .help = "I2C-Diagnose: Pegel messen, SDA/SCL vertauscht testen", .func = cmd_i2cdiag },
         { .command = "com",     .help = "Intercom (NR_Com): com | com server <ip> [port] | com pin <pin> | com on|off | com join <nr>", .func = cmd_com },
+        { .command = "otacode", .help = "Update-Code fuer Updates ueber WLAN: otacode <code>", .func = cmd_otacode },
         { .command = "download", .help = "Flash-Modus (Update ohne BOOT-Taste, nutzt NR-Intercom.bat)", .func = cmd_download },
         { .command = "codec",   .help = "WM8960 neu einstellen (ohne Neustart)", .func = cmd_codec },
         { .command = "i2ctest", .help = "I2C-Qualitaet messen (100/50/20/10 kHz)", .func = cmd_i2ctest },

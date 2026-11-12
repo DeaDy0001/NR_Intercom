@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "link.h"
+#include "ota.h"
+#include "esp_app_desc.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
@@ -137,6 +139,16 @@ static void parse_kv(char *tok, bool settings)
 
 static void handle_line(char *line)
 {
+    if (!strncmp(line, "OTA ", 4)) {                   // Update vom Werkzeug ueber den C5
+        static char url[200], ssid[33], pass[65];
+        char *save, *u = strtok_r(line + 4, " \r", &save), *s = strtok_r(NULL, " \r", &save),
+             *p = strtok_r(NULL, " \r", &save);
+        hex_dec(u, url, sizeof(url));
+        hex_dec(s, ssid, sizeof(ssid));
+        hex_dec(p, pass, sizeof(pass));
+        ota_start(url, ssid, pass);
+        return;
+    }
     // Intercom-Status, Kanalliste, WLAN-Suche
     if (line[0] == 'N' && line[1] == ' ') {
         xSemaphoreTake(s_lock, portMAX_DELAY);
@@ -215,6 +227,11 @@ static void send(const char *s)
     uart_write_bytes(LINK_UART, s, strlen(s));
 }
 
+void link_send_line(const char *s)
+{
+    send(s);
+}
+
 static void link_task(void *arg)
 {
     static char line[512];
@@ -237,6 +254,13 @@ static void link_task(void *arg)
         }
         // solange keine Einstellungen da sind, jede Sekunde danach fragen
         int64_t now = esp_timer_get_time();
+        static int64_t last_ver;
+        if (now - last_ver > 5000000) {                   // eigene Version an den C5 (fuer die Update-Anzeige)
+            last_ver = now;
+            char v[64];
+            snprintf(v, sizeof(v), "V ver=%s\n", esp_app_get_description()->version);
+            send(v);
+        }
         if (!s_st.have_settings && now - last_get > 1000000) {
             last_get = now;
             send("GET\n");

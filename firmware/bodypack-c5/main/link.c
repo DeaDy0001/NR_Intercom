@@ -8,6 +8,7 @@
 #include "net.h"
 #include "rtp.h"
 #include "com.h"
+#include "ota.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
@@ -206,8 +207,23 @@ static bool apply(const char *k, int v)
     return true;
 }
 
+void link_s3_ota(const char *url)
+{
+    char u[420], ss[68], pw[132], b[640];
+    hex_enc(url, u, sizeof(u));
+    hex_enc(g_set.ssid, ss, sizeof(ss));
+    hex_enc(g_set.pass, pw, sizeof(pw));
+    snprintf(b, sizeof(b), "OTA %s %s %s\n", u, ss, pw);
+    send_line(b);
+    ESP_LOGI(TAG, "S3-Update angestossen: %s", url);
+}
+
 static void handle_line(char *line)
 {
+    if ((line[0] == 'O' || line[0] == 'V') && line[1] == ' ') {   // S3: Update-Fortschritt bzw. Version
+        ota_s3_line(line);
+        return;
+    }
     char *cmd = strtok(line, " \r\n");
     if (!cmd) return;
     if (!strcmp(cmd, "GET")) {

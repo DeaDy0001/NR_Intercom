@@ -60,6 +60,8 @@ typedef struct {
     uint8_t  com_on;        // 1 = Intercom-Client aktiv
     // ab Version 6
     uint8_t  rx_gain_db;    // Hoerverstaerkung fuer den Empfang (Intercom-Mix), 0..24 dB, mit Begrenzer
+    // ab Version 7
+    char     ota_code[16];  // Update-Code fuer Updates ueber WLAN (muss im Werkzeug gleich sein)
 } settings_t;
 
 extern settings_t g_set;

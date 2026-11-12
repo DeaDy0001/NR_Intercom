@@ -7,6 +7,9 @@ Im Fenster 'help' eingeben. Braucht Python 3 mit esptool (bringt pyserial mit): 
 """
 import json
 import os
+import socket
+import struct
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import shlex
 import subprocess
 import sys
@@ -61,6 +64,15 @@ HELP = """
     c5 status        nur der C5 (WLAN, Audio, RTP, CPU, RAM, Intercom), ebenso: s3 status
     c5 <befehl>      einen Befehl am C5 ausfuehren und die Antwort zeigen, z. B.
                      c5 com    c5 help    c5 rxgain 18    c5 com find    (am S3: s3 help, s3 status)
+
+    Ueber WLAN (ohne USB-Kabel, Bodypack muss im WLAN sein):
+    devices          Bodypacks im Netzwerk suchen (Name, IP, Firmware C5/S3)
+    c5 wlan          Firmware holen (git pull) und den C5 ueber WLAN aktualisieren
+    s3 wlan          dasselbe fuer den S3 (der S3 braucht ein 2,4-GHz-WLAN)
+    wlan             git pull, dann S3 und C5 ueber WLAN
+    code <code>      Update-Code festlegen (Standard nrintercom, am C5: otacode <code>)
+    Einmalig vorher per USB: 'update' (neue Speicheraufteilung mit zwei Programmbereichen).
+    Windows-Firewall: Python beim ersten Mal fuer "Private Netzwerke" erlauben.
 
     ports            angeschlossene COM-Ports anzeigen
     c5 port COM6     COM-Port fuer den C5 festlegen, ebenso: s3 port COM5
@@ -178,8 +190,9 @@ def flash(board):
         return False
     b = BOARDS[board]
     args = []
+    # Bootloader, Partitionstabelle, Startinfo (immer Bereich ota_0) und Programm; 0x9000-0xEFFF (Einstellungen) bleibt
     for addr, fn in ((b["boot"], f'{b["name"]}-bootloader.bin'), ("0x8000", f'{b["name"]}-partitions.bin'),
-                     ("0x10000", f'{b["name"]}-app.bin')):
+                     ("0xf000", f'{b["name"]}-otadata.bin'), ("0x20000", f'{b["name"]}-app.bin')):
         path = os.path.join(BIN_DIR, fn)
         if not os.path.exists(path):
             warn(f"  Datei fehlt: {path}  -> zuerst 'pull'")
@@ -393,6 +406,177 @@ def monitor(board):
     info("  Monitor beendet.")
 
 
+# ---------------------------------------------------------------- Update ueber WLAN
+OTA_PORT = 3011
+HTTP_PORT = 8070
+_http = None
+
+
+def get_code():
+    return load_ports().get("_code", "nrintercom")
+
+
+def bin_version(path):
+    """Versionstext aus dem ESP-App-Abbild (esp_app_desc_t ab Byte 32: Magic, ..., version[32] ab Byte 48)."""
+    try:
+        with open(path, "rb") as f:
+            d = f.read(96)
+        if struct.unpack("<I", d[32:36])[0] != 0xABCD5432:
+            return "?"
+        return d[48:80].split(b"\0")[0].decode("ascii", "replace")
+    except OSError:
+        return "?"
+
+
+def discover(timeout=1.5):
+    """Bodypacks per UDP-Broadcast suchen."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    s.settimeout(0.2)
+    found = {}
+    end = time.time() + timeout
+    next_send = 0
+    while time.time() < end:
+        if time.time() >= next_send:
+            next_send = time.time() + 0.5
+            for addr in ("255.255.255.255",):
+                try:
+                    s.sendto(b"NRBP?", (addr, OTA_PORT))
+                except OSError:
+                    pass
+        try:
+            data, (ip, _) = s.recvfrom(1024)
+            d = json.loads(data.decode("utf-8", "replace"))
+            if d.get("nrbp"):
+                d["ip"] = d.get("ip") or ip
+                found[d.get("mac", ip)] = d
+        except (socket.timeout, ValueError):
+            pass
+    s.close()
+    return sorted(found.values(), key=lambda d: d.get("name", ""))
+
+
+def show_devices(devs=None):
+    devs = discover() if devs is None else devs
+    if not devs:
+        warn("  kein Bodypack im Netzwerk gefunden. Im selben WLAN/LAN? Firmware alt? -> einmalig per USB 'update'.")
+        return devs
+    for i, d in enumerate(devs, 1):
+        print(f"  {i}. {d.get('name', '?'):16s} {d.get('ip', '?'):15s} C5 {d.get('c5', '?'):22s} "
+              f"S3 {d.get('s3') or '?':22s} {d.get('user', '')}")
+    return devs
+
+
+def start_http():
+    global _http
+    if _http:
+        return
+    class H(SimpleHTTPRequestHandler):
+        def __init__(self, *a, **k):
+            super().__init__(*a, directory=BIN_DIR, **k)
+        def log_message(self, *a):
+            pass
+    _http = ThreadingHTTPServer(("0.0.0.0", HTTP_PORT), H)
+    threading.Thread(target=_http.serve_forever, daemon=True).start()
+
+
+def pc_ip_towards(ip):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect((ip, OTA_PORT))
+        return s.getsockname()[0]
+    finally:
+        s.close()
+
+
+def pick_devices():
+    devs = show_devices()
+    if len(devs) <= 1:
+        return devs
+    ans = input("  Welche? Nummer, mehrere mit Komma, 'alle' (Enter = abbrechen): ").strip().lower()
+    if ans in ("alle", "all", "a"):
+        return devs
+    out = []
+    for part in ans.replace(" ", "").split(","):
+        if part.isdigit() and 1 <= int(part) <= len(devs):
+            out.append(devs[int(part) - 1])
+    return out
+
+
+def ota_one(dev, board):
+    b = BOARDS[board]
+    fn = f'{b["name"]}-app.bin'
+    path = os.path.join(BIN_DIR, fn)
+    if not os.path.exists(path):
+        warn(f"  Datei fehlt: {path}  -> zuerst 'pull'")
+        return False
+    ip = dev["ip"]
+    try:
+        start_http()
+    except OSError as e:
+        warn(f"  Datei-Server auf Port {HTTP_PORT} startet nicht: {e}")
+        return False
+    url = f"http://{pc_ip_towards(ip)}:{HTTP_PORT}/{fn}"
+    info(f"  {dev.get('name')} ({ip}): {board.upper()} {dev.get(board) or '?'} -> {bin_version(path)}")
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(1.0)
+    s.sendto(f"NRBP_OTA {get_code()} {board} {url}".encode(), (ip, OTA_PORT))
+    end = time.time() + (180 if board == "s3" else 120)
+    last = -1
+    ok = False
+    while time.time() < end:
+        try:
+            data, _ = s.recvfrom(1024)
+            d = json.loads(data.decode("utf-8", "replace"))
+        except (socket.timeout, ValueError):
+            continue
+        st = d.get("ota")
+        if st == "start":
+            print("  Update gestartet ...")
+        elif st == "progress":
+            pct = int(d.get("pct", 0))
+            if pct != last:
+                last = pct
+                bar = "#" * (pct // 4)
+                sys.stdout.write(f"\r  [{bar:25s}] {pct:3d} %")
+                sys.stdout.flush()
+            end = max(end, time.time() + 60)
+        elif st == "done":
+            print(f"\r  [{'#' * 25}] 100 %")
+            ok = True
+            break
+        elif st == "error":
+            print()
+            warn(f"  Fehler: {d.get('msg', '?')}")
+            break
+    s.close()
+    if not ok:
+        if last < 0:
+            warn("  keine Antwort vom Bodypack (Firewall am PC? Update-Code? Firmware alt -> einmalig per USB 'update')")
+        return False
+    info(f"  {board.upper()} startet neu, warte ...")
+    t_done = time.time()
+    for _ in range(40):
+        time.sleep(1.5)
+        for d in discover(1.0):
+            if d.get("mac") == dev.get("mac") and (board == "c5" or d.get("s3")):
+                if board == "s3" and d.get("s3") == dev.get("s3") and time.time() - t_done < 15:
+                    continue          # S3 meldet die neue Version erst einige Sekunden nach seinem Neustart
+                info(f"  {d.get('name')}: C5 {d.get('c5')}, S3 {d.get('s3') or '?'}  - fertig.")
+                return True
+    warn("  Bodypack meldet sich nicht zurueck. 'devices' oder 'c5 status' pruefen.")
+    return False
+
+
+def ota(boards):
+    devs = pick_devices()
+    for dev in devs:
+        for board in boards:
+            if not ota_one(dev, board):
+                break
+            dev = next((d for d in discover(1.0) if d.get("mac") == dev.get("mac")), dev)
+
+
 # ---------------------------------------------------------------- Gesamtstatus
 def overview():
     info("  ===== PC / Firmware-Dateien =====")
@@ -432,6 +616,24 @@ def handle(line):
         overview()
     elif cmd == "pull":
         pull_then(None)
+    elif cmd in ("devices", "geraete", "bodypacks"):
+        show_devices()
+    elif cmd == "wlan" or (cmd == "update" and len(parts) > 1 and parts[1].lower() == "wlan"):
+        pull_then("ota-all")
+    elif cmd == "ota-all":              # intern: S3 zuerst (der C5 reicht dessen Fortschritt weiter), dann C5
+        ota(["s3", "c5"])
+    elif cmd == "code":
+        if len(parts) < 2:
+            print(f"  Update-Code: {get_code()}")
+        else:
+            p = load_ports()
+            p["_code"] = parts[1]
+            try:
+                with open(PORTS_FILE, "w", encoding="utf-8") as f:
+                    json.dump(p, f)
+            except OSError:
+                pass
+            info(f"  Update-Code gespeichert. Am C5 muss derselbe stehen: c5 otacode {parts[1]}")
     elif cmd == "update":
         pull_then("flash-all")
     elif cmd == "flash-all":            # intern: nach dem Neustart von 'update'
@@ -440,8 +642,14 @@ def handle(line):
     elif cmd in BOARDS:
         board = cmd
         sub = parts[1].lower() if len(parts) > 1 else "help"
-        if sub == "update":
+        if sub == "update" and len(parts) > 2 and parts[2].lower() == "wlan":
+            pull_then(f"{board} ota")
+        elif sub == "update":
             pull_then(f"{board} flash")
+        elif sub == "wlan":
+            pull_then(f"{board} ota")
+        elif sub == "ota":              # intern: nach pull
+            ota([board])
         elif sub == "flash":
             flash(board)
         elif sub == "monitor":

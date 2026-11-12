@@ -7,7 +7,9 @@ Drahtloses Intercom-Bodypack (Beltpack) als Client für die bestehende NR_Com-So
 
 **`NR-Intercom.bat`** doppelklicken: ein Fenster für alles. `help` zeigt die Befehle, z. B.
 `c5 update` / `s3 update` (Firmware holen und flashen, Einstellungen bleiben erhalten),
-`c5 monitor` / `s3 monitor` (Log, zurück mit Strg+Q), `c5 status` (Befehl am Bodypack ausführen).
+`c5 monitor` / `s3 monitor` (Log, zurück mit Strg+Q), `c5 status` (Befehl am Bodypack ausführen), `status` (alles).
+**Ohne Kabel über WLAN:** `devices` (Bodypacks im Netz), `wlan` bzw. `c5 wlan` / `s3 wlan` (Firmware holen und
+über WLAN aufspielen). Voraussetzung: einmalig per USB `update` (neue Speicheraufteilung mit zwei Programmbereichen).
 
 ## Hardware
 

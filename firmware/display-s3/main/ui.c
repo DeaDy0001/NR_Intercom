@@ -9,6 +9,7 @@
 #include "battery.h"
 #include "display.h"
 #include "link.h"
+#include "ota.h"
 #include "nvs.h"
 #include "esp_timer.h"
 #include "esp_heap_caps.h"
@@ -994,6 +995,26 @@ static void handle_comset(const input_ev_t *ev)
     draw_comset();
 }
 
+// Update laeuft: ganzer Bildschirm zeigt den Fortschritt
+static void draw_ota(void)
+{
+    int p = ota_progress();
+    gfx_clear(C_BG);
+    gfx_text_box(&font_l, 0, 40, DISP_W, ALIGN_CENTER, p == -2 ? "Update fehlgeschlagen" : "Update läuft ...",
+                 p == -2 ? C_TALK : C_TEXT);
+    if (p >= 0) {
+        gfx_round_rect(40, 110, DISP_W - 80, 30, 8, C_TILE);
+        gfx_round_rect(40, 110, (DISP_W - 80) * p / 100 < 16 ? 16 : (DISP_W - 80) * p / 100, 30, 8, C_ACCENT);
+        char b[16];
+        snprintf(b, sizeof(b), "%d %%", p);
+        gfx_text_box(&font_m, 0, 150, DISP_W, ALIGN_CENTER, b, C_TEXT);
+        gfx_text_box(&font_s, 0, 200, DISP_W, ALIGN_CENTER, "Nicht ausschalten - das Display startet danach neu", C_DIM);
+    } else {
+        gfx_text_box(&font_s, 0, 110, DISP_W, ALIGN_CENTER, ota_message(), C_WARN);
+        gfx_text_box(&font_s, 0, 200, DISP_W, ALIGN_CENTER, "Beliebiger Taster: weiter", C_DIM);
+    }
+}
+
 static void redraw(void)
 {
     switch (s_scr) {
@@ -1130,15 +1151,25 @@ static void ui_task(void *arg)
         input_ev_t ev;
         TickType_t wait = (s_scr == SCR_FPS) ? 0 : pdMS_TO_TICKS(20);
         while (xQueueReceive(g_input_q, &ev, wait) == pdTRUE) {
-            handle(&ev);
             wait = 0;
+            if (ota_progress() == -2) {                   // Fehlermeldung des Updates: Taster = weiter
+                if (ev.type == EV_ENC1_PRESS || ev.type == EV_ENC2_PRESS) { ota_clear_error(); redraw(); }
+                continue;
+            }
+            if (ota_progress() >= 0) continue;            // waehrend des Updates keine Bedienung
+            handle(&ev);
         }
         int64_t now = esp_timer_get_time();
 
         static int64_t last_link;
+        if (ota_progress() != -1) {                       // Update laeuft (oder ist fehlgeschlagen)
+            if (now - last_link > 200000) { last_link = now; draw_ota(); gfx_flush(); }
+            continue;
+        }
         if (now - last_link > 100000) {                   // Bodypack-Werte mit 10 Hz
             last_link = now;
             link_get(&s_c5);
+            ota_check_new_version(s_c5.online);
             if (s_scr == SCR_BP) {
                 bp_sync();
                 draw_bp();

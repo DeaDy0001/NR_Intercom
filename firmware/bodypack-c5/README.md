@@ -66,11 +66,19 @@ die richtige Lösung kommt mit der eigenen Platine.
 | `c5 monitor` | Log mitlesen und Befehle tippen, zurück mit **Strg+Q** |
 | `c5 reset` | Board neu starten |
 | `c5 status`, `c5 com`, `c5 rxgain 18` … | Befehl am C5 ausführen und Antwort zeigen |
+| `devices` | Bodypacks im WLAN suchen (Name, IP, Firmware C5 und S3) |
+| `c5 wlan` / `wlan` | Firmware holen und **über WLAN** aufspielen (ohne Kabel, ohne Tasten). Einmalig vorher per USB `update`. |
 | `ports` / `c5 port COM6` | COM-Ports anzeigen / festlegen (wird gemerkt) |
 
 Beim Flashen bleiben WLAN, Passwort, PIN und alle Einstellungen erhalten: Es werden nur Bootloader,
-Partitionstabelle und Programm geschrieben (`*-bootloader.bin`, `*-partitions.bin`, `*-app.bin`), der
-Einstellungsbereich 0x9000–0xFFFF nicht. Den Monitor der Arduino IDE vorher **schließen** (blockiert den Port).
+Partitionstabelle, Startinfo und Programm geschrieben (`*-bootloader.bin`, `*-partitions.bin`, `*-otadata.bin`,
+`*-app.bin` bei 0x20000), der Einstellungsbereich 0x9000–0xEFFF nicht.
+
+**Update über WLAN (OTA):** Der Flash hat zwei Programmbereiche (`partitions.csv`). Ein Update wird in den freien
+Bereich geladen, danach startet das Board neu. Läuft die neue Version nicht sauber an (C5: kein WLAN innerhalb
+90 s, S3: keine Verbindung zum C5 innerhalb 60 s), springt der Bootloader automatisch auf die alte Version zurück.
+Abgesichert ist das Update mit einem Update-Code (Standard `nrintercom`, ändern mit `c5 otacode …` und im
+Werkzeug `code …`). Der S3 verbindet sich fürs Update selbst kurz mit dem WLAN (nur 2,4 GHz). Den Monitor der Arduino IDE vorher **schließen** (blockiert den Port).
 Nach einem eigenen Build: `sh tools/export_bins.sh`.
 
 ### Variante A: fertige Datei, ohne Entwicklungsumgebung
