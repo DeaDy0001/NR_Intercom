@@ -58,6 +58,8 @@ typedef struct {
     uint16_t com_port;      // HTTP-Port des Gateways, Standard 3002
     char     com_pin[16];   // PIN des NR_Com-Benutzers
     uint8_t  com_on;        // 1 = Intercom-Client aktiv
+    // ab Version 6
+    uint8_t  rx_gain_db;    // Hoerverstaerkung fuer den Empfang (Intercom-Mix), 0..24 dB, mit Begrenzer
 } settings_t;
 
 extern settings_t g_set;

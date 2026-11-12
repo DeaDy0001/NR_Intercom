@@ -110,6 +110,7 @@ static void parse_kv(char *tok, bool settings)
         else if (!strcmp(k, "frame")) s->frame = i;
         else if (!strcmp(k, "jb")) s->jb = i;
         else if (!strcmp(k, "latch")) s->latch = i;
+        else if (!strcmp(k, "rxgain")) s->rxgain = i;
         else if (!strcmp(k, "comon")) s->com_on = i;
         else if (!strcmp(k, "comport")) s->com_port = i;
         else if (!strcmp(k, "comhost")) hex_dec(v, s->com_host, sizeof(s->com_host));

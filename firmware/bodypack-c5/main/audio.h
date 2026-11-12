@@ -31,6 +31,7 @@ typedef struct {
 
 esp_err_t audio_init(void);
 void      audio_set_mode(int mode);
+void      audio_set_rx_gain(int db);   // Hoerverstaerkung Empfang 0..24 dB
 void      audio_get_stats(audio_stats_t *st);
 
 // Mikrofon-Samples fuer den Netzversand (mono, int16) und Wiedergabe-Samples vom Netz

@@ -21,6 +21,8 @@ static float s_mic_peak, s_out_peak;   // linear 0..1, abklingend
 static float s_ms_l, s_ms_r;           // mittlere Leistung (normiert), ~0,5 s
 static float s_gate_gain = 1.0f;
 static float s_env;                    // geglaettete Mikrofonleistung fuer das Gate
+static int32_t s_rx_gain_q12 = 4096;   // Hoerverstaerkung (Q12, 4096 = 0 dB)
+static int32_t s_lim_q12 = 4096;       // aktuelle Verstaerkung nach Begrenzer
 static volatile uint32_t s_rx_ovf, s_tx_udf;   // I2S-Aussetzer (aus der ISR gezaehlt)
 
 static bool IRAM_ATTR on_rx_ovf(i2s_chan_handle_t h, i2s_event_data_t *e, void *arg)
@@ -48,6 +50,13 @@ static inline int16_t sat16(int32_t v)
 static float lin_to_db(float v)
 {
     return v > 1e-6f ? 20.0f * log10f(v) : -120.0f;
+}
+
+void audio_set_rx_gain(int db)
+{
+    if (db < 0) db = 0;
+    if (db > 24) db = 24;
+    s_rx_gain_q12 = (int32_t)(4096.0f * powf(10.0f, db / 20.0f) + 0.5f);
 }
 
 void audio_set_mode(int mode)
@@ -183,8 +192,15 @@ static void audio_task(void *arg)
                 if (n > 0) s_st.play_underruns++;
                 memset((uint8_t *)play + n, 0, sizeof(play) - n);
             }
+            // Hoerverstaerkung mit Begrenzer (Festkomma Q12): sofort leiser bei Spitzen, in ~60 ms wieder lauter
+            int32_t ppk = 0;
+            for (int i = 0; i < AUDIO_BLOCK; i++) { int32_t a = play[i] < 0 ? -play[i] : play[i]; if (a > ppk) ppk = a; }
+            int32_t want = s_rx_gain_q12;
+            if (ppk > 0 && (((int64_t)ppk * want) >> 12) > 30000) want = (int32_t)(30000LL * 4096 / ppk);
+            if (want < s_lim_q12) s_lim_q12 = want;
+            else s_lim_q12 += (want - s_lim_q12 + 63) / 64;
             for (int i = 0; i < AUDIO_BLOCK; i++) {
-                int32_t v = play[i];
+                int32_t v = (play[i] * s_lim_q12) >> 12;
                 if (g_talk) v += (mic[i] * side_q15) >> 15;   // Mithoerton nur beim Sprechen
                 out[2 * i] = out[2 * i + 1] = sat16(v);
             }
@@ -249,6 +265,7 @@ esp_err_t audio_init(void)
     ESP_ERROR_CHECK(i2s_channel_enable(s_rx));
 
     s_mode = g_set.mode;
+    audio_set_rx_gain(g_set.rx_gain_db);
     // hoechste Prioritaet: bei nur 4 ms Puffer darf WLAN den Audio-Task nicht aufhalten
     xTaskCreate(audio_task, "audio", 4096, NULL, configMAX_PRIORITIES - 1, NULL);
     ESP_LOGI(TAG, "I2S Slave aktiv: BCLK=%d WS=%d DIN=%d DOUT=%d, Modus %s",

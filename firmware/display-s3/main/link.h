@@ -12,7 +12,7 @@ typedef struct {
     bool  online;          // in den letzten 2,5 s Daten vom C5 empfangen
     bool  have_settings;
     // Einstellungen (S-Zeile)
-    int   mode, mic, pga, boost, vol, side, gate, band, ant, codec, kbps, frame, jb, latch;
+    int   mode, mic, pga, boost, vol, side, gate, band, ant, codec, kbps, frame, jb, latch, rxgain;
     // Live-Werte (L-Zeile)
     float jack_db, board_db, peak_db, out_db, gate_gain_db;
     bool  talk, codec_ok, wifi;

@@ -60,7 +60,7 @@ static const char *const N_ANT[]   = { "intern", "extern" };
 static const char *const N_CODEC[] = { "Opus", "L16 (roh)" };
 static const char *const N_LATCH[] = { "halten", "umschalten" };
 
-typedef enum { BI_MODE, BI_MIC, BI_PGA, BI_BOOST, BI_GATE, BI_VOL, BI_SIDE, BI_LATCH, BI_BAND, BI_ANT,
+typedef enum { BI_MODE, BI_MIC, BI_PGA, BI_BOOST, BI_GATE, BI_VOL, BI_RXGAIN, BI_SIDE, BI_LATCH, BI_BAND, BI_ANT,
                BI_CODEC, BI_KBPS, BI_FRAME, BI_JB, BI_COUNT } bp_idx_t;
 
 typedef struct {
@@ -78,6 +78,7 @@ static const bp_item_t s_bp[BI_COUNT] = {
     [BI_BOOST] = { "boost", "Mic-Boost",        0, 3, 1, N_BOOST, NULL },
     [BI_GATE]  = { "gate",  "Rausch-Gate",      -80, 0, 2, NULL, "%d dBFS" },
     [BI_VOL]   = { "vol",   "Kopfhörer",        0, 100, 5, NULL, "%d %%" },
+    [BI_RXGAIN]= { "rxgain","Hörverstärkung",   0, 24, 3, NULL, "+%d dB" },
     [BI_SIDE]  = { "side",  "Mithörton (Funk)", 0, 100, 5, NULL, "%d %%" },
     [BI_LATCH] = { "latch", "Talk-Taste",       0, 1, 1, N_LATCH, NULL },
     [BI_BAND]  = { "band",  "WLAN-Band",        0, 2, 1, N_BAND, NULL },
@@ -100,6 +101,7 @@ static int bp_state_val(int i, const c5_state_t *c)
     switch (i) {
     case BI_MODE: return c->mode;   case BI_MIC: return c->mic;     case BI_PGA: return c->pga;
     case BI_BOOST: return c->boost; case BI_GATE: return c->gate;   case BI_VOL: return c->vol;
+    case BI_RXGAIN: return c->rxgain;
     case BI_SIDE: return c->side;   case BI_LATCH: return c->latch; case BI_BAND: return c->band;
     case BI_ANT: return c->ant;     case BI_CODEC: return c->codec; case BI_KBPS: return c->kbps;
     case BI_FRAME: return c->frame; case BI_JB: return c->jb;

@@ -47,9 +47,9 @@ void console_print_status(void)
            wm8960_present() ? "gefunden + eingestellt" : "NICHT gefunden",
            CONFIG_NRB_PIN_I2C_SDA, CONFIG_NRB_PIN_I2C_SCL, (unsigned long)(wm8960_get_i2c_hz() / 1000),
            (unsigned long)wm8960_write_errors(), (unsigned long)wm8960_i2c_retries());
-    printf("Audio: Modus %s, Mic %s (PGA %+d dB, Boost %d), Kopfhoerer %d%%, Mithoerton %d%%, Talk %s\n",
+    printf("Audio: Modus %s, Mic %s (PGA %+d dB, Boost %d), Kopfhoerer %d%% (+%d dB Empfang), Mithoerton %d%%, Talk %s\n",
            mode_name(g_set.mode), g_set.mic == MIC_ONBOARD ? "links (LINPUT1)" : g_set.mic == MIC_JACK ? "rechts (RINPUT1)" : "beide (Test)", g_set.pga_db,
-           g_set.boost, g_set.hp_vol, g_set.sidetone, g_talk ? "AN" : "aus");
+           g_set.boost, g_set.hp_vol, g_set.rx_gain_db, g_set.sidetone, g_talk ? "AN" : "aus");
     printf("       Pegel Mic %.1f dBFS, Ausgang %.1f dBFS, Bloecke %lu, I2S-Fehler %lu\n",
            as.mic_peak_db, as.out_peak_db, (unsigned long)as.blocks, (unsigned long)as.i2s_errors);
     printf("       Effektivpegel rechts (RINPUT1) %.1f dBFS, links (LINPUT1) %.1f dBFS, Gate %s (%.0f dB)\n",
@@ -208,6 +208,16 @@ static int cmd_vol(int argc, char **argv)
     int v = atoi(argv[1]);
     g_set.hp_vol = v < 0 ? 0 : v > 100 ? 100 : v;
     wm8960_set_hp_volume(g_set.hp_vol);
+    save();
+    return 0;
+}
+
+static int cmd_rxgain(int argc, char **argv)
+{
+    if (argc < 2) { printf("rxgain <0..24>  Hoerverstaerkung fuer den Intercom-Empfang in dB (aktuell %d)\n", g_set.rx_gain_db); return 1; }
+    int v = atoi(argv[1]);
+    g_set.rx_gain_db = v < 0 ? 0 : v > 24 ? 24 : v;
+    audio_set_rx_gain(g_set.rx_gain_db);
     save();
     return 0;
 }
@@ -535,6 +545,7 @@ void console_cmds_register(void)
         { .command = "gate",    .help = "Mikrofon-Gate: gate <-80..-20 dBFS> | gate off", .func = cmd_gate },
         { .command = "pegel",   .help = "Mikrofonpegel live anzeigen: pegel [sekunden]", .func = cmd_pegel },
         { .command = "vol",     .help = "Kopfhoerer-Lautstaerke: vol 0..100", .func = cmd_vol },
+        { .command = "rxgain",  .help = "Hoerverstaerkung Empfang: rxgain 0..24 (dB, mit Begrenzer)", .func = cmd_rxgain },
         { .command = "side",    .help = "Mithoerton im RTP-Modus: side 0..100", .func = cmd_side },
         { .command = "rtp",     .help = "RTP: rtp <ip> [port] | codec | frame | jb | latch | reset", .func = cmd_rtp },
         { .command = "opus",    .help = "Opus: opus <kbit/s> [komplexitaet] [lowdelay|voip]", .func = cmd_opus },

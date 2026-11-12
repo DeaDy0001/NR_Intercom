@@ -9,7 +9,7 @@
 static const char *TAG = "settings";
 #define SETTINGS_NS      "nrb"
 #define SETTINGS_KEY     "cfg"
-#define SETTINGS_VERSION 5
+#define SETTINGS_VERSION 6
 
 settings_t g_set;
 
@@ -46,6 +46,7 @@ void settings_reset(void)
     g_set.com_port   = 3002;
     g_set.com_pin[0] = 0;
     g_set.com_on     = 1;
+    g_set.rx_gain_db = 12;
 }
 
 void settings_load(void)
@@ -71,6 +72,7 @@ void settings_load(void)
         memcpy(&g_set, &blob.s, len - hdr);
         if (blob.version < 3) g_set.gate_db = def.gate_db;   // lag im alten Stand evtl. im Fuellbyte
         if (blob.version < 5) g_set.opus_cplx = def.opus_cplx;   // CPU-Last senken
+        if (blob.version < 6) g_set.rx_gain_db = def.rx_gain_db;
         if (blob.version < 4) {                              // Intercom-Felder neu
             memcpy(g_set.com_host, def.com_host, sizeof(g_set.com_host));
             g_set.com_port = def.com_port;

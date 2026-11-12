@@ -71,10 +71,10 @@ static void send_settings(void)
     hex_enc(g_set.ssid, ssid, sizeof(ssid));
     snprintf(b, sizeof(b),
              "S mode=%d mic=%d pga=%d boost=%d vol=%d side=%d gate=%d band=%d ant=%d codec=%d kbps=%d "
-             "frame=%d jb=%d latch=%d comon=%d comport=%u comhost=%s compin=%s wssid=%s\n",
+             "frame=%d jb=%d latch=%d rxgain=%d comon=%d comport=%u comhost=%s compin=%s wssid=%s\n",
              g_set.mode, g_set.mic, g_set.pga_db, g_set.boost, g_set.hp_vol, g_set.sidetone, g_set.gate_db,
              g_set.band, g_set.ant_ext, g_set.codec, g_set.opus_kbps, g_set.frame_ms, g_set.jb_ms,
-             g_set.ptt_latch, g_set.com_on, g_set.com_port, host, pin, ssid);
+             g_set.ptt_latch, g_set.rx_gain_db, g_set.com_on, g_set.com_port, host, pin, ssid);
     send_line(b);
 }
 
@@ -174,6 +174,9 @@ static bool apply(const char *k, int v)
     } else if (!strcmp(k, "vol")) {
         g_set.hp_vol = clampi(v, 0, 100);
         wm8960_set_hp_volume(g_set.hp_vol);
+    } else if (!strcmp(k, "rxgain")) {
+        g_set.rx_gain_db = clampi(v, 0, 24);
+        audio_set_rx_gain(g_set.rx_gain_db);
     } else if (!strcmp(k, "side")) {
         g_set.sidetone = clampi(v, 0, 100);
     } else if (!strcmp(k, "gate")) {
