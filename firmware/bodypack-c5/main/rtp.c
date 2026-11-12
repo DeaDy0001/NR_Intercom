@@ -161,7 +161,7 @@ static OpusEncoder *create_encoder(void)
         return NULL;
     }
     opus_encoder_ctl(enc, OPUS_SET_BITRATE(g_set.opus_kbps * 1000));
-    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(g_set.opus_cplx));
+    opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(g_set.opus_cplx > OPUS_CPLX_MAX ? OPUS_CPLX_MAX : g_set.opus_cplx));
     opus_encoder_ctl(enc, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
     opus_encoder_ctl(enc, OPUS_SET_VBR(1));
     opus_encoder_ctl(enc, OPUS_SET_VBR_CONSTRAINT(1));
@@ -472,7 +472,7 @@ esp_err_t rtp_init(void)
     // Prioritaet unter dem Netzwerk-Stack (tiT = 18): bei CPU-Ueberlast stottert hoechstens das Audio,
     // Verbindung zum Server und zum Display bleiben bestehen (vorher: Watchdog, Sitzung abgelaufen)
     if (xTaskCreate(rx_task, "rtp_rx", 4096, NULL, 17, NULL) != pdPASS ||
-        xTaskCreate(codec_task, "codec", 32 * 1024, NULL, 16, &s_tx_task) != pdPASS) {
+        xTaskCreate(codec_task, "codec", CODEC_STACK, NULL, 16, &s_tx_task) != pdPASS) {
         ESP_LOGE(TAG, "zu wenig RAM fuer RTP-Tasks (frei: %u Byte)", (unsigned)esp_get_free_heap_size());
         return ESP_ERR_NO_MEM;
     }

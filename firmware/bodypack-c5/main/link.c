@@ -370,7 +370,7 @@ esp_err_t link_init(void)
     uart_set_pin(LINK_UART, CONFIG_NRB_PIN_LINK_TX, CONFIG_NRB_PIN_LINK_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     // RX mit Pull-up, damit eine offene Leitung keinen Zeichenmuell erzeugt
     gpio_pullup_en(CONFIG_NRB_PIN_LINK_RX);
-    xTaskCreate(link_task, "link", 6144, NULL, 4, NULL);   // HTTP-Abfrage bei der Server-Suche
+    xTaskCreate(link_task, "link", 5120, NULL, 4, NULL);   // HTTP-Abfrage bei der Server-Suche
     ESP_LOGI(TAG, "Display-Verbindung: UART1 TX=GP%d RX=GP%d, %d Baud", CONFIG_NRB_PIN_LINK_TX,
              CONFIG_NRB_PIN_LINK_RX, LINK_BAUD);
     return ESP_OK;

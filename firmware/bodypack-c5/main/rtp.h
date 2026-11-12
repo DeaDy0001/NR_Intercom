@@ -8,6 +8,11 @@
 // Empfang erkennt den Codec am Payload-Typ.
 // Lokaler Codec-Test: "rtp 127.0.0.1 <lokaler port>" schickt die Pakete an sich selbst.
 
+// Codec-Task: gemessen ~13 KB Stack bei Komplexitaet 2, ~15,5 KB bei 5 -> 24 KB mit Reserve.
+// Hoehere Komplexitaet braucht mehr Stack (und mehr CPU, als der C5 hat), deshalb begrenzt.
+#define CODEC_STACK     (24 * 1024)
+#define OPUS_CPLX_MAX   5
+
 #define RTP_PT_OPUS 111
 #define RTP_PT_L16  96
 

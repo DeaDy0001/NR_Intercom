@@ -92,7 +92,7 @@ void console_print_status(void)
     printf("CPU  : Last %d %%, Opus-Encoder %lu us (max %lu), Decoder %lu us (max %lu) pro Paket, Audio max %lu us/ms\n",
            g_cpu_load, (unsigned long)rs.enc_us_avg, (unsigned long)rs.enc_us_max, (unsigned long)rs.dec_us_avg,
            (unsigned long)rs.dec_us_max, (unsigned long)as.proc_us_max);
-    printf("Stack: Codec-Task frei %lu Byte (von 32 KB)\n", (unsigned long)rs.codec_stack_free);
+    printf("Stack: Codec-Task frei %lu Byte (von %d KB)\n", (unsigned long)rs.codec_stack_free, CODEC_STACK / 1024);
     printf("RAM  : frei %u Byte, minimal %u Byte\n", (unsigned)esp_get_free_heap_size(),
            (unsigned)esp_get_minimum_free_heap_size());
     com_status_t cs;
@@ -300,7 +300,7 @@ static int cmd_opus(int argc, char **argv)
     g_set.opus_kbps = k < 8 ? 8 : k > 128 ? 128 : k;
     if (argc > 2) {
         int c = atoi(argv[2]);
-        g_set.opus_cplx = c < 0 ? 0 : c > 10 ? 10 : c;
+        g_set.opus_cplx = c < 0 ? 0 : c > OPUS_CPLX_MAX ? OPUS_CPLX_MAX : c;
     }
     if (argc > 3) g_set.opus_voip = !strcmp(argv[3], "voip");
     rtp_codec_changed();

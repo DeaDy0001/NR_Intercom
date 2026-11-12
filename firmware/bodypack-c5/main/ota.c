@@ -211,7 +211,7 @@ esp_err_t ota_init(void)
     if (s_sock < 0) return ESP_FAIL;
     struct sockaddr_in a = { .sin_family = AF_INET, .sin_port = htons(OTA_UDP_PORT), .sin_addr.s_addr = htonl(INADDR_ANY) };
     if (bind(s_sock, (struct sockaddr *)&a, sizeof(a)) != 0) return ESP_FAIL;
-    if (xTaskCreate(udp_task, "ota_udp", 3584, NULL, 4, NULL) != pdPASS) return ESP_ERR_NO_MEM;
+    if (xTaskCreate(udp_task, "ota_udp", 3072, NULL, 4, NULL) != pdPASS) return ESP_ERR_NO_MEM;
     ESP_LOGI(TAG, "Update ueber WLAN bereit (UDP %d), laeuft aus %s", OTA_UDP_PORT, run ? run->label : "?");
     return ESP_OK;
 }

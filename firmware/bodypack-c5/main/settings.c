@@ -73,6 +73,7 @@ void settings_load(void)
         memcpy(&g_set, &blob.s, len - hdr);
         if (blob.version < 3) g_set.gate_db = def.gate_db;   // lag im alten Stand evtl. im Fuellbyte
         if (blob.version < 5) g_set.opus_cplx = def.opus_cplx;   // CPU-Last senken
+        if (g_set.opus_cplx > 5) g_set.opus_cplx = 5;            // mehr passt weder in CPU noch in den Stack
         if (blob.version < 6) g_set.rx_gain_db = def.rx_gain_db;
         if (blob.version < 7) memcpy(g_set.ota_code, def.ota_code, sizeof(g_set.ota_code));
         if (blob.version < 4) {                              // Intercom-Felder neu
