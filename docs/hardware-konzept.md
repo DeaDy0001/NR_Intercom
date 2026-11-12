@@ -1,6 +1,9 @@
-# Hardware-Konzept Bodypack (Stand 3)
+# Hardware-Konzept Bodypack (Stand 4)
 
-> **Stand 3 (November 2026):** Display wird das **Waveshare ESP32-S3-Touch-LCD-2.8B** (2,8″, 480 × 640, Touch).
+> **Stand 4 (November 2026):** Bauteile gegen die Datenblätter geprüft (Ordner `Datenblätter/`), Spannungsversorgung
+> überarbeitet (±5 V mit TPS65131 + LDOs, 48 V mit Verdoppler), Schaltplan V0.3.
+>
+> **Stand 3:** Display wird das **Waveshare ESP32-S3-Touch-LCD-2.8B** (2,8″, 480 × 640, Touch).
 > Akku bleibt **2× 18650** (flacher LiPo erst in einer späteren Version). Neu: Messwerte vom Prototyp (Abschnitt 1a),
 > Pin-Plan für das 2,8″-Board (Abschnitt 7) und die **Basisstation** mit LAN und Laden (Abschnitt 11).
 
@@ -226,7 +229,16 @@ Stromversorgung:
 - Lader mit Power-Path, z. B. TI BQ25895 (per I2C, 2–3 A)
 - NTC an den Zellen
 - MAX17048 für die Prozentanzeige
-- Buck-Boost 3,3 V für die Logik, rauscharmes ±5 V für den Analogteil, Boost 48 V für die Phantomspeisung
+- Buck-Boost 3,3 V für die Logik: **TPS63021** (fest 3,3 V, PS/SYNC an VIN = fester PWM-Betrieb, rauscharm)
+- ±5 V für den Analogteil: **TPS65131** erzeugt ±6 V (Boost + Inverter, PWM), danach glätten die rauscharmen LDOs
+  **TPS7A4901** (+5 V) und **TPS7A3001** (−5 V). Der ursprünglich geplante LM27762 geht nicht: Er macht +OUT mit
+  einem Linearregler direkt aus VIN, aus 3,5–4,2 V Akku also nie +5 V.
+- 48 V Phantom: Ein einstufiger Boost von 3,3 V auf 48 V bräuchte ca. 93 % Tastverhältnis, der **LM5155** kann laut
+  Datenblatt 90 % (min) bis 93 % (typ). Deshalb boostet er nur auf **ca. 24 V**, ein **Spannungsverdoppler**
+  (2 Dioden + 2 Kondensatoren, 100 V) macht daraus 48 V. FB misst direkt an den 48 V (470 k / 10 k, Referenz 1,0 V).
+  Geschaltet wird mit **Q2 ZXMP10A13F** (P-FET −100 V) und **Q3 MMBTA42** (NPN 300 V), Gate geschützt mit 15-V-Zener.
+- Ladestrom-Grenze am BQ25895: **R_ILIM 130 Ω** (ca. 2,7 A). In der Basisstation erkennt der Lader an D+/D− kein
+  Netzteil (nur 500 mA), deshalb setzt die Firmware beim Andocken den Eingangsstrom per I2C hoch.
 - Das S3-Board wird über VSYS gespeist, sein BAT-Anschluss bleibt leer
 - Soft-Power-Taster (lang drücken: Ein/Aus, sauberes Abmelden)
 
@@ -286,8 +298,9 @@ Das entlastet auch das Funknetz für die mobilen Bodypacks.
   die Tasten; auf der Platine hängen die Tasten am I/O-Expander U10. Der W5500 läuft ohne Interrupt-Leitung
   (Abfrage-Modus, das kann der ESP-IDF-Treiber).
 - **Erkennung:** Der DET-Kontakt liegt in der Station auf GND und geht im Bodypack an U16 (P11, interner Pull-up).
-- **USB-C und Station funktionieren beide.** Ein Strom-Umschalter **U15 TPS2116** wählt zwischen USB-C-VBUS (VIN1)
-  und den 5 V der Station (VIN2) und gibt das Ergebnis (VBUS_CHG) an den Lader. Die Daten von USB-C (Hub → Flashen
+- **USB-C und Station funktionieren beide.** Ein Strom-Umschalter **U15 TPS2116** wählt zwischen den 5 V der Station
+  (VIN1, **Vorrang**: MODE an VIN1, PR1 über 100 k / 33 k → schaltet ab ca. 4 V) und USB-C-VBUS (VIN2) und gibt das
+  Ergebnis (VBUS_CHG) an den Lader. Die Daten von USB-C (Hub → Flashen
   und Konsole beider ESP32) sind davon unabhängig, man kann also auch in der Station per USB flashen.
   Beide 5-V-Quellen gleichzeitig sind erlaubt, der TPS2116 verhindert Rückströme zwischen ihnen.
 - **Kontakte:** vergoldete Flächen am Bodypack, Federstifte (Pogo-Pins) in der Station, mechanisch geführt.

@@ -404,7 +404,7 @@ def testaufbau():
 # Variante B: eigene Traegerplatine (Entwurf V0.1)
 # =====================================================================================
 def platine():
-    s = Svg(3660, 3080, "NR Bodypack · Variante B: Trägerplatine V0.2 (Entwurf, S3 2,8″ + Basisstation, nicht für die Fertigung freigegeben)",
+    s = Svg(3900, 3080, "NR Bodypack · Variante B: Trägerplatine V0.3 (Entwurf, S3 2,8″ + Basisstation, nicht für die Fertigung freigegeben)",
             "IC-Pins mit Namen (Pin-Nummern aus dem EasyEDA/LCSC-Symbol übernehmen). Gleiche Netznamen in Fähnchen = "
             "gleiche Leitung. Werte mit * vor dem Layout gegen das Datenblatt prüfen.")
     U = "used"
@@ -474,24 +474,30 @@ def platine():
     to_flag("U1.VBUS", "VBUS", C["pwr"], 30)
     small(690, 360, "liegt direkt hinter J1 auf D+/D− und VBUS")
 
-    s.module("U2", 400, 520, 260, "U2 USB-Hub 2.0", "z. B. CH334F (4 Ports)*",
-             [("VBUS", "", "VBUS / V5", U), ("V33", "", "V33 (intern)", U), ("DP", "", "UP D+", U),
-              ("DM", "", "UP D−", U), ("GND", "", "GND", U)],
-             [("D1P", "", "DN1 D+", U), ("D1M", "", "DN1 D−", U), ("D2P", "", "DN2 D+", U), ("D2M", "", "DN2 D−", U),
-              ("XT", "", "Takt lt. DB*", "nc")], pitch=50, top=70, nums=False)
+    s.module("U2", 400, 520, 260, "U2 CH334F", "USB-Hub 2.0, QFN-24",
+             [("VBUS", "", "19 V5", U), ("V33", "", "20 VDD33", U), ("DP", "", "15 DPU", U),
+              ("DM", "", "14 DMU", U), ("PSELF", "", "18 PSELF", U), ("GND", "", "GND (Pad)", U)],
+             [("D1P", "", "12 DP1", U), ("D1M", "", "11 DM1", U), ("D2P", "", "10 DP2", U), ("D2M", "", "9 DM2", U),
+              ("XT", "", "4/3 XI/XO", U)], pitch=46, top=70, nums=False)
+    to_text("U2.PSELF", "R63 10 k → GND (busversorgt)")
+    to_text("U2.XT", "Y2 12 MHz (Last-C intern)")
     to_flag("U2.VBUS", "VBUS", C["pwr"], 150); under("U2.VBUS", "C1 10 µF → GND", 20)
     to_text("U2.V33", "C2 1 µF → GND")
     to_flag("U2.DP", "USB_DP", C["usb"], 150); to_flag("U2.DM", "USB_DM", C["usb"], 150); to_gnd("U2.GND")
     for pin, name in (("U2.D1P", "C5_USB_DP"), ("U2.D1M", "C5_USB_DM"), ("U2.D2P", "S3_USB_DP"),
                       ("U2.D2M", "S3_USB_DM")):
         to_flag(pin, name, C["usb"], 40)
-    s.module("U15", 880, 310, 220, "U15 TPS2116", "5 V: USB / Station",
-             [("IN1", "", "VIN1", U), ("IN2", "", "VIN2", U), ("PR1", "", "PR1 lt. DB*", "nc"), ("GND", "", "GND", U)],
-             [("OUT", "", "VOUT", U), ("ST", "", "ST", "nc")], pitch=40, top=64, nums=False)
-    to_flag("U15.IN1", "VBUS", C["pwr"], 40); to_flag("U15.IN2", "DOCK_5V", C["pwr"], 40); to_gnd("U15.GND")
-    to_flag("U15.OUT", "VBUS_CHG", C["pwr"], 30)
+    s.module("U15", 840, 360, 180, "U15 TPS2116", "Vorrang Station",
+             [("IN1", "", "3 VIN1", U), ("IN2", "", "6 VIN2", U), ("PR1", "", "4 PR1", U), ("GND", "", "1 GND", U)],
+             [("OUT", "", "2+7 VOUT", U), ("ST", "", "8 ST", "nc"), ("MODE", "", "5 MODE", U)], pitch=40, top=64,
+             nums=False)
+    to_flag("U15.IN1", "DOCK_5V", C["pwr"], 40); to_flag("U15.IN2", "VBUS", C["pwr"], 40); to_gnd("U15.GND")
+    to_text("U15.PR1", "R61/R62", INK, 16)
+    to_text("U15.MODE", "→ DOCK_5V", C["pwr"], 16)
+    to_flag("U15.OUT", "VBUS_CHG", C["pwr"], 10)
     s.note(60, 850, ["Ein USB-C für alles: Laden (über U15 → U3) und Flashen/Konsole beider ESP32 über den Hub.",
-                     "In der Basisstation lädt U15 aus deren 5 V (DOCK_5V). Die USB-C-Buchsen der Module bleiben unbenutzt."],
+                     "In der Basisstation lädt U15 aus deren 5 V (DOCK_5V). Die USB-C-Buchsen der Module bleiben unbenutzt.",
+                     "U15: Vorrang Station (MODE → VIN1, PR1 über R61 100 k von DOCK_5V und R62 33 k → GND, schaltet ab ca. 4 V)."],
            size=14)
 
     # ======================================================================= B · Laden + Akku
@@ -502,11 +508,11 @@ def platine():
               ("PGND", "", "PGND / GND", U)],
              [("SW", "", "SW", U), ("BTST", "", "BTST", U), ("SYS", "", "SYS", U), ("BAT", "", "BAT", U),
               ("SDA", "", "SDA", U), ("SCL", "", "SCL", U), ("INT", "", "/INT", U), ("STAT", "", "STAT", U),
-              ("QON", "", "/QON", U), ("DSEL", "", "DSEL", "nc")], pitch=50, top=70, nums=False)
+              ("QON", "", "/QON", U), ("DSEL", "", "DSEL", U)], pitch=50, top=70, nums=False)
     to_flag("U3.VBUS", "VBUS_CHG", C["pwr"], 120); under("U3.VBUS", "C3 1 µF → GND", 10)
     to_text("U3.PMID", "C4 10 µF → GND")
     to_flag("U3.REGN", "REGN", C["pwr"], 120); under("U3.REGN", "C5 4,7 µF → GND", 10)
-    to_text("U3.ILIM", "R3 R_ILIM* → GND")
+    to_text("U3.ILIM", "R3 130 Ω → GND (2,7 A)")
     to_flag("U3.TS", "TS", C["ana"], 120)
     to_flag("U3.DP", "USB_DP", C["usb"], 120); to_flag("U3.DM", "USB_DM", C["usb"], 120)
     for pin in ("U3.OTG", "U3.CE", "U3.PGND"):
@@ -537,6 +543,7 @@ def platine():
     s.line([e, (e[0] + 20, y + 56)], C["btn"]); s.flag(e[0] + 20, y + 56, "PWR_KEY", C["btn"])
     small(1690, 880, "S1 kurz: Ein (verlässt den Ship-Mode)")
     small(1690, 900, "S1 lang: S3 meldet ab → Ship-Mode (Aus)")
+    small(1690, 920, "DSEL: R64 10 k → +3V3")
 
     # TS-Netzwerk
     bx, by = 1180, 790
@@ -580,16 +587,18 @@ def platine():
     s.text(2250, 700, "Drains intern verbunden", 12, "#555", anchor="middle", family=SANS)
 
     s.module("U5", 2170, 740, 180, "U5 MAX17048", "Ladezustand %, I2C 0x36",
-             [("CELL", "", "CELL", U), ("VDD", "", "VDD", U), ("GND", "", "GND", U)],
-             [("SDA", "", "SDA", U), ("SCL", "", "SCL", U), ("ALRT", "", "ALRT", U)], pitch=34, top=60, nums=False)
+             [("CELL", "", "2 CELL", U), ("VDD", "", "3 VDD", U), ("GND", "", "4 GND", U)],
+             [("SDA", "", "8 SDA", U), ("SCL", "", "7 SCL", U), ("ALRT", "", "5 ALRT", U)], pitch=34, top=60,
+             nums=False)
     to_flag("U5.CELL", "BAT+", C["pwr"], 60)
     to_text("U5.VDD", "= CELL, C10 1 µF → GND", C["pwr"])
     to_gnd("U5.GND", 20)
+    small(2175, 922, "CTG (1) + QSTRT (6) → GND")
     for pin, name in (("U5.SDA", "SDA_S3"), ("U5.SCL", "SCL_S3"), ("U5.ALRT", "BAT_ALRT")):
         to_flag(pin, name, C["i2c"], 30)
 
     # ======================================================================= C · Spannungen
-    s.block(2450, 100, 1180, 840, "C · Spannungen: 3,3 V (Logik), ±5 V (Analog), 48 V (Phantom)")
+    s.block(2450, 100, 1420, 840, "C · Spannungen: 3,3 V (Logik), ±5 V (Analog), 48 V (Phantom)")
     s.module("U6", 2680, 170, 230, "U6 TPS63021", "Buck-Boost 3,3 V / 2 A",
              [("VIN", "", "VIN", U), ("VINA", "", "VINA", U), ("EN", "", "EN", U), ("PS", "", "PS/SYNC", U),
               ("GND", "", "GND/PGND", U)],
@@ -603,39 +612,68 @@ def platine():
     xa, ya = p("U6.L1"); xb_, yb_ = p("U6.L2")
     s.line([(xa, ya), (xa + 10, ya)]); s.inductor(xa + 10, ya, "L2", "1,5 µH / 4 A")
     s.line([(xa + 110, ya), (xa + 124, ya), (xa + 124, yb_), (xb_, yb_)])
-    x, y = p("U6.VOUT"); s.line([(x, y), (x + 200, y)], C["pwr"]); s.flag(x + 200, y, "+3V3", C["pwr"])
+    x, y = p("U6.VOUT"); s.line([(x, y), (x + 130, y)], C["pwr"]); s.flag(x + 130, y, "+3V3", C["pwr"])
     small(x + 40, y + 18, "C12 3× 22 µF → GND")
     to_text("U6.FB", "→ VOUT (Festspannung)")
 
-    s.module("U7", 2680, 560, 230, "U7 LM27762", "±5 V rauscharm, 250 mA",
-             [("VIN", "", "VIN", U), ("EN", "", "EN+ / EN−", U), ("GND", "", "GND", U)],
-             [("OUTP", "", "OUT+", U), ("OUTN", "", "OUT−", U), ("CP", "", "C1+/C1−*", U)], pitch=50, top=70, nums=False)
-    to_flag("U7.VIN", "VSYS", C["pwr"], 160); under("U7.VIN", "C13 10 µF → GND", 20)
-    to_flag("U7.EN", "ANA_EN", C["i2c"], 60); to_gnd("U7.GND")
-    to_flag("U7.OUTP", "+5VA", C["pwr"], 200); under("U7.OUTP", "C14 10 µF → GND", 20)
-    x, y = p("U7.OUTN"); s.line([(x, y), (x + 200, y)], C["pwr"]); s.flag(x + 200, y, "−5VA", C["pwr"])
-    small(x + 20, y + 18, "C15 10 µF → GND")
-    to_text("U7.CP", "C±, FB lt. DB*")
+    s.module("U7", 2720, 540, 230, "U7 TPS65131", "±6 V Doppelwandler, PWM",
+             [("EN", "", "8+10 ENP/ENN", U), ("VIN", "", "4 VIN", U), ("INN", "", "5+6 INN", U), ("INP", "", "1+24 INP", U),
+              ("PS", "", "9+11 PSP/PSN", U), ("GND", "", "2,3,19 GND", U)],
+             [("VPOS", "", "23 VPOS", U), ("FBP", "", "22 FBP", U), ("VREF", "", "17 VREF", U), ("FBN", "", "16 FBN", U),
+              ("VNEG", "", "15 VNEG", U), ("OUTN", "", "13+14 OUTN", U), ("CP", "", "21 CP", U), ("CN", "", "18 CN", U)],
+             pitch=34, top=64, nums=False)
+    to_flag("U7.EN", "ANA_EN", C["i2c"], 40)
+    to_text("U7.VIN", "R74 ← VSYS")
+    to_flag("U7.INN", "VSYS", C["pwr"], 40); under("U7.INN", "C61 4,7 µF", 10)
+    to_text("U7.INP", "L3 ← VSYS")
+    to_gnd("U7.PS"); to_gnd("U7.GND")
+    to_flag("U7.VPOS", "V6P", C["pwr"], 20)
+    to_text("U7.FBP", "R70 / R71")
+    to_text("U7.VREF", "C63 220 nF")
+    to_text("U7.FBN", "R72 / R73")
+    to_flag("U7.VNEG", "V6N", C["pwr"], 20)
+    to_text("U7.OUTN", "L4 → GND, D6")
+    to_text("U7.CP", "C66 10 nF"); to_text("U7.CN", "C67 4,7 nF")
+    small(2470, 896, "R70 470 k V6P→FBP, R71 120 k FBP→GND, R72 590 k V6N→FBN, R73 120 k FBN→VREF, C60 100 nF, C61 4,7 µF,")
+    small(2470, 914, "L3/L4 4,7 µH, D5 INP→V6P und D6 V6N→OUTN Schottky 1 A, C62/C64 22 µF. Ergibt ±5,96 V vor den LDOs.")
+    s.module("U17", 3300, 540, 190, "U17 TPS7A4901", "LDO +5 V, NR 10 nF*",
+             [("IN", "", "IN + EN", U), ("GND", "", "GND", U)], [("OUT", "", "OUT", U), ("FB", "", "FB", U)],
+             pitch=34, top=64, nums=False)
+    to_flag("U17.IN", "V6P", C["pwr"], 30); to_gnd("U17.GND")
+    to_flag("U17.OUT", "+5VA", C["pwr"], 40); under("U17.OUT", "C76 10 µF", 10)
+    to_text("U17.FB", "R75 31,6 k* / R76 10 k*")
+    s.module("U18", 3300, 720, 190, "U18 TPS7A3001", "LDO −5 V, NR 10 nF*",
+             [("IN", "", "IN", U), ("EN", "", "EN lt. DB*", "nc"), ("GND", "", "GND", U)],
+             [("OUT", "", "OUT", U), ("FB", "", "FB", U)], pitch=34, top=64, nums=False)
+    to_flag("U18.IN", "V6N", C["pwr"], 30); to_gnd("U18.GND")
+    to_flag("U18.OUT", "−5VA", C["pwr"], 40); under("U18.OUT", "C77 10 µF", 10)
+    to_text("U18.FB", "R77 32,4 k* / R78 10 k*")
 
-    s.module("U8", 3290, 170, 220, "U8 Boost 48 V", "z. B. LM5155 + 100-V-FET*",
-             [("VIN", "", "VIN", U), ("EN", "", "EN/UVLO", U), ("GND", "", "GND", U)],
-             [("VOUT", "", "VOUT", U), ("FB", "", "FB 1,0 V", U)], pitch=46, top=70, nums=False)
-    to_flag("U8.VIN", "VSYS", C["pwr"], 60); to_flag("U8.EN", "P48_EN", C["p48"], 60); to_gnd("U8.GND")
-    to_flag("U8.VOUT", "P48_RAW", C["p48"], 20); to_text("U8.FB", "R11/R12", INK, 16)
-    s.note(3290, 380, ["R11 470 k (VOUT→FB), R12 10 k (FB→GND):", "1,0 V × (1 + 470/10) = 48 V",
-                       "L, Diode 100 V, C 2× 1 µF/100 V,", "RT + Kompensation lt. Datenblatt*"], size=13)
-    s.text(3230, 500, "P48-Schalter + Filter", 13, INK, weight="bold", family=SANS)
-    s.flag(3300, 540, "P48_RAW", C["p48"], "L")
-    s.line([(3300, 540), (3320, 540)], C["p48"])
-    s.rect(3320, 520, 100, 40, stroke=C["p48"], fill="#ffffff", sw=2.5)
-    s.text(3370, 534, "Q2 P-FET", 12, C["p48"], anchor="middle", weight="bold")
-    s.text(3370, 549, "≥ 60 V*", 11, INK, anchor="middle")
-    e = s.resistor(3420, 540, "R13", "100 Ω", color=C["p48"])
-    s.line([e, (e[0] + 40, 540)], C["p48"])
-    s.dot(e[0] + 40, 540, INK); s.flag(e[0] + 40, 540, "P48", C["p48"])
-    s.note(3230, 610, ["C16 47 µF/63 V (+) am P48-Knoten → GND.",
-                       "Gate: 100 k → P48_RAW, NPN + 10 k ← P48_SW,", "Zener 15 V G-S, Sanftanlauf 1 µF*.",
-                       "Ausgang 47 k Entladung nach GND.", "Phantom nur auf XLR 2/3, nicht auf die Klinke."], size=13)
+    s.module("U8", 3270, 150, 200, "U8 LM5155", "Boost ≈ 24 V, ca. 250 kHz",
+             [("BIAS", "", "1+2 BIAS/VCC", U), ("UVLO", "", "12 UVLO", U), ("RT", "", "10 RT", U), ("SS", "", "9 SS", U),
+              ("COMP", "", "6 COMP", U), ("GND", "", "4+7 GND", U)],
+             [("GATE", "", "3 GATE", U), ("CS", "", "5 CS", U), ("FB", "", "8 FB", U)], pitch=30, top=60, nums=False)
+    to_flag("U8.BIAS", "VSYS", C["pwr"], 40); to_flag("U8.UVLO", "P48_EN", C["p48"], 40)
+    to_text("U8.RT", "R80 86,6 k*"); to_text("U8.SS", "C74 47 nF*"); to_text("U8.COMP", "R85/C75*")
+    to_gnd("U8.GND")
+    to_text("U8.GATE", "Q4 Gate"); to_text("U8.CS", "Q4 S, R81*"); to_text("U8.FB", "R11/R12")
+    s.note(3600, 150, ["Leistungsteil 48 V:",
+                       "VSYS → L5 10 µH* → Q4 Drain",
+                       "Q4 N-FET ≥ 60 V, Logic Level*",
+                       "R81 20 mΩ*, R11 470 k, R12 10 k",
+                       "D7 → P24 ≈ 24 V (C71 1 µF/100 V)",
+                       "Verdoppler: C72 1 µF/100 V,",
+                       "D8, D9 → P48_RAW (C73)",
+                       "Dioden Schottky 100 V",
+                       "",
+                       "P48-Schalter:",
+                       "Q2 ZXMP10A13F (S = P48_RAW)",
+                       "D → R13 100 Ω → P48",
+                       "C16 47 µF/63 V an P48",
+                       "G–S: R82 100 k + DZ1 15 V",
+                       "R83 47 k Gate → Q3 C",
+                       "Q3 MMBTA42, E = GND",
+                       "B ← R84 10 k ← P48_SW"], size=12)
 
     # ======================================================================= D · C5
     s.block(30, 960, 1000, 820, "D · ESP32-C5-Zero (gesteckt): Funk, Audio, Tasten")
