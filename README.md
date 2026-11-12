@@ -3,6 +3,12 @@
 Drahtloses Intercom-Bodypack (Beltpack) als Client für die bestehende NR_Com-Software
 (Repo `DeaDy0001/netrock-com`: Node.js + mediasoup/WebRTC, Mix-Minus pro Benutzer über GStreamer, derzeit Windows).
 
+## Schnellstart (Windows)
+
+**`NR-Intercom.bat`** doppelklicken: ein Fenster für alles. `help` zeigt die Befehle, z. B.
+`c5 update` / `s3 update` (Firmware holen und flashen, Einstellungen bleiben erhalten),
+`c5 monitor` / `s3 monitor` (Log, zurück mit Strg+Q), `c5 status` (Befehl am Bodypack ausführen).
+
 ## Hardware
 
 Ziel (siehe Hardware-Konzept):

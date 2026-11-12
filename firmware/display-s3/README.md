@@ -46,32 +46,22 @@ Nichts umlöten: Die Drehgeber bleiben, wie sie laut dem bisherigen Sketch im NR
 
 ## 2. Flashen
 
-### Empfohlen: Flashen und Konsole in einem Fenster (ohne Arduino IDE)
-Einmalig in der Eingabeaufforderung: `py -m pip install esptool`.
-Danach `firmware\flash-s3.bat` doppelklicken: flasht und zeigt **im selben Fenster** gleich die Konsole
-(Log und Befehle wie `status`, mit Pfeiltasten und Verlauf). Kein Schließen/Öffnen des Monitors mehr nötig.
+### Empfohlen: `NR-Intercom.bat` (ein Fenster für alles, ohne Arduino IDE)
+**`NR-Intercom.bat`** im Hauptordner des Repositorys doppelklicken. Beim ersten Start wird bei Bedarf
+`esptool` installiert (`py -m pip install esptool`). Dann im Fenster Befehle eingeben, `help` zeigt alle:
 
-| Taste | Wirkung |
+| Befehl | Wirkung |
 |---|---|
-| **Strg+F** | neu flashen (nach `git pull`), danach läuft die Konsole von selbst weiter |
-| **Strg+R** | Board neu starten |
-| **Strg+Q** | beenden |
+| `s3 update` | neueste Firmware holen (`git pull`) und flashen |
+| `update` | `git pull`, dann C5 und S3 flashen |
+| `s3 monitor` | Log mitlesen, zurück mit **Strg+Q** |
+| `s3 reset` | Board neu starten |
+| `ports` / `s3 port COM6` | COM-Ports anzeigen / festlegen (wird gemerkt) |
 
-`firmware\konsole-s3.bat` öffnet nur die Konsole. Der zuletzt benutzte COM-Port wird gemerkt.
-Den Arduino-IDE-Monitor dafür **schließen** (er blockiert sonst den Port).
-
-### Variante 0: Doppelklick (Windows mit Arduino IDE)
-
-> **Einstellungen bleiben erhalten:** `flash-c5.bat` / `flash-s3.bat` schreiben Bootloader, Partitionstabelle
-> und Programm einzeln (`*-bootloader.bin`, `*-partitions.bin`, `*-app.bin`). Der Speicherbereich mit WLAN,
-> Passwort, PIN und allen Einstellungen (0x9000–0xFFFF) wird dabei **nicht** überschrieben.
-> Die Komplett-Datei `*.bin` (ab Adresse 0x0, für das Flashen im Browser) setzt dagegen alles zurück.
-> Nach einem eigenen Build: `sh tools/export_bins.sh`.
-1. In der Arduino IDE muss das Paket **„esp32 by Espressif“** installiert sein (Werkzeuge → Board → Boardverwalter).
-2. S3-Board per USB-C anschließen. Den **seriellen Monitor der Arduino IDE schließen**, er blockiert sonst den Port.
-3. **`firmware/flash-s3.bat`** doppelklicken. Das Skript findet esptool selbst, zeigt die COM-Ports und fragt nach dem Port.
-   Bei nur einem Gerät genügt Enter.
-4. Klappt es nicht: BOOT-Taste halten, kurz RESET drücken, BOOT loslassen und mit „j“ neu versuchen.
+Beim Flashen bleiben WLAN, Passwort, PIN und alle Einstellungen erhalten: Es werden nur Bootloader,
+Partitionstabelle und Programm geschrieben (`*-bootloader.bin`, `*-partitions.bin`, `*-app.bin`), der
+Einstellungsbereich 0x9000–0xFFFF nicht. Den Monitor der Arduino IDE vorher **schließen** (blockiert den Port).
+Nach einem eigenen Build: `sh tools/export_bins.sh`.
 
 ### Variante A: fertige Datei im Browser
 1. Chrome oder Edge öffnen: <https://espressif.github.io/esptool-js/>

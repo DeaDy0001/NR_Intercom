@@ -55,35 +55,28 @@ die richtige Lösung kommt mit der eigenen Platine.
 
 ## 2. Flashen
 
-### Empfohlen: Flashen und Konsole in einem Fenster (ohne Arduino IDE)
-Einmalig in der Eingabeaufforderung: `py -m pip install esptool`.
-Danach `firmware\flash-c5.bat` doppelklicken: flasht und zeigt **im selben Fenster** gleich die Konsole
-(Log und Befehle wie `status`, mit Pfeiltasten und Verlauf). Kein Schließen/Öffnen des Monitors mehr nötig.
+### Empfohlen: `NR-Intercom.bat` (ein Fenster für alles, ohne Arduino IDE)
+**`NR-Intercom.bat`** im Hauptordner des Repositorys doppelklicken. Beim ersten Start wird bei Bedarf
+`esptool` installiert (`py -m pip install esptool`). Dann im Fenster Befehle eingeben, `help` zeigt alle:
 
-| Taste | Wirkung |
+| Befehl | Wirkung |
 |---|---|
-| **Strg+F** | neu flashen (nach `git pull`), danach läuft die Konsole von selbst weiter |
-| **Strg+R** | Board neu starten |
-| **Strg+Q** | beenden |
+| `c5 update` | neueste Firmware holen (`git pull`) und flashen |
+| `update` | `git pull`, dann C5 und S3 flashen |
+| `c5 monitor` | Log mitlesen und Befehle tippen, zurück mit **Strg+Q** |
+| `c5 reset` | Board neu starten |
+| `c5 status`, `c5 com`, `c5 rxgain 18` … | Befehl am C5 ausführen und Antwort zeigen |
+| `ports` / `c5 port COM6` | COM-Ports anzeigen / festlegen (wird gemerkt) |
 
-`firmware\konsole-c5.bat` öffnet nur die Konsole. Der zuletzt benutzte COM-Port wird gemerkt.
-Den Arduino-IDE-Monitor dafür **schließen** (er blockiert sonst den Port).
-
-### Variante 0: Doppelklick (Windows mit Arduino IDE)
-
-> **Einstellungen bleiben erhalten:** `flash-c5.bat` / `flash-s3.bat` schreiben Bootloader, Partitionstabelle
-> und Programm einzeln (`*-bootloader.bin`, `*-partitions.bin`, `*-app.bin`). Der Speicherbereich mit WLAN,
-> Passwort, PIN und allen Einstellungen (0x9000–0xFFFF) wird dabei **nicht** überschrieben.
-> Die Komplett-Datei `*.bin` (ab Adresse 0x0, für das Flashen im Browser) setzt dagegen alles zurück.
-> Nach einem eigenen Build: `sh tools/export_bins.sh`.
-1. Arduino IDE: Paket **„esp32 by Espressif“ ab Version 3.3** (ältere esptool-Versionen kennen den C5 nicht).
-2. C5-Zero per USB-C anschließen, seriellen Monitor schließen.
-3. **`firmware/flash-c5.bat`** doppelklicken, COM-Port wählen.
+Beim Flashen bleiben WLAN, Passwort, PIN und alle Einstellungen erhalten: Es werden nur Bootloader,
+Partitionstabelle und Programm geschrieben (`*-bootloader.bin`, `*-partitions.bin`, `*-app.bin`), der
+Einstellungsbereich 0x9000–0xFFFF nicht. Den Monitor der Arduino IDE vorher **schließen** (blockiert den Port).
+Nach einem eigenen Build: `sh tools/export_bins.sh`.
 
 ### Variante A: fertige Datei, ohne Entwicklungsumgebung
 1. Chrome oder Edge öffnen: <https://espressif.github.io/esptool-js/>
 2. ESP32-C5-Zero per USB-C anschließen → **Connect** (bei Problemen BOOT-Taste halten und dann Reset drücken)
-3. Datei `firmware/bin/nr-bodypack-c5.bin` mit **Flash Address 0x0** auswählen → **Program**
+3. Datei `firmware/bin/nr-bodypack-c5.bin` mit **Flash Address 0x0** (setzt alle Einstellungen zurück) auswählen → **Program**
 4. Danach im Terminal derselben Seite (115200 Baud) oder mit einem anderen seriellen Terminal arbeiten
 
 ### Variante B: selbst bauen (ESP-IDF 5.5)
