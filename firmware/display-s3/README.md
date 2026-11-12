@@ -46,6 +46,20 @@ Nichts umlöten: Die Drehgeber bleiben, wie sie laut dem bisherigen Sketch im NR
 
 ## 2. Flashen
 
+### Empfohlen: Flashen und Konsole in einem Fenster (ohne Arduino IDE)
+Einmalig in der Eingabeaufforderung: `py -m pip install esptool`.
+Danach `firmware\flash-s3.bat` doppelklicken: flasht und zeigt **im selben Fenster** gleich die Konsole
+(Log und Befehle wie `status`, mit Pfeiltasten und Verlauf). Kein Schließen/Öffnen des Monitors mehr nötig.
+
+| Taste | Wirkung |
+|---|---|
+| **Strg+F** | neu flashen (nach `git pull`), danach läuft die Konsole von selbst weiter |
+| **Strg+R** | Board neu starten |
+| **Strg+Q** | beenden |
+
+`firmware\konsole-s3.bat` öffnet nur die Konsole. Der zuletzt benutzte COM-Port wird gemerkt.
+Den Arduino-IDE-Monitor dafür **schließen** (er blockiert sonst den Port).
+
 ### Variante 0: Doppelklick (Windows mit Arduino IDE)
 
 > **Einstellungen bleiben erhalten:** `flash-c5.bat` / `flash-s3.bat` schreiben Bootloader, Partitionstabelle

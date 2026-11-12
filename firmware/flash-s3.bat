@@ -25,6 +25,19 @@ echo   NR Intercom - ESP32-S3 Display-Firmware flashen
 echo  ================================================
 echo.
 
+rem ---------------------------------------------------------------- bevorzugt: Flashen + Konsole in einem Fenster
+rem (Python mit esptool + pyserial: einmalig "py -m pip install esptool")
+set "PYEXE="
+py -c "import esptool, serial" >nul 2>&1 && set "PYEXE=py"
+if not defined PYEXE python -c "import esptool, serial" >nul 2>&1 && set "PYEXE=python"
+if defined PYEXE if exist "%~dp0..\tools\nrtool.py" (
+    %PYEXE% "%~dp0..\tools\nrtool.py" s3
+    goto :ende_ohne_pause
+)
+echo  Tipp: Mit "py -m pip install esptool" flasht diese Datei kuenftig und zeigt
+echo        danach gleich die Konsole an - ohne Arduino IDE.
+echo.
+
 if not exist "%BIN%" goto :no_bin
 if not exist "%BOOT%" goto :no_bin
 if not exist "%PART%" goto :no_bin
@@ -139,4 +152,5 @@ goto :ende
 :ende
 echo.
 pause
+:ende_ohne_pause
 endlocal
