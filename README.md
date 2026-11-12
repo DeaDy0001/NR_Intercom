@@ -25,7 +25,7 @@ Aktueller Prototyp: ESP32-S3 AMOLED + Waveshare WM8960 Audio Board
 
 ➡️ **Funknetz-Planung (Access Points, Reichweite, Einstellungen): [docs/funknetz-planung.md](docs/funknetz-planung.md)**
 
-➡️ **Gesamt-Schaltpläne (alles auf einem Blatt):** [Variante A: Testaufbau](docs/img/schaltplan-testaufbau.svg) · [Variante B: Trägerplatine V0.1 als Linien-Plan](docs/img/schaltplan-platine-v1-linien.svg) · [Variante B in Blöcken](docs/img/schaltplan-platine-v1.svg) (erzeugt mit `tools/schematics.py` und `tools/schematic_routed.py`)
+➡️ **Gesamt-Schaltpläne (alles auf einem Blatt):** [Variante A: Testaufbau](docs/img/schaltplan-testaufbau.svg) · [Variante B: Trägerplatine V0.2 als Linien-Plan](docs/img/schaltplan-platine-v1-linien.svg) · [Variante B in Blöcken](docs/img/schaltplan-platine-v1.svg) · [Basisstation als Linien-Plan](docs/img/schaltplan-basisstation-linien.svg) (erzeugt mit `tools/schematics.py`, `tools/schematic_routed.py` und `tools/schematic_station.py`)
 
 ➡️ **Verdrahtungspläne Testaufbau (jeder Pin mit eigener Linie):** [C5 + WM8960 + Tasten](docs/img/verkabelung-c5-wm8960.png) · [S3 + Drehgeber](docs/img/verkabelung-s3-drehgeber.png)
 

@@ -1,0 +1,217 @@
+#!/usr/bin/env python3
+"""Basisstation als Linien-Schaltplan (gleicher Router wie tools/schematic_routed.py).
+
+Die Station haelt ein Bodypack, gibt ihm 5 V zum Laden und LAN ueber einen W5500 (SPI ueber Federkontakte).
+
+Aufruf: python tools/schematic_station.py docs/img
+Erzeugt: docs/img/schaltplan-basisstation-linien.svg
+"""
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from schematics import C  # noqa: E402
+import schematic_routed as sr  # noqa: E402
+from schematic_routed import Board, spread  # noqa: E402
+
+for n in ("ETH_TXP", "ETH_TXN", "ETH_RXP", "ETH_RXN", "TX_CT", "RX_CT", "J3_TCT", "J3_RCT"):
+    sr.NET_COLOR[n] = C["usb"]
+for n in ("+5V", "DOCK_5V", "J1VB", "AVDD"):
+    sr.NET_COLOR[n] = C["pwr"]
+sr.NET_COLOR["+3V3"] = C["pwr"]
+for n in ("LINK_K", "ACT_K", "LINKLED", "ACTLED", "PLED", "FLED"):
+    sr.NET_COLOR[n] = C["led"]
+for n in ("DOCK_SCK", "DOCK_MOSI", "DOCK_MISO", "DOCK_CS", "DK_SCK", "DK_MOSI", "DK_MISO", "DK_CS", "W_MISO"):
+    sr.NET_COLOR[n] = C["i2s"]
+sr.Board.LABELLED = sr.Board.LABELLED + ("ETH_",)
+
+W, H = 2400, 1600
+
+
+def build(priority=()):
+    b = Board(W, H, "NR Bodypack · Basisstation V0.1 als Linien-Schaltplan (Entwurf)",
+              "Bodypack einstecken → 5 V zum Laden über die Kontakte, LAN über den W5500 in der Station (SPI über "
+              "Federstifte). GND = Masse-Symbol. Kreuzungen ohne Punkt sind NICHT verbunden. Werte mit * vor dem "
+              "Layout prüfen.")
+    U = "used"
+    M = b.module
+    b.obstacle(0, 0, W, 100, margin=0)
+
+    # ================================================================== Stromeingang
+    b.block(40, 120, 0, 0, "Stromeingang USB-C 5 V / 3 A (nur Strom)")
+    M("J1", 80, 170, 180, "J1 USB-C", "nur Strom, 5 V 3 A", [],
+      [("VBUS", "", "VBUS", U), ("CC1", "", "CC1", U), ("CC2", "", "CC2", U), ("GND", "", "GND", U)],
+      pitch=40, top=70)
+    b.gnd_pin("J1.GND")
+    b.R("F1", "PTC 3 A", 310, 240, color=C["pwr"])
+    b.R("R1", "5,1 k", 330, 280, vert=True); b.gnd_pin("R1.2", 10)
+    b.R("R2", "5,1 k", 390, 320, vert=True); b.gnd_pin("R2.2", 10)
+    b.D("D1", "SMBJ5.0CA", 480, 280, vert=True, color=C["pwr"]); b.gnd_pin("D1.K", 10)
+    b.Cap("C1", "47 µF", 580, 280, polar=True); b.gnd_pin("C1.2", 10)
+    b.R("R3", "1 k", 680, 280, vert=True, color=C["pwr"])
+    b.D("D2", "LED grün", 680, 380, vert=True, led=True, color=C["btn"]); b.gnd_pin("D2.K", 10)
+
+    # ================================================================== Schalter fuer die 5 V an den Kontakten
+    b.block(820, 120, 0, 0, "5 V an die Kontakte (strombegrenzt)")
+    M("U1", 860, 170, 220, "U1 TPS2557", "Lastschalter, I-Limit",
+      [("IN", "", "IN", U), ("EN", "", "EN", U), ("ILIM", "", "ILIM", U), ("GND", "", "GND", U)],
+      [("OUT", "", "OUT", U), ("FLT", "", "/FAULT", U)], pitch=40, top=70)
+    b.gnd_pin("U1.GND")
+    b.R("R4", "R_ILIM*", 760, 340, vert=True); b.gnd_pin("R4.2", 10)
+    b.Cap("C2", "1 µF", 1160, 300); b.gnd_pin("C2.2", 10)
+    b.R("R5", "1 k", 1120, 430, color=C["pwr"])
+    b.D("D3", "LED rot", 1220, 430, led=True)
+
+    # ================================================================== 3,3 V
+    b.block(1380, 120, 0, 0, "3,3 V für den W5500")
+    M("U2", 1440, 170, 200, "U2 AP2112K-3.3", "LDO 600 mA",
+      [("VIN", "", "VIN", U), ("EN", "", "EN", U), ("GND", "", "GND", U)],
+      [("VOUT", "", "VOUT", U), ("NC", "", "NC", "nc")], pitch=40, top=70)
+    b.gnd_pin("U2.GND")
+    b.Cap("C3", "1 µF", 1330, 300); b.gnd_pin("C3.2", 10)
+    b.Cap("C4", "10 µF", 1700, 280); b.gnd_pin("C4.2", 10)
+
+    # ================================================================== Federstifte
+    b.block(40, 700, 0, 0, "Federstifte zum Bodypack")
+    M("J2", 80, 760, 200, "J2 Federstifte", "7× Pogo-Pin, gefedert",
+      [], [("SCK", "", "SCK", U), ("MOSI", "", "MOSI", U), ("MISO", "", "MISO", U), ("CS", "", "CS", U),
+           ("V5", "", "5 V → Bodypack", U), ("DET", "", "DET (auf GND)", U), ("GND", "", "GND", U)],
+      pitch=40, top=60)
+    b.gnd_pin("J2.DET"); b.gnd_pin("J2.GND")
+    M("U4", 440, 760, 200, "U4 TPD4E05U06", "ESD 4-fach, flow-through",
+      [("IO1", "", "IO1", U), ("IO2", "", "IO2", U), ("IO3", "", "IO3", U), ("IO4", "", "IO4", U)],
+      [("O1", "", "IO1", U), ("O2", "", "IO2", U), ("O3", "", "IO3", U), ("O4", "", "IO4", U), ("GND", "", "GND", U)],
+      pitch=40, top=60)
+    b.gnd_pin("U4.GND")
+    b.R("R6", "33 Ω", 760, 870, color=C["i2s"])
+    b.R("R7", "10 k", 900, 640, vert=True, color=C["pwr"])
+
+    # ================================================================== W5500
+    b.block(1000, 705, 0, 0, "Netzwerk-Chip W5500 (SPI → 100 Mbit Ethernet)")
+    M("U3", 1040, 720, 300, "U3 W5500", "Ethernet mit PHY, LQFP-48",
+      [("SCLK", "", "SCLK", U), ("MOSI", "", "MOSI", U), ("MISO", "", "MISO", U), ("SCS", "", "/SCS", U),
+       ("INT", "", "/INT (Abfrage)", "nc"), ("XI", "", "XI", U), ("XO", "", "XO", U),
+       ("PMODE", "", "PMODE0–2 offen = Auto", "nc"), ("RST", "", "/RST", U), ("GND", "", "GND/AGND", U)],
+      [("TXP", "", "TXP", U), ("TXN", "", "TXN", U), ("RXP", "", "RXP", U), ("RXN", "", "RXN", U),
+       ("LINK", "", "LINKLED", U), ("ACT", "", "ACTLED", U), ("EXRES", "", "EXRES1", U), ("TOCAP", "", "TOCAP", U),
+       ("V12", "", "1V2O", U), ("VBG", "", "VBG", "nc"), ("VDD", "", "VDD", U), ("AVDD", "", "AVDD", U)],
+      pitch=40, top=70)
+    b.gnd_pin("U3.GND")
+    b.R("R8", "10 k", 980, 1050, vert=True, color=C["pwr"])
+    b.Cap("C5", "100 nF", 920, 1110); b.gnd_pin("C5.2", 10)
+    M("Y1", 700, 950, 140, "Y1 25 MHz", "Quarz", [], [("X1", "", "1", U), ("X2", "", "2", U)], pitch=40, top=40)
+    b.Cap("C6", "18 pF*", 720, 1120); b.gnd_pin("C6.2", 10)
+    b.Cap("C7", "18 pF*", 800, 1160); b.gnd_pin("C7.2", 10)
+
+    # Abschluss der Leitungspaare (Werte lt. WIZnet-Referenzschaltung pruefen)
+    b.R("R9", "49,9 Ω", 1420, 620, vert=True, color=C["usb"])
+    b.R("R10", "49,9 Ω", 1480, 620, vert=True, color=C["usb"])
+    b.R("R11", "49,9 Ω", 1580, 620, vert=True, color=C["usb"])
+    b.R("R12", "49,9 Ω", 1640, 620, vert=True, color=C["usb"])
+    b.Cap("C8", "6,8 nF*", 1740, 560); b.gnd_pin("C8.2", 10)
+    b.R("R13", "330 Ω", 1420, 950, color=C["led"])
+    b.R("R14", "330 Ω", 1560, 990, color=C["led"])
+    b.R("R15", "12,4 k 1 %", 1580, 1030, vert=True); b.gnd_pin("R15.2", 10)
+    b.Cap("C10", "4,7 µF", 1480, 1070); b.gnd_pin("C10.2", 10)
+    b.Cap("C11", "10 nF", 1380, 1100); b.gnd_pin("C11.2", 10)
+    b.Cap("C12", "100 nF", 1460, 1260); b.gnd_pin("C12.2", 10)
+    b.L("L1", "Ferrit 600 Ω", 1560, 1230)
+    b.Cap("C13", "10 µF+100 nF", 1400, 1320); b.gnd_pin("C13.2", 10)
+
+    # ================================================================== RJ45
+    b.block(1940, 660, 0, 0, "RJ45 mit Übertrager + LEDs")
+    M("J3", 1960, 720, 230, "J3 RJ45", "HR911105A* (Magjack)",
+      [("TDP", "", "TD+", U), ("TDN", "", "TD−", U), ("RDP", "", "RD+", U), ("RDN", "", "RD−", U),
+       ("LGK", "", "LED grün K", U), ("LYK", "", "LED gelb K", U), ("TCT", "", "TCT", U), ("RCT", "", "RCT", U),
+       ("LGA", "", "LED grün A", U), ("LYA", "", "LED gelb A", U), ("SH", "", "Schirm", U)],
+      [], pitch=40, top=70)
+    b.gnd_pin("J3.SH")
+    b.Cap("C9", "100 nF*", 1760, 1180); b.gnd_pin("C9.2", 10)
+    b.text(2210, 820, "→ Netzwerkkabel", 15, "#444", weight="bold")
+    b.text(2210, 842, "  Switch / NR_Com", 13, "#555")
+
+    # ================================================================== NETZE
+    N = b.net
+    N("J1VB", "J1.VBUS", "F1.1")
+    N("CC1", "J1.CC1", "R1.1"); N("CC2", "J1.CC2", "R2.1")
+    N("PLED", "R3.2", "D2.A")
+    N("ILIM", "U1.ILIM", "R4.1")
+    N("FLED", "R5.2", "D3.A")
+    N("FAULT", "D3.K", "U1.FLT")
+    N("DOCK_5V", "U1.OUT", "C2.1", "J2.V5")
+    N("DK_SCK", "J2.SCK", "U4.IO1"); N("DK_MOSI", "J2.MOSI", "U4.IO2")
+    N("DK_MISO", "J2.MISO", "U4.IO3"); N("DK_CS", "J2.CS", "U4.IO4")
+    N("DOCK_SCK", "U4.O1", "U3.SCLK")
+    N("DOCK_MOSI", "U4.O2", "U3.MOSI")
+    N("DOCK_MISO", "U4.O3", "R6.1")
+    N("W_MISO", "R6.2", "U3.MISO")
+    N("DOCK_CS", "U4.O4", "U3.SCS", "R7.2")
+    N("RST", "U3.RST", "R8.2", "C5.1")
+    N("XI", "U3.XI", "Y1.X1", "C6.1")
+    N("XO", "U3.XO", "Y1.X2", "C7.1")
+    N("ETH_TXP", "U3.TXP", "J3.TDP", "R9.2")
+    N("ETH_TXN", "U3.TXN", "J3.TDN", "R10.2")
+    N("ETH_RXP", "U3.RXP", "J3.RDP", "R11.2")
+    N("ETH_RXN", "U3.RXN", "J3.RDN", "R12.2")
+    N("RX_CT", "R11.1", "R12.1", "C8.1")
+    N("J3_RCT", "J3.RCT", "C9.1")
+    N("LINKLED", "U3.LINK", "R13.1"); N("LINK_K", "R13.2", "J3.LGK")
+    N("ACTLED", "U3.ACT", "R14.1"); N("ACT_K", "R14.2", "J3.LYK")
+    N("EXRES", "U3.EXRES", "R15.1")
+    N("TOCAP", "U3.TOCAP", "C10.1")
+    N("V12", "U3.V12", "C11.1")
+    N("AVDD", "U3.AVDD", "L1.1", "C13.1")
+    N("+5V", "F1.2", "D1.A", "C1.1", "R3.1", "U1.IN", "U1.EN", "R5.1", "U2.VIN", "U2.EN", "C3.1")
+    N("+3V3", "U2.VOUT", "C4.1", "R9.1", "R10.1", "J3.TCT", "R7.1", "R8.1", "U3.VDD", "C12.1", "L1.2",
+      "J3.LGA", "J3.LYA")
+
+    local_first = [n for n in b.nets if b.nets[n] and n not in ("+5V", "+3V3")]
+    local_first.sort(key=lambda n: len(b.nets[n]) * 1000 + spread(b, n))
+    order = local_first + ["+5V", "+3V3"]
+    order = [n for n in priority if n in order] + [n for n in order if n not in priority]
+    b.route_all(order)
+
+    b.note(60, 1420, [
+        "So funktioniert die Station:",
+        "• Netzteil 5 V / 3 A an J1 (nur Strom). U1 gibt die 5 V strombegrenzt an den Federstift „5 V“.",
+        "  Kurzschluss an den offenen Kontakten (z. B. Schlüssel) → U1 begrenzt, rote LED D3 leuchtet.",
+        "• DET liegt in der Station auf GND. Das Bodypack erkennt daran, dass es steckt (U16 P11).",
+        "• Der W5500 läuft ständig. /SCS hat einen Pull-up (R7), ohne Bodypack ist der Chip also abgewählt.",
+        "• Das Bodypack (C5) spricht den W5500 über SPI an: GP11 SCK, GP12 MOSI, GP1 MISO, GP0 CS.",
+        "  /INT bleibt offen (Abfrage-Modus). Reset beim Einschalten über R8/C5, zusätzlich Software-Reset per SPI.",
+    ], size=14)
+    b.note(1260, 1420, [
+        "Vor dem Layout prüfen (*):",
+        "• Abschluss TX/RX (R9–R12, C8, C9) und Mittelanzapfungen lt. WIZnet-Referenz",
+        "  und Datenblatt der gewählten RJ45-Buchse.",
+        "• R_ILIM für ca. 2,5 A (Lader zieht bis 2 A), Quarz-Lastkapazitäten.",
+        "• Pogo-Reihenfolge spiegelbildlich zum Bodypack; GND und DET zuerst Kontakt.",
+        "• Bodypack ohne Strom an einer Station mit Strom (und umgekehrt): keine",
+        "  Rückspeisung über die SPI-Leitungen (ggf. Serienwiderstände erhöhen).",
+        "• Später möglich: PoE-Modul statt Netzteil (ein Kabel für Strom + LAN).",
+    ], size=14)
+    return b.render(), b.failed
+
+
+if __name__ == "__main__":
+    out = sys.argv[1] if len(sys.argv) > 1 else "."
+    os.makedirs(out, exist_ok=True)
+    prio, best = [], None
+    for attempt in range(6):
+        svg, failed = build(prio)
+        print(f"Durchlauf {attempt + 1}: {len(failed)} Verweise", [f[0] for f in failed])
+        if best is None or len(failed) < len(best[1]):
+            best = (svg, failed)
+        if not failed:
+            break
+        for n, _ in failed:
+            if n not in prio:
+                prio.insert(0, n)
+    svg, failed = best
+    path = os.path.join(out, "schaltplan-basisstation-linien.svg")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(svg)
+    print("geschrieben:", path)
+    print("nicht geroutet (Verweise):", len(failed))
+    for n, p in failed:
+        print("  ", n, p)

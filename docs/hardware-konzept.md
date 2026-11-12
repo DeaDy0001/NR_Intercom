@@ -293,6 +293,17 @@ Das entlastet auch das Funknetz für die mobilen Bodypacks.
 - **Kontakte:** vergoldete Flächen am Bodypack, Federstifte (Pogo-Pins) in der Station, mechanisch geführt.
   Serienwiderstände und ESD-Schutz an den SPI-Leitungen im Bodypack.
 
+### Schaltplan der Station
+[`img/schaltplan-basisstation-linien.svg`](img/schaltplan-basisstation-linien.svg) (Linien-Plan, erzeugt mit
+`tools/schematic_station.py`):
+- **Strom:** USB-C-Netzteil 5 V / 3 A (nur Strom), Sicherung, TVS-Diode. Die 5 V gehen über einen strombegrenzten
+  Lastschalter **TPS2557** an den Federstift, damit ein Kurzschluss an den offenen Kontakten nichts zerstört
+  (rote LED = Fehler). Später möglich: PoE-Modul statt Netzteil, dann reicht ein Kabel für Strom und LAN.
+- **3,3 V:** AP2112K-3.3 nur für den W5500.
+- **LAN:** W5500 mit 25-MHz-Quarz, Abschluss der Leitungspaare lt. WIZnet-Referenz, RJ45-Buchse mit Übertrager und LEDs.
+  /SCS hat einen Pull-up, ohne Bodypack ist der Chip abgewählt. /INT bleibt offen (Abfrage-Modus).
+- **Federstifte:** SCK, MOSI, MISO, CS, 5 V, DET (in der Station auf GND), GND, mit ESD-Schutz TPD4E05U06.
+
 ### Was die Firmware macht (ohne Ab- und Anmelden)
 - Station erkannt → Netzwerk über den W5500 starten (DHCP). Danach **setzt das Bodypack seine Sitzung fort**
   (`POST /device/v1/resume` mit dem bisherigen Token und der neuen Adresse), es meldet sich **nicht** ab und wieder an.
