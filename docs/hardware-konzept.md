@@ -1,5 +1,7 @@
 # Hardware-Konzept Bodypack (Stand 4)
 
+> **Berechnungen aller Blöcke inkl. Rauschbetrachtung:** [berechnungen.md](berechnungen.md)
+>
 > **Stand 4 (November 2026):** Bauteile gegen die Datenblätter geprüft (Ordner `Datenblätter/`), Spannungsversorgung
 > überarbeitet (±5 V mit TPS65131 + LDOs, 48 V mit Verdoppler), Schaltplan V0.3.
 >

@@ -531,10 +531,7 @@ def platine():
     for pin, name in (("U3.SDA", "SDA_S3"), ("U3.SCL", "SCL_S3"), ("U3.INT", "BQ_INT")):
         to_flag(pin, name, C["i2c"], 170)
     small(p("U3.INT")[0] + 40, p("U3.INT")[1] + 16, "R4 10 k → +3V3 (Pull-up)")
-    x, y = p("U3.STAT"); s.line([(x, y), (x + 20, y)])
-    e = s.resistor(x + 20, y, "R5", "2,2 k")
-    e2 = s.diode(e[0], y, "D1", "LED rot", kind="led")
-    s.line([e2, (e2[0] + 20, y)], C["pwr"]); s.flag(e2[0] + 20, y, "VSYS", C["pwr"])
+    to_text("U3.STAT", "offen (Ladeanzeige am Display)")
     x, y = p("U3.QON"); s.line([(x, y), (x + 20, y)])
     a, b = s.button(x + 20, y, "S1 EIN/AUS", "below")
     s.line([b, (b[0] + 16, y), (b[0] + 16, y + 6)]); s.gnd(b[0] + 16, y + 6)
@@ -636,18 +633,20 @@ def platine():
     to_text("U7.CP", "C66 10 nF"); to_text("U7.CN", "C67 4,7 nF")
     small(2470, 896, "R70 470 k V6P→FBP, R71 120 k FBP→GND, R72 590 k V6N→FBN, R73 120 k FBN→VREF, C60 100 nF, C61 4,7 µF,")
     small(2470, 914, "L3/L4 4,7 µH, D5 INP→V6P und D6 V6N→OUTN Schottky 1 A, C62/C64 22 µF. Ergibt ±5,96 V vor den LDOs.")
-    s.module("U17", 3300, 540, 190, "U17 TPS7A4901", "LDO +5 V, NR 10 nF*",
+    s.module("U17", 3300, 540, 190, "U17 TPS7A4901", "LDO +5 V rauscharm",
              [("IN", "", "IN + EN", U), ("GND", "", "GND", U)], [("OUT", "", "OUT", U), ("FB", "", "FB", U)],
              pitch=34, top=64, nums=False)
     to_flag("U17.IN", "V6P", C["pwr"], 30); to_gnd("U17.GND")
     to_flag("U17.OUT", "+5VA", C["pwr"], 40); under("U17.OUT", "C76 10 µF", 10)
-    to_text("U17.FB", "R75 32,4 k / R76 10 k")
-    s.module("U18", 3300, 720, 190, "U18 TPS7A3001", "LDO −5 V, NR 10 nF*",
+    to_text("U17.FB", "R75 32,4 k ∥ C83 10 n / R76 10 k")
+    small(3300, 692, "NR/SS (6): C81 10 nF · Pin 3 NC, 7 DNC frei")
+    s.module("U18", 3300, 720, 190, "U18 TPS7A3001", "LDO −5 V rauscharm",
              [("IN", "", "IN + EN", U), ("GND", "", "GND", U)],
              [("OUT", "", "OUT", U), ("FB", "", "FB", U)], pitch=34, top=64, nums=False)
     to_flag("U18.IN", "V6N", C["pwr"], 30); to_gnd("U18.GND")
     to_flag("U18.OUT", "−5VA", C["pwr"], 40); under("U18.OUT", "C77 10 µF", 10)
-    to_text("U18.FB", "R77 32,4 k / R78 10 k")
+    to_text("U18.FB", "R77 32,4 k ∥ C84 10 n / R78 10 k")
+    small(3300, 872, "NR/SS (6): C82 10 nF · Pin 3 NC, 7 DNC frei")
 
     s.module("U8", 3270, 150, 200, "U8 LM5155", "Boost ≈ 24 V, ca. 250 kHz",
              [("BIAS", "", "1+2 BIAS/VCC", U), ("UVLO", "", "12 UVLO", U), ("RT", "", "10 RT", U), ("SS", "", "9 SS", U),
@@ -764,13 +763,13 @@ def platine():
                              "U9.DIN": ("I2S_DOUT", C["i2sd"]), "U9.DOUT": ("I2S_DIN", C["i2sd"]),
                              "U9.SCL": ("SCL_A", C["i2c"]), "U9.SDA": ("SDA_A", C["i2c"]),
                              "U9.RST": ("CODEC_RST", C["i2c"]), "U9.IOVDD": ("+3V3", C["pwr"]),
-                             "U9.LDOIN": ("+3V3", C["pwr"]), "U9.LDOSEL": ("+3V3", C["pwr"])}.items():
+                             "U9.LDOIN": ("3V3A", C["pwr"]), "U9.LDOSEL": ("+3V3", C["pwr"])}.items():
         to_flag(pin, name, col, 90)
     for pin in ("U9.MCLK", "U9.SPI", "U9.GND"):
         to_gnd(pin)
     small(p("U9.RST")[0] - 90, p("U9.RST")[1] + 18, "R16 10 k → +3V3", anchor="end")
     small(p("U9.IOVDD")[0] - 90, p("U9.IOVDD")[1] + 18, "C17 10 µF + 100 nF → GND", anchor="end")
-    small(p("U9.LDOIN")[0] - 90, p("U9.LDOIN")[1] + 18, "C18 10 µF + 100 nF → GND", anchor="end")
+    small(p("U9.LDOIN")[0] - 90, p("U9.LDOIN")[1] + 18, "C18 10 µF + 100 nF · 3V3A aus U19 LP5907-3.3 (+5VA)", anchor="end")
     small(p("U9.LDOSEL")[0] - 90, p("U9.LDOSEL")[1] + 18, "interne LDOs an → AVDD/DVDD 1,8 V", anchor="end")
     to_text("U9.REF", "C19 10 µF → GND"); to_text("U9.AVDD", "C20 10 µF + 100 nF → GND")
     to_text("U9.DVDD", "C21 10 µF + 100 nF → GND")
@@ -826,6 +825,7 @@ def platine():
     s.line([(xg, yg1), (830, yg1)]); e = s.resistor(830, yg1, "RG1", "200 Ω", vertical=True)
     s.line([e, (830, e[1] + 10), (850, e[1] + 10), (850, yg2), (xg, yg2)])
     to_flag("U11.VP", "+5VA", C["pwr"], 70); to_flag("U11.VN", "−5VA", C["pwr"], 70); to_gnd("U11.REF", 20)
+    small(p("U11.OUT")[0] + 6, p("U11.OUT")[1] - 30, "SENSE (8) an VO (9)")
     x, y = p("U11.OUT"); s.line([(x, y), (x + 20, y)], C["ana"])
     e = s.resistor(x + 20, y, "R23", "4,7 k", color=C["ana"])
     s.line([e, (e[0] + 20, y)], C["ana"]); s.dot(e[0] + 20, y, INK)
@@ -861,6 +861,7 @@ def platine():
         x, y = p(pin); s.line([(x, y), (x - 20, y)], C["ana"])
         s.cap(x - 72, y, rc, "2,2 µF", vertical=False, color=C["ana"]); s.flag(x - 72, y, name, C["ana"], "L")
     to_flag("U13.EN", "HP_EN", C["ana"], 80); to_flag("U13.VP", "+5VA", C["pwr"], 80); to_flag("U13.VN", "−5VA", C["pwr"], 80)
+    small(p("U13.VN")[0] - 80, p("U13.VN")[1] + 18, "Pad (11) an V−, GND (3) an GND", anchor="end")
     to_text("U13.FB", "siehe unten", INK, 16)
     s.module("J6", 2620, 1900, 120, "J6", "6,35 Stereo", [("T", "", "T (L)", U), ("R", "", "R (R)", U),
                                                        ("S", "", "S (GND)", U)], [], pitch=60, top=70, nums=False)
@@ -907,10 +908,11 @@ def platine():
 
     # ======================================================================= J · Andock-Kontakte
     s.block(30, 2600, 1940, 440, "J · Andock-Kontakte zur Basisstation (W5500 + RJ45 + 5 V-Netzteil in der Station)")
-    s.module("J7", 90, 2660, 230, "J7 Kontaktflächen", "vergoldet, zu Federstiften", [],
-             [("SCK", "", "SCK", U), ("MOSI", "", "MOSI", U), ("MISO", "", "MISO", U), ("CS", "", "CS", U),
-              ("V5", "", "5V Station", U), ("DET", "", "DET (GND in Station)", U), ("GND", "", "GND", U)],
-             pitch=46, top=60, nums=False)
+    s.module("J7", 90, 2650, 230, "J7 Pogo Kontakt", "9-polig, magnetisch", [],
+             [("G1", "", "1 GND", U), ("V5", "", "2 + 8 5V", U), ("SCK", "", "3 SCK", U), ("MOSI", "", "4 MOSI", U),
+              ("DET", "", "5 DET", U), ("MISO", "", "6 MISO", U), ("CS", "", "7 CS", U), ("GND", "", "9 GND", U)],
+             pitch=40, top=60, nums=False)
+    to_gnd("J7.G1", 20)
     for pin, net in (("J7.SCK", "DOCK_SCK"), ("J7.MOSI", "DOCK_MOSI"), ("J7.MISO", "DOCK_MISO"), ("J7.CS", "DOCK_CS")):
         x, y = p(pin)
         s.line([(x, y), (x + 40, y)], C["btn"])
