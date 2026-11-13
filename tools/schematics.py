@@ -641,13 +641,13 @@ def platine():
              pitch=34, top=64, nums=False)
     to_flag("U17.IN", "V6P", C["pwr"], 30); to_gnd("U17.GND")
     to_flag("U17.OUT", "+5VA", C["pwr"], 40); under("U17.OUT", "C76 10 µF", 10)
-    to_text("U17.FB", "R75 31,6 k* / R76 10 k*")
+    to_text("U17.FB", "R75 32,4 k / R76 10 k")
     s.module("U18", 3300, 720, 190, "U18 TPS7A3001", "LDO −5 V, NR 10 nF*",
-             [("IN", "", "IN", U), ("EN", "", "EN lt. DB*", "nc"), ("GND", "", "GND", U)],
+             [("IN", "", "IN + EN", U), ("GND", "", "GND", U)],
              [("OUT", "", "OUT", U), ("FB", "", "FB", U)], pitch=34, top=64, nums=False)
     to_flag("U18.IN", "V6N", C["pwr"], 30); to_gnd("U18.GND")
     to_flag("U18.OUT", "−5VA", C["pwr"], 40); under("U18.OUT", "C77 10 µF", 10)
-    to_text("U18.FB", "R77 32,4 k* / R78 10 k*")
+    to_text("U18.FB", "R77 32,4 k / R78 10 k")
 
     s.module("U8", 3270, 150, 200, "U8 LM5155", "Boost ≈ 24 V, ca. 250 kHz",
              [("BIAS", "", "1+2 BIAS/VCC", U), ("UVLO", "", "12 UVLO", U), ("RT", "", "10 RT", U), ("SS", "", "9 SS", U),
@@ -835,7 +835,7 @@ def platine():
     s.note(60, 2290, [
         "Schutz/Filter je Ader (am Knoten hinter R19/R20): BAV99 (D3/D4) nach +5VA / −5VA, R21/R22 10 k nach GND,",
         "C25 470 pF zwischen den Adern, C26/C27 100 pF nach GND. Entkopplung U11: C28 10 µF + 100 nF an V+ und V−.",
-        "Verstärkung: RG2 68 Ω über Analogschalter U12 (z. B. ADG1201, ±5 V) parallel zu RG1. GAIN_HI aus = +20 dB, an = +40 dB.",
+        "Verstärkung: RG2 68 Ω über Analogschalter U12 ADG1201 (VDD/VSS an ±6 V, braucht min. ±5 V) parallel zu RG1. GAIN_HI aus = +20 dB, an = +40 dB.",
         "Klinke (T/R) liegt parallel zu XLR 2/3. Phantom per Software nur einschalten, wenn ein XLR-Kondensatormikro steckt.",
     ], size=13)
     s.note(1350, 1880, [

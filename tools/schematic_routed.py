@@ -630,20 +630,20 @@ def build(priority=()):
       [("IN", "", "IN", U), ("EN", "", "EN", U), ("GND", "", "GND", U)], [("OUT", "", "OUT", U), ("FB", "", "FB", U)],
       pitch=40, top=70)
     b.gnd_pin("U17.GND")
-    b.R("R75", "31,6 k*", 5640, 1240, vert=True, color=C["pwr"])
-    b.R("R76", "10 k*", 5640, 1350, vert=True); b.gnd_pin("R76.2", 10)
+    b.R("R75", "32,4 k", 5640, 1240, vert=True, color=C["pwr"])
+    b.R("R76", "10 k", 5640, 1350, vert=True); b.gnd_pin("R76.2", 10)
     b.Cap("C76", "10 µF", 5700, 1180)
     b.gnd_pin("C76.2", 10)
     M("U18", 5400, 1600, 190, "U18 TPS7A3001", "−5 V, NR 10 nF*",
-      [("IN", "", "IN", U), ("EN", "", "EN lt. DB*", "nc"), ("GND", "", "GND", U)],
+      [("IN", "", "IN", U), ("EN", "", "EN → IN", U), ("GND", "", "GND", U)],
       [("OUT", "", "OUT", U), ("FB", "", "FB", U)], pitch=40, top=70)
     b.gnd_pin("U18.GND")
-    b.R("R77", "32,4 k*", 5640, 1680, vert=True, color=C["pwr"])
-    b.R("R78", "10 k*", 5640, 1790, vert=True); b.gnd_pin("R78.2", 10)
+    b.R("R77", "32,4 k", 5640, 1680, vert=True, color=C["pwr"])
+    b.R("R78", "10 k", 5640, 1790, vert=True); b.gnd_pin("R78.2", 10)
     b.Cap("C77", "10 µF", 5700, 1620)
     b.gnd_pin("C77.2", 10)
     s.text(4300, 1980, "TPS65131: +6 V = 1,213 V × (1 + 470 k/120 k), −6 V = −1,213 V × 590 k/120 k. "
-           "LDO-Teiler und NR-Kondensatoren lt. Datenblatt*.", 12, "#444", family=SANS)
+           "LDOs: VFB 1,185 V / −1,179 V → 32,4 k / 10 k, NR/SS 10 nF, DNC (Pin 7) frei lassen.", 12, "#444", family=SANS)
 
     # ================================================================== Sammelschienen
     RA = {"VSYS": 920, "+3V3": 950, "+5VA": 980, "−5VA": 1010, "P48": 1040}
@@ -798,7 +798,7 @@ def build(priority=()):
       [("VP", "", "V+", U), ("VN", "", "V−", U), ("OUT", "", "OUT", U)], pitch=40, top=70)
     b.gnd_pin("U11.REF")
     b.R("RG1", "680 Ω", 3300, 2530, vert=True)
-    M("U12", 3060, 2810, 170, "U12 ADG1201", "Schalter +20/+40 dB",
+    M("U12", 3060, 2810, 170, "U12 ADG1201", "VDD/VSS = V6P/V6N (±6 V)",
       [("S", "", "S", U), ("IN", "", "IN", U)], [("D", "", "D", U)], pitch=40, top=60)
     b.R("RG2", "68 Ω", 3320, 2810)
     b.Cap("C28", "10 µF+100 nF", 3720, 2230); b.gnd_pin("C28.2", 10)
@@ -871,7 +871,7 @@ def build(priority=()):
     N("FBP", "U7.FBP", "R70.2", "R71.1")
     N("VREF65", "U7.VREF", "R73.1", "C63.1")
     N("FBN", "U7.FBN", "R72.1", "R73.2")
-    N("V6N", "U7.VNEG", "R72.2", "D6.A", "C64.1", "U18.IN")
+    N("V6N", "U7.VNEG", "R72.2", "D6.A", "C64.1", "U18.IN", "U18.EN")
     N("SWN", "U7.OUTN", "D6.K", "L4.1")
     N("CP65", "U7.CP", "C66.1"); N("CN65", "U7.CN", "C67.1")
     N("FB5P", "U17.FB", "R75.2", "R76.1"); N("FB5N", "U18.FB", "R77.2", "R78.1")
