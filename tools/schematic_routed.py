@@ -576,8 +576,8 @@ def build(priority=()):
     b.Cap("C75", "10 nF*", 3990, 720); b.gnd_pin("C75.2", 10)
     M("Q4", 4180, 200, 190, "Q4 N-FET", "≥ 60 V, Logic Level*", [("G", "", "G", U), ("S", "", "S", U)],
       [("D", "", "D", U)], pitch=40, top=70)
-    b.R("R81", "20 mΩ*", 4120, 380, vert=True); b.gnd_pin("R81.2", 10)
-    b.L("L5", "10 µH* / 2 A", 4420, 200)
+    b.R("R81", "68 mΩ", 4120, 380, vert=True); b.gnd_pin("R81.2", 10)
+    b.L("L5", "22 µH / 1,5 A", 4420, 200)
     b.D("D7", "100 V 1 A", 4600, 270, color=C["p48"])
     b.Cap("C71", "1 µF/100 V", 4720, 300); b.gnd_pin("C71.2", 10)
     b.Cap("C72", "1 µF/100 V", 4580, 420, vert=False)

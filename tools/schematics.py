@@ -658,9 +658,9 @@ def platine():
     to_gnd("U8.GND")
     to_text("U8.GATE", "Q4 Gate"); to_text("U8.CS", "Q4 S, R81*"); to_text("U8.FB", "R11/R12")
     s.note(3600, 150, ["Leistungsteil 48 V:",
-                       "VSYS → L5 10 µH* → Q4 Drain",
+                       "VSYS → L5 22 µH → Q4 Drain",
                        "Q4 N-FET ≥ 60 V, Logic Level*",
-                       "R81 20 mΩ*, R11 470 k, R12 10 k",
+                       "R81 68 mΩ, R11 470 k, R12 10 k",
                        "D7 → P24 ≈ 24 V (C71 1 µF/100 V)",
                        "Verdoppler: C72 1 µF/100 V,",
                        "D8, D9 → P48_RAW (C73)",
