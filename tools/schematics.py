@@ -780,15 +780,15 @@ def platine():
     s.module("U10", 3230, 1200, 240, "U10 TCA9555", "I/O-Expander C5, I2C 0x20",
              [("VCC", "", "VCC", U), ("SDA", "", "SDA", U), ("SCL", "", "SCL", U), ("ADDR", "", "A0–A2", U),
               ("GND", "", "GND", U)],
-             [("P0", "", "P00", U), ("P1", "", "P01", U), ("P2", "", "P02", U), ("P3", "", "P03", U), ("P4", "", "P04", U),
-              ("P5", "", "P05", U), ("P6", "", "P06", U), ("P10", "", "P10", U), ("P11", "", "P11", U), ("P12", "", "P12", U),
+             [("P0", "", "P00", U), ("P1", "", "P01 frei", "nc"), ("P2", "", "P02", U), ("P3", "", "P03", U), ("P4", "", "P04", U),
+              ("P5", "", "P05", U), ("P10", "", "P10", U), ("P11", "", "P11", U), ("P12", "", "P12", U),
               ("P13", "", "P13", U)], pitch=34, top=64, nums=False)
     to_flag("U10.VCC", "+3V3", C["pwr"], 70); small(p("U10.VCC")[0] - 70, p("U10.VCC")[1] + 18, "C22 100 nF", anchor="end")
     to_flag("U10.SDA", "SDA_A", C["i2c"], 70); to_flag("U10.SCL", "SCL_A", C["i2c"], 70)
     to_gnd("U10.ADDR"); to_gnd("U10.GND")
-    for pin, name, col in (("U10.P0", "P48_SW", C["p48"]), ("U10.P1", "GAIN_SET", C["ana"]),
+    for pin, name, col in (("U10.P0", "P48_SW", C["p48"]), 
                            ("U10.P2", "HP_EN", C["ana"]), ("U10.P3", "CODEC_RST", C["i2c"]),
-                           ("U10.P4", "ANA_EN", C["i2c"]), ("U10.P5", "P48_EN", C["p48"]), ("U10.P6", "GAIN_RST", C["ana"]),
+                           ("U10.P4", "ANA_EN", C["i2c"]), ("U10.P5", "P48_EN", C["p48"]),
                            ("U10.P10", "T1", C["btn"]), ("U10.P11", "T2", C["btn"]), ("U10.P12", "T3", C["btn"]),
                            ("U10.P13", "T4", C["btn"])):
         to_flag(pin, name, col, 20)
@@ -823,7 +823,7 @@ def platine():
              [("VP", "", "V+", U), ("VN", "", "V−", U), ("REF", "", "REF", U), ("OUT", "", "OUT", U)], pitch=50,
              top=70, nums=False)
     xg, yg1 = p("U11.RG1"); _, yg2 = p("U11.RG2")
-    s.line([(xg, yg1), (830, yg1)]); e = s.resistor(830, yg1, "RG1", "680 Ω", vertical=True)
+    s.line([(xg, yg1), (830, yg1)]); e = s.resistor(830, yg1, "RG1", "200 Ω", vertical=True)
     s.line([e, (830, e[1] + 10), (850, e[1] + 10), (850, yg2), (xg, yg2)])
     to_flag("U11.VP", "+5VA", C["pwr"], 70); to_flag("U11.VN", "−5VA", C["pwr"], 70); to_gnd("U11.REF", 20)
     x, y = p("U11.OUT"); s.line([(x, y), (x + 20, y)], C["ana"])
@@ -835,19 +835,18 @@ def platine():
     s.note(60, 2290, [
         "Schutz/Filter je Ader (am Knoten hinter R19/R20): BAV99 (D3/D4) nach +5VA / −5VA, R21/R22 10 k nach GND,",
         "C25 470 pF zwischen den Adern, C26/C27 100 pF nach GND. Entkopplung U11: C28 10 µF + C78 100 nF an V+, C79 10 µF + C80 100 nF an V−.",
-        "Verstärkung: RG2 68 Ω über Relais K1 (bistabil, 2 Spulen 3 V, Kontakt COM–NO) parallel zu RG1: aus = +20 dB, an = +40 dB.",
-        "K1-Spulen: +3V3 → Spule → Q5/Q6 (MMBT3904, Basis 1 k von GAIN_SET/GAIN_RST), Freilaufdioden D10/D11 1N4148W. Puls 10 ms.",
+        "Verstärkung fest: RG1 200 Ω → G = 1 + 6 kΩ/200 Ω = 31 (+30 dB). Feinanpassung über die Codec-PGA (V1 ohne Umschaltung).",
         "Klinke (T/R) liegt parallel zu XLR 2/3. Phantom per Software nur einschalten, wenn ein XLR-Kondensatormikro steckt.",
     ], size=13)
     s.note(1350, 1880, [
         "Pegelplan Mikrofon:",
-        "Vorverstärker +20 / +40 dB",
+        "Vorverstärker fest +30 dB",
         "→ Teiler R23/R24 −14 dB",
         "→ Codec-PGA 0 … +47,5 dB",
-        "= gesamt ca. +6 … +73 dB",
+        "= gesamt ca. +16 … +63 dB",
         "",
-        "BPHS1 (dynamisch): +40 dB (SET),",
-        "PGA ca. +20…30 dB, Phantom AUS.",
+        "BPHS1 (dynamisch):",
+        "PGA ca. +30…40 dB, Phantom AUS.",
         "Umschalten: Codec stumm → P48 →",
         "500 ms warten → Ton an.",
     ], size=13)
