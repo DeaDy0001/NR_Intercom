@@ -99,7 +99,7 @@
 "G · Mikrofon";"RG1, RG2";"680 Ω, 68 Ω (0,1 % besser)";"Standard";"0603";"+20 / +40 dB"
 "G · Mikrofon";"U12";"ADI ADG1201, VDD/VSS an ±6 V";"±6 V";"SOT-23-6";"Verstärkung umschalten"
 "G · Mikrofon";"R23, R24";"4,7 kΩ, 1,2 kΩ";"Standard";"0603";"Pegelanpassung"
-"G · Mikrofon";"C29";"1 µF Folie (PPS/PET)";"≥ 16 V";"SMD-Folie 1210/1812";"Koppel-C → Codec"
+"G · Mikrofon";"C29";"1 µF X7R Keramik (z. B. Samsung CL31B105KBHNNNE*), alternativ Folie THT";"50 V";"1206 (Folie: Raster 5 mm)";"Koppel-C → Codec"
 "H · Kopfhörer";"U13";"TI OPA1622";"±5 V";"VSON-10 3×3 (DRC)";"Kopfhörer-Verstärker"
 "H · Kopfhörer";"C30, C31";"2,2 µF X7R (Folie besser)";"≥ 16 V";"0805";"Koppel-C"
 "H · Kopfhörer";"R25, R26";"47 kΩ";"Standard";"0603";"Ruhepunkt"
