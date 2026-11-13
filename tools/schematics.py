@@ -830,11 +830,11 @@ def platine():
     e = s.resistor(x + 20, y, "R23", "4,7 k", color=C["ana"])
     s.line([e, (e[0] + 20, y)], C["ana"]); s.dot(e[0] + 20, y, INK)
     s.gnd(*s.resistor(e[0] + 20, y, "R24", "1,2 k", vertical=True))
-    e3 = s.cap(e[0] + 20, y, "C29", "1 µF Folie", vertical=False, color=C["ana"])
+    e3 = s.cap(e[0] + 20, y, "C29", "1 µF X7R", vertical=False, color=C["ana"])
     s.line([e3, (e3[0] + 20, y)], C["ana"]); s.flag(e3[0] + 20, y, "MIC_TO_CODEC", C["ana"])
     s.note(60, 2290, [
         "Schutz/Filter je Ader (am Knoten hinter R19/R20): BAV99 (D3/D4) nach +5VA / −5VA, R21/R22 10 k nach GND,",
-        "C25 470 pF zwischen den Adern, C26/C27 100 pF nach GND. Entkopplung U11: C28 10 µF + 100 nF an V+ und V−.",
+        "C25 470 pF zwischen den Adern, C26/C27 100 pF nach GND. Entkopplung U11: C28 10 µF + C78 100 nF an V+, C79 10 µF + C80 100 nF an V−.",
         "Verstärkung: RG2 68 Ω über Analogschalter U12 ADG1201 (VDD/VSS an ±6 V, braucht min. ±5 V) parallel zu RG1. GAIN_HI aus = +20 dB, an = +40 dB.",
         "Klinke (T/R) liegt parallel zu XLR 2/3. Phantom per Software nur einschalten, wenn ein XLR-Kondensatormikro steckt.",
     ], size=13)
@@ -871,7 +871,7 @@ def platine():
     to_gnd("J6.S", 20)
     s.note(2020, 2240, ["R25/R26 47 k: IN1+/IN2+ nach GND (Ruhepunkt).",
                         "Verstärkung ×2: R27/R28 1 k OUT → IN−, R29/R30 1 k IN− → GND.",
-                        "Entkopplung C32–C35: je 10 µF + 100 nF an V+ und V−.",
+                        "Entkopplung: C32 10 µF + C33 100 nF an V+, C34 10 µF + C35 100 nF an V−.",
                         "HP_EN erst nach dem Hochfahren einschalten (kein Knacken).",
                         "Stereo: Mono-Mix oder Kanal A links / B rechts (Firmware)."], size=13)
 

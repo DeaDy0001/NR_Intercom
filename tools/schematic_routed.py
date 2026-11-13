@@ -801,10 +801,11 @@ def build(priority=()):
     M("U12", 3060, 2810, 170, "U12 ADG1201", "VDD/VSS = V6P/V6N (±6 V)",
       [("S", "", "S", U), ("IN", "", "IN", U)], [("D", "", "D", U)], pitch=40, top=60)
     b.R("RG2", "68 Ω", 3320, 2810)
-    b.Cap("C28", "10 µF+100 nF", 3720, 2230); b.gnd_pin("C28.2", 10)
+    b.Cap("C28", "10µ ‖ C78 100n", 3720, 2230); b.gnd_pin("C28.2", 10)
+    b.Cap("C79", "10µ ‖ C80 100n", 3780, 2400); b.gnd_pin("C79.2", 10)
     b.R("R23", "4,7 k", 3660, 2560, color=C["ana"])
     b.R("R24", "1,2 k", 3760, 2580, vert=True); b.gnd_pin("R24.2", 10)
-    b.Cap("C29", "1 µF Folie", 3800, 2560, vert=False)
+    b.Cap("C29", "1 µF X7R", 3800, 2560, vert=False)
 
     b.block(3960, 2210, 0, 0, "Kopfhörer: OPA1622 + 6,35 mm Stereo")
     M("U13", 4120, 2300, 210, "U13 OPA1622", "Kopfhörer-Verstärker",
@@ -821,7 +822,8 @@ def build(priority=()):
     b.R("R30", "1 k", 4150, 2740, vert=True); b.gnd_pin("R30.2", 10)
     b.R("R31", "10 Ω", 4400, 2420, color=C["ana"])
     b.R("R32", "10 Ω", 4400, 2500, color=C["ana"])
-    b.Cap("C32", "10 µF+100 nF", 4500, 2230); b.gnd_pin("C32.2", 10)
+    b.Cap("C32", "10µ ‖ C33 100n", 4500, 2230); b.gnd_pin("C32.2", 10)
+    b.Cap("C34", "10µ ‖ C35 100n", 4620, 2640); b.gnd_pin("C34.2", 10)
     M("J6", 4580, 2400, 100, "J6", "6,35 Stereo", [("T", "", "T (L)", U), ("R", "", "R (R)", U), ("S", "", "S GND", U)],
       [], pitch=40, top=70)
     b.gnd_pin("J6.S")
@@ -932,7 +934,7 @@ def build(priority=()):
 
       *[f"{rr}.1" for (_, _, rr, _) in enc])
     N("+5VA", "U17.OUT", "R75.1", "C76.1", "U11.VP", "C28.1", "U13.VP", "C32.1", "D3.P", "D4.P")
-    N("−5VA", "U18.OUT", "R77.1", "C77.1", "U11.VN", "U13.VN", "D3.N", "D4.N")
+    N("−5VA", "U18.OUT", "R77.1", "C77.1", "U11.VN", "C79.1", "U13.VN", "C34.1", "D3.N", "D4.N")
     N("P48", "R13.2", "C16.1", "R17.1", "R18.1")
 
     local_first = [n for n in b.nets if b.nets[n] and n not in ("VSYS", "+3V3", "+5VA", "−5VA", "P48")]
