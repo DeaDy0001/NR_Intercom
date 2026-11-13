@@ -498,7 +498,7 @@ def build(priority=()):
     b.R("R62", "33 k", 420, 860); b.gnd_pin("R62.2", 20)
 
     b.block(1220, 120, 0, 0, "Laderegler BQ25895 (Power-Path)")
-    M("U3", 1440, 170, 260, "U3 BQ25895", "Lader 2 A, I2C 0x6A",
+    M("U3", 1440, 170, 260, "U3 BQ25895", "Lader 2 A, I2C 0x6A (Bus C5)",
       [("VBUS", "", "1 VBUS", U), ("PMID", "", "23 PMID", U), ("REGN", "", "22 REGN", U), ("TS", "", "11 TS", U),
        ("ILIM", "", "10 ILIM", U), ("DP", "", "2 D+", U), ("DM", "", "3 D−", U), ("OTG", "", "8 OTG", U),
        ("CE", "", "9 /CE", U), ("PGND", "", "17+18+25 PGND/PAD", U)],
@@ -564,20 +564,22 @@ def build(priority=()):
 
     # ---------------------------------------------------------------- 48 V: LM5155 Boost (~24 V) + Verdoppler
     b.block(3760, 120, 0, 0, "48 V Phantom: LM5155 → ca. 24 V, Spannungsverdoppler → 48 V, P-FET-Schalter")
-    M("U8", 3800, 180, 240, "U8 LM5155", "Boost-Controller, ca. 250 kHz",
+    M("U8", 3800, 180, 240, "U8 LM5155", "Boost-Controller, ca. 500 kHz",
       [("BIAS", "", "1 BIAS", U), ("VCC", "", "2 VCC", U), ("UVLO", "", "12 UVLO/SYNC", U), ("RT", "", "10 RT", U),
        ("SS", "", "9 SS", U), ("COMP", "", "6 COMP", U), ("AGND", "", "7 AGND", U), ("PGND", "", "4+13 PGND/EP", U)],
-      [("GATE", "", "3 GATE", U), ("CS", "", "5 CS", U), ("FB", "", "8 FB 1,0 V", U), ("PG", "", "11 PGOOD", "nc")],
+      [("GATE", "", "3 GATE", U), ("FB", "", "8 FB 1,0 V", U), ("PG", "", "11 PGOOD", "nc"), ("CS", "", "5 CS", U)],
       pitch=40, top=70)
     b.gnd_pin("U8.AGND"); b.gnd_pin("U8.PGND")
     b.Cap("C70", "1 µF+10 µF", 3640, 480); b.gnd_pin("C70.2", 10)
-    b.R("R80", "86,6 k*", 3780, 640, vert=True); b.gnd_pin("R80.2", 10)
-    b.Cap("C74", "47 nF*", 3880, 660); b.gnd_pin("C74.2", 10)
-    b.R("R85", "10 k*", 3990, 620, vert=True)
-    b.Cap("C75", "10 nF*", 3990, 720); b.gnd_pin("C75.2", 10)
+    b.R("R80", "44,2 k", 3780, 640, vert=True); b.gnd_pin("R80.2", 10)
+    b.Cap("C74", "47 nF", 3880, 660); b.gnd_pin("C74.2", 10)
+    b.R("R85", "1,0 k", 3990, 620, vert=True)
+    b.Cap("C75", "150 nF", 3990, 720); b.gnd_pin("C75.2", 10)
     M("Q4", 4180, 200, 190, "Q4 SI2308BDS", "N-FET 60 V", [("G", "", "1 G", U), ("S", "", "2 S", U)],
       [("D", "", "3 D", U)], pitch=40, top=70)
-    b.R("R81", "68 mΩ", 4120, 380, vert=True); b.gnd_pin("R81.2", 10)
+    b.R("R81", "68 mΩ", 4170, 480, vert=True); b.gnd_pin("R81.2", 10)
+    b.R("R86", "2,0 k", 4070, 450)
+    b.Cap("C87", "1 nF C0G", 4080, 720); b.gnd_pin("C87.2", 10)
     b.L("L5", "22 µH / 1,5 A", 4420, 200)
     b.D("D7", "100 V 1 A", 4600, 270, color=C["p48"])
     b.Cap("C71", "1 µF/100 V", 4720, 300); b.gnd_pin("C71.2", 10)
@@ -681,18 +683,18 @@ def build(priority=()):
             enc.append((k, ["A", "B", "SW"][j], rr, cc))
 
     M("S3", 960, 1140, 300, "J3/J4 ESP32-S3-Touch-LCD-2.8B", "2× 12 Buchsenleiste",
-      [(f"L{i + 1}", "", t, U if t.endswith("GND") or (i + 1) in (3, 4, 5, 8, 9, 12) else "nc")
-       for i, t in enumerate(["24 GND", "23 3V3", "22 SDA (GP15)", "21 SCL (GP7)", "20 GP16", "19 GP4", "18 GP0",
-                              "17 D+ (GP20)", "16 D− (GP19)", "15 GND", "14 VCC", "13 5V*"])],
+      [(f"L{i + 1}", "", t, U if t.endswith("GND") or (i + 1) in (3, 4, 6, 8, 9, 11) else "nc")
+       for i, t in enumerate(["24 GND", "23 3V3", "22 SDA (GP15)", "21 SCL (GP7)", "20 GP16 (TP_INT)", "19 GP4 ← /INT", "18 GP0",
+                              "17 D+ (GP20)", "16 D− (GP19)", "15 GND", "14 VCC ← VSYS", "13 5V (frei)"])],
       [(f"R{i + 1}", "", t, U if t.endswith("GND") or (i + 1) in (3, 4) else "nc")
        for i, t in enumerate(["1 GND", "2 3V3", "3 TXD (GP43)", "4 RXD (GP44)", "5 GP37", "6 GP36", "7 GP35",
-                              "8 GP34", "9 GP33", "10 GND", "11 BAT (frei)", "12 5V"])],
+                              "8 GP34", "9 GP33", "10 GND", "11 BAT (frei)", "12 5V (frei)"])],
       pitch=30, top=70)
     for p_ in ("S3.L1", "S3.L10", "S3.R1", "S3.R10"):
         b.gnd_pin(p_, 14)
-    s.text(1110, 1600, "5V*: Speisung des Boards aus VSYS – lt. Board-Schaltplan prüfen", 11, "#a33", anchor="middle",
+    s.text(1110, 1600, "VSYS → Pin 14 VCC (Eingang 3,3-V-Wandler MP1605 am Board)", 11, "#a33", anchor="middle",
            family=SANS)
-    s.text(1110, 1616, "(BAT nicht benutzen, falls das Board einen eigenen Lader hat)", 11, "#a33", anchor="middle",
+    s.text(1110, 1616, "5V, BAT, 3V3 offen · USB-C am S3-Board nicht anstecken", 11, "#a33", anchor="middle",
            family=SANS)
 
     M("U16", 610, 1650, 260, "U16 TCA9555", "I/O-Expander S3, 0x27",
@@ -700,7 +702,7 @@ def build(priority=()):
        ("ADDR", "", "21,2,3 A0–A2", U), ("INT", "", "1 /INT", U), ("GND", "", "12 GND", U)],
       [("P00", "", "4 P00 ENC1_A", U), ("P01", "", "5 P01 ENC1_B", U), ("P02", "", "6 P02 ENC1_SW", U),
        ("P03", "", "7 P03 ENC2_A", U), ("P04", "", "8 P04 ENC2_B", U), ("P05", "", "9 P05 ENC2_SW", U),
-       ("P06", "", "10 P06 PWR_KEY", U), ("P07", "", "11 P07 BQ_INT", U), ("P10", "", "13 P10 BAT_ALRT", U),
+       ("P06", "", "10 P06 PWR_KEY", U), ("P07", "", "11 P07 frei", "nc"), ("P10", "", "13 P10 BAT_ALRT", U),
        ("P11", "", "14 P11 DOCK_DET", U), ("NCX", "", "15–20 P12–P17 frei", "nc")], pitch=30, top=70)
     b.gnd_pin("U16.GND")
     b.R("R60", "10 k", 570, 1590, vert=True, color=C["pwr"])
@@ -748,7 +750,7 @@ def build(priority=()):
     M("U10", 3680, 1240, 270, "U10 TCA9555", "I/O-Expander C5, 0x20",
       [("VCC", "", "24 VCC", U), ("SDA", "", "23 SDA", U), ("SCL", "", "22 SCL", U),
        ("ADDR", "", "21,2,3 A0–A2", U), ("INT", "", "1 /INT (Abfrage)", "nc"), ("GND", "", "12 GND", U)],
-      [("P0", "", "4 P00 P48_SW", U), ("P1", "", "5 P01 frei", "nc"), ("P2", "", "6 P02 HP_EN", U),
+      [("P0", "", "4 P00 P48_SW", U), ("P1", "", "5 P01 BQ_INT", U), ("P2", "", "6 P02 HP_EN", U),
        ("P3", "", "7 P03 CODEC_RST", U), ("P4", "", "8 P04 ANA_EN", U), ("P5", "", "9 P05 P48_EN", U),
        ("P10", "", "13 P10 T1", U), ("P11", "", "14 P11 T2", U), ("P12", "", "15 P12 T3", U), ("P13", "", "16 P13 T4", U),
        ("NCX", "", "10,11,17–20 frei", "nc")],
@@ -876,9 +878,9 @@ def build(priority=()):
     N("VINA", "U6.VINA", "R10.2")
     N("SW1_63", "U6.L1", "L2.1"); N("SW2_63", "U6.L2", "L2.2")
     N("FB48", "U8.FB", "R11.2", "R12.1")
-    N("RT48", "U8.RT", "R80.1"); N("SS48", "U8.SS", "C74.1"); N("COMP48", "U8.COMP", "R85.1")
+    N("RT48", "U8.RT", "R80.1"); N("SS48", "U8.SS", "C74.1"); N("COMP48", "U8.COMP", "R85.1", "C87.1")
     N("COMP48B", "R85.2", "C75.1")
-    N("GATE48", "U8.GATE", "Q4.G"); N("CS48", "U8.CS", "Q4.S", "R81.1")
+    N("GATE48", "U8.GATE", "Q4.G"); N("CS48", "U8.CS", "R86.1"); N("RS48", "R86.2", "Q4.S", "R81.1")
     N("SW48", "L5.2", "Q4.D", "D7.A", "C72.1")
     N("P24", "D7.K", "C71.1", "D8.A"); N("DBL", "C72.2", "D8.K", "D9.A")
     N("P48_RAW", "D9.K", "C73.1", "R11.1", "Q2.S", "R82.1", "DZ1.K")
@@ -925,7 +927,7 @@ def build(priority=()):
     # Signale zwischen den Modulen
     N("I2S_BCLK", "C5.GP4", "U9.BCLK"); N("I2S_WS", "C5.GP5", "U9.WCLK")
     N("I2S_DOUT", "C5.GP8", "U9.DIN"); N("I2S_DIN", "C5.GP6", "U9.DOUT")
-    N("SDA_A", "C5.GP9", "R14.2", "U9.SDA", "U10.SDA"); N("SCL_A", "C5.GP10", "R15.2", "U9.SCL", "U10.SCL")
+    N("SDA_A", "C5.GP9", "R14.2", "U9.SDA", "U10.SDA", "U3.SDA"); N("SCL_A", "C5.GP10", "R15.2", "U9.SCL", "U10.SCL", "U3.SCL")
     N("UART_S3_TX", "S3.R3", "C5.GP3"); N("UART_C5_TX", "C5.GP2", "S3.R4")      # gekreuzt: TX -> RX
     N("T1", "U10.P10", "R33.1"); N("T2", "U10.P11", "R34.1"); N("T3", "U10.P12", "R35.1"); N("T4", "U10.P13", "R36.1")
     N("DOCK_SCK", "C5.GP11", "R50.2"); N("DOCK_MOSI", "C5.GP12", "R51.2")
@@ -936,15 +938,15 @@ def build(priority=()):
     N("LED_DATA", "C5.GP7", "R37.1")
     N("C5_USB_DP", "U2.D1P", "C5.GP14"); N("C5_USB_DM", "U2.D1M", "C5.GP13")
     N("S3_USB_DP", "U2.D2P", "S3.L8"); N("S3_USB_DM", "U2.D2M", "S3.L9")
-    N("SDA_S3", "U3.SDA", "U5.SDA", "U16.SDA", "S3.L3"); N("SCL_S3", "U3.SCL", "U5.SCL", "U16.SCL", "S3.L4")
-    N("S3_EXP_INT", "U16.INT", "R60.2", "S3.L5")
-    N("BQ_INT", "U3.INT", "R4.2", "U16.P07"); N("BAT_ALRT", "U5.ALRT", "U16.P10")
+    N("SDA_S3", "U5.SDA", "U16.SDA", "S3.L3"); N("SCL_S3", "U5.SCL", "U16.SCL", "S3.L4")
+    N("S3_EXP_INT", "U16.INT", "R60.2", "S3.L6")
+    N("BQ_INT", "U3.INT", "R4.2", "U10.P1"); N("BAT_ALRT", "U5.ALRT", "U16.P10")
     N("PWR_KEY", "D2.A", "U16.P06")
     N("P48_SW", "U10.P0", "R84.1"); N("HP_EN", "U10.P2", "U13.EN")
     N("ANA_EN", "U10.P4", "U7.EN"); N("P48_EN", "U10.P5", "U8.UVLO")
     # Versorgungen (an Sammelschienen)
     N("VSYS", "U3.SYS", "L1.2", "C7.1", "U6.VIN", "C11.1", "R10.1", "U6.EN", "U6.PS", "R74.1", "U7.INN", "L3.1", "C61.1",
-      "U8.BIAS", "U8.VCC", "C70.1", "L5.1", "S3.L12", "LED1.VDD", "LED2.VDD", "LED3.VDD", "LED4.VDD", "C40.1", "C41.1", "C42.1", "C43.1")
+      "U8.BIAS", "U8.VCC", "C70.1", "L5.1", "S3.L11", "LED1.VDD", "LED2.VDD", "LED3.VDD", "LED4.VDD", "C40.1", "C41.1", "C42.1", "C43.1")
     N("+3V3", "U6.VOUT", "C12.1", "U6.FB", "C5.3V3", "C44.1", "R14.1", "R15.1", "R4.1", "R16.1", "U9.IOVDD",
       "U9.LDOSEL", "C17.1", "U10.VCC", "C22.1", "U16.VCC", "U16.ADDR", "C45.1", "R60.1", "R64.2",
 

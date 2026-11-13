@@ -12,9 +12,10 @@ und die Datenblätter in `Platine/Datenblätter/`. Werte mit „ca.“ sind Absc
 | Laden, Akku, Schutz | passt (2,7 A Eingang, 2 A Laden, Schutz löst ab ca. 3 A aus) |
 | 3,3 V (TPS63021) | passt, große Reserve (2 A möglich, ca. 0,6 A Spitze nötig) |
 | ±6 V → ±5 V | passt, LDOs mit ca. 0,9 V Spannungsreserve, **zusätzlich C83/C84 für weniger Rauschen** |
-| 48 V Phantom | passt, Tastverhältnis ca. 86–87 % (LM5155 kann ca. 92 %), Strombegrenzung 1,47 A |
+| 48 V Phantom | **geändert:** 500 kHz (R80 44,2 k), **neu R86 2 k** (Flankenausgleich), Kompensation R85 1 k / C75 150 nF / **neu C87 1 nF**. Vorher drohte Schwingen bei halber Taktfrequenz |
 | Mikrofon-Kette | **Eingangsrauschen ca. −125 dBu** (20 Hz–20 kHz, unbewertet). Studio-Vorverstärker liegen bei ca. −128 dBu |
 | Kopfhörer | 1 V eff. an 32 Ω (ca. 30 mW), sehr rauscharm |
+| ESP32-S3-Board | Speisung über **Pin 14 VCC** (nicht 5V), BQ25895 an den I2C-Bus des C5 (Adresse 0x6A ist am S3-Bus schon belegt), /INT von U16 an **GP4** |
 | **Neu für weniger Rauschen** | **U19 LP5907-3.3**: eigene, saubere 3,3 V für den Codec-Analogteil (statt aus dem Schaltwandler) |
 
 ---
@@ -81,23 +82,60 @@ und die Datenblätter in `Platine/Datenblätter/`. Werte mit „ca.“ sind Absc
 
 ## 7. 48 V Phantom
 
-- **Boost LM5155 auf ca. 24 V, dann Spannungsverdoppler auf 48 V.**
-- Takt: RT 86,6 kΩ → f ≈ 2,2·10¹⁰ / 86,6 k ≈ **254 kHz** (weit über dem Hörbereich).
-- Tastverhältnis bei 3,5 V: D = 1 − (3,5 − 0,2) / (24 + 0,4) ≈ **0,86**. Bei 3,3 V ca. 0,87. Der LM5155 kann bei
-  ca. 250 kHz etwa 90–92 %. Passt, die Reserve ist aber klein. Deshalb **keine** einstufige 48-V-Lösung.
+- **Boost LM5155 auf ca. 24 V, dann Spannungsverdoppler auf 48 V.** Der Teiler R11/R12 misst direkt die 48 V.
+- **Takt (geändert): R80 44,2 kΩ** → f ≈ 2,2·10¹⁰ / 44,2 k ≈ **500 kHz** (vorher 86,6 k / 254 kHz).
+- Tastverhältnis bei VSYS 3,5 V: D = 1 − 3,5 / (24,4 + 0,4) ≈ **0,86**. Grenze des LM5155 bei 500 kHz:
+  1 − 100 ns × 500 kHz = 0,95 bzw. ca. 0,90 (interne Grenze). Passt, die Reserve ist klein. Der BQ25895 hält VSYS
+  auch bei leerem Akku auf mind. 3,5 V. Firmware: 48 V unter 3,4 V Akkuspannung abschalten.
 - Last: P48 nach Norm max. 10 mA je Mikrofon, mit 2 × 6,81 kΩ Kurzschlussstrom max. 14 mA → **ca. 0,7 W**.
   Eingangsstrom ca. 0,27 A Mittelwert.
-- Spule L5 22 µH: ΔI = 3,5 V × 0,86 / (254 kHz × 22 µH) ≈ **0,54 A** → Spitze ca. 0,55–0,8 A. Sättigung 2,0 A. Passt.
-- **Strombegrenzung R81 68 mΩ:** 100 mV / 68 mΩ = **1,47 A**. Q4 Si2308BDS: 60 V, 0,19 Ω bei 4,5 V.
-- **Verdoppler C71–C73 1 µF / 100 V (1206 X7R):** Bei 24–48 V bleiben ca. 0,4–0,5 µF übrig.
-  Welligkeit an C73: ΔU = I / (f × C) = 14 mA / (254 kHz × 0,45 µF) ≈ **0,12 V** (bei 254 kHz, nicht hörbar).
+- Spule L5 22 µH: ΔI = 3,5 V × 0,86 / (500 kHz × 22 µH) ≈ **0,27 A** → Spitze ca. 0,41 A. Sättigung 2,0 A. Passt.
+
+### Flankenausgleich (Slope Compensation), warum R86 neu ist
+
+Bei Tastverhältnis über 50 % schwingt ein Stromregler bei halber Taktfrequenz, wenn die interne Rampe zu klein ist
+(Datenblatt Gl. 8):
+
+- Nötig: 0,5 × (V_LOAD + V_F − V_SUPPLY) / L × R_S × 1,2 = 0,5 × 21,3 V / 22 µH × 68 mΩ × 1,2 ≈ **39,5 kV/s**
+- Vorher (254 kHz, ohne RSL): 40 mV × 254 kHz = **10,2 kV/s → zu wenig, Schwinggefahr.**
+- Jetzt (500 kHz, R86 = RSL 2,0 kΩ, Maximum laut Datenblatt): 40 mV × 500 kHz + 30 µA × 2 kΩ × 500 kHz
+  = 20 + 30 = **50 kV/s** → passt (optimal laut Gl. 9 wären ca. 54 kV/s).
+- R86 sitzt zwischen CS (Pin 5) und dem Knoten R81 / Q4-Source. Der LM5155 schickt einen Rampenstrom aus CS, der an
+  R86 die zusätzliche Rampe erzeugt.
+
+### Strombegrenzung
+
+- I_PEAK = (100 mV − 30 µA × 2 kΩ × 0,86) / 68 mΩ ≈ **0,71 A** (mit Toleranz min. ca. 0,6 A). Nötig sind ca. 0,41 A. Passt.
+- Q4 Si2308BDS: 60 V, 0,19 Ω bei 4,5 V. Bei 500 kHz und 0,27 A ca. 30 mW Verluste.
+
+### Regelschleife (Kompensation)
+
+Stromgeregelter Boost, Rechnung nach Datenblatt (Fehlerverstärker Gm = 2 mA/V, R_O = 10 MΩ):
+
+- Rückführung vom 48-V-Ausgang: 1 V / 48 V, der Verdoppler verdoppelt die 24 V → wirksam 1 / 24,4 am Boost-Knoten.
+- Ausgangskapazität am Boost-Knoten (DC-Bias abgezogen): C71 ≈ 0,8 µF + C73 über den Verdoppler ×4 ≈ 2,4 µF → **ca. 3,2 µF**.
+- Durchtrittsfrequenz (oberhalb des Lastpols, unabhängig von der Last):
+  f_c = Gm × R85 × (1/24,4) × (1 − D) / (2π × R_S × C_out) = 2 mA/V × 1 kΩ × 0,041 × 0,14 / (2π × 68 mΩ × 3,2 µF)
+  ≈ **8–9 kHz**.
+- Rechter Halbebenen-Nullpunkt: f_RHP = R_Last (1 − D)² / (2π L) ≈ 840 Ω × 0,02 / (2π × 22 µH) ≈ **120 kHz** →
+  f_c liegt weit darunter (Faustregel ≤ f_RHP / 5 = 24 kHz und ≤ f_SW / 10 = 50 kHz).
+- **R85 1,0 kΩ + C75 150 nF:** Nullstelle 1 / (2π × 1 k × 150 n) ≈ **1,1 kHz** (f_c / 8).
+- **C87 1 nF C0G** von COMP nach GND: Pol bei 1 / (2π × 1 k × 1 n) ≈ **160 kHz**, filtert Schaltstörungen.
+- Phasenreserve ca. **75–80°**. Auch bei doppelter oder halber Verstärkung (Toleranzen, Kapazität) stabil.
+- Ohne Mikrofon arbeitet der Wandler lückend (DCM), dort ist die Schleife von sich aus stabil.
+- Die bisherigen Startwerte 10 k / 10 nF hätten f_c ≈ 85 kHz ergeben, nahe am RHP-Nullpunkt → wären instabil gewesen.
+
+### Verdoppler, Teiler, Sanftanlauf
+
+- **Verdoppler C71–C73 1 µF / 100 V (1206 X7R):** Bei 24–48 V bleiben ca. 0,4–0,8 µF übrig.
+  Welligkeit an C73: ΔU = I / (f × C) = 14 mA / (500 kHz × 0,45 µF) ≈ **0,06 V**.
 - Teiler R11 470 k / R12 10 k: 1,0 V × 48 = **48 V** (Toleranz ±1 % → 47,5–48,5 V; Norm 48 ± 4 V).
-- Sanftanlauf C74 47 nF: ca. 5 ms.
-- **Kompensation R85/C75 und R80 sind Startwerte**. Mit dem TI-Rechner WEBENCH (LM5155, Boost 3,3–4,2 V → 24 V, 30 mA)
-  gegenrechnen.
+- Sanftanlauf C74 47 nF: t = 47 nF × 1 V / 10 µA ≈ **5 ms**.
+- **WEBENCH wird nicht gebraucht**, die Werte oben sind nach Datenblatt gerechnet. Beim ersten Einschalten die 48 V
+  mit dem Oszilloskop ansehen (Lastsprung Mikrofon an/aus): kein Klingeln, keine Schwingung bei 250 kHz.
 - **Schalter Q2/Q3:** Gate von Q2 auf −15 V begrenzt (DZ1, max. ±20 V erlaubt). Strom durch R83:
   (48 − 15) V / 47 kΩ ≈ 0,7 mA. Q3 bekommt 0,26 mA Basisstrom (aus 3,3 V über 10 kΩ), schaltet sicher durch.
-- **Filter R13 100 Ω + C16 47 µF:** Grenzfrequenz 34 Hz. Der 254-kHz-Rippel wird um ca. 77 dB gedämpft.
+- **Filter R13 100 Ω + C16 47 µF:** Grenzfrequenz 34 Hz. Der 500-kHz-Rippel wird um ca. 80 dB gedämpft.
   Er wirkt außerdem als **Gleichtakt** auf das Mikrofon (beide Adern gleich), der INA163 unterdrückt ihn zusätzlich.
 
 ## 8. Mikrofon-Eingang und Rauschen
@@ -173,11 +211,34 @@ und die Datenblätter in `Platine/Datenblätter/`. Werte mit „ca.“ sind Absc
 5. **Entkoppel-Kondensatoren** (100 nF) direkt an die Pins, 10 µF daneben.
 6. **Antenne des C5** weit weg vom Mikrofoneingang. Kein Kupfer unter der Antenne.
 7. **48-V-Teil** mit ausreichend Abstand (≥ 0,5 mm) zu anderen Leitungen.
-8. **Taktfrequenzen:** BQ25895 1,5 MHz, TPS63021 2,4 MHz, TPS65131 1,38 MHz, LM5155 254 kHz. Alles weit über
+8. **Taktfrequenzen:** BQ25895 1,5 MHz, TPS63021 2,4 MHz, TPS65131 1,38 MHz, LM5155 500 kHz. Alles weit über
    dem Hörbereich, Mischprodukte entstehen nur bei schlechtem Layout. Deshalb Punkte 1–3 beachten.
 
 ## 13. Noch offen
 
-- LM5155: Kompensation, RT und Sanftanlauf mit WEBENCH gegenrechnen.
-- 2,8″-Board: 5-V-Pin aus VSYS (3,5–4,2 V) reicht er? I2C-Pull-ups vorhanden? Am Board-Schaltplan prüfen.
+- Erledigt: LM5155 gerechnet (Abschnitt 7), 2,8″-Board geprüft (Abschnitt 14).
 - Kopfhörerbuchse J6: Typ wählst du selbst.
+
+## 14. ESP32-S3-Touch-LCD-2.8B (Board-Schaltplan geprüft)
+
+Quelle: `Platine/ESP32-S3_2.8-Touch-LCD/` (Schaltplan, Maßzeichnung, Datenblätter).
+
+| Punkt | Ergebnis |
+|---|---|
+| **Versorgung** | Die 5V-Pins (12, 13) gehen auf den Lader ETA6098 des Boards und über eine Diode auf VCC. **Pin 14 VCC** ist direkt der Eingang des 3,3-V-Wandlers MP1605 (2,3–5,5 V). → **VSYS an Pin 14 VCC**, 5V, BAT, 3V3 offen. |
+| USB-C am Board | Im Gerät nicht anstecken (würde über die Diode in VCC/VSYS zurückspeisen). Programmieren über unseren Hub (D+/D− am Stecker). |
+| **I2C-Adressen am S3-Bus** (GP15/GP7, 10 k Pull-ups am Board) | TCA9554 0x20, GT911 0x5D/0x14, PCF85063 0x51, **QMI8658 0x6A**. Der BQ25895 hat ebenfalls 0x6A → **BQ25895 an den I2C-Bus des C5** (dort: Codec 0x18, U10 0x20). Keine weiteren Pull-ups nötig. |
+| U5 MAX17048 (0x36), U16 TCA9555 (0x27) | bleiben am S3-Bus, keine Überschneidung. |
+| **GP16** | ist am Board der Touch-Interrupt (TP_INT) → nicht benutzen. **/INT von U16 an GP4 (Pin 19).** GP4 hat am Board einen Teiler 200 k / 100 k (BAT_ADC), mit R60 10 k Pull-up unkritisch. |
+| GP0 | Boot-Pin, frei lassen. GP33–37 = PSRAM, nicht benutzen. |
+| TXD/RXD | GP43/GP44 (U0TXD/U0RXD). Das Boot-Protokoll des S3 erscheint beim Start am C5, die Firmware ignoriert es. |
+| BQ_INT | jetzt an U10 P01 (Expander des C5). Der C5 schickt Ladezustand und Laderstatus per UART an den S3. |
+
+**Maße für den Footprint (Draufsicht Trägerplatine, Ursprung = linke obere Ecke des Boards):**
+
+- Board 47,90 × 66,70 mm, 4 Löcher M2 je 3,50 mm vom Rand (Abstand 40,90 × 59,70 mm).
+- Stiftleiste 2 × 12, Raster 2,54 mm, Mitte der Leiste 6,30 mm vom Rand (2,80 mm neben der Lochmitte):
+  Spalte Pins 1–12 (TXD-Seite) bei **x = 5,03 mm**, Spalte Pins 13–24 (SDA-Seite) bei **x = 7,57 mm**.
+- Erste Reihe (Pin 1 GND / Pin 24 GND) bei **y = 10,00 mm**, letzte Reihe (Pin 12 / 13, 5V) bei y = 37,94 mm.
+- Höhe gesamt 11,1 mm, Stiftleiste ca. 6 mm unter dem Board.
+- Skizze: `docs/img/footprint-s3-2.8b.svg`.
