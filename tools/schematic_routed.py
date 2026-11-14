@@ -789,7 +789,8 @@ def build(priority=()):
     for i in range(4):
         x0 = 1420 + i * 220
         M(f"LED{i + 1}", x0, 2540, 120, f"LED{i + 1}", "SK6812MINI-E", [("DIN", "", "2 DIN", U), ("VDD", "", "3 VDD", U)],
-          [("DOUT", "", "4 DOUT", U), ("GND", "", "1 GND", U)], pitch=40, top=60)
+          [("DOUT", "", "4 DOUT" if i < 3 else "4 frei", U if i < 3 else "nc"), ("GND", "", "1 GND", U)],
+          pitch=40, top=60)
         b.gnd_pin(f"LED{i + 1}.GND", 10)
         b.Cap(f"C{40 + i}", "100 nF", x0 - 40, 2700); b.gnd_pin(f"C{40 + i}.2", 10)
 
