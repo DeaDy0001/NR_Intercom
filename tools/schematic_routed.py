@@ -508,14 +508,14 @@ def build(priority=()):
     for p in ("U3.OTG", "U3.CE", "U3.PGND"):
         b.gnd_pin(p)
     b.Cap("C3", "1 µF", 1350, 640); b.gnd_pin("C3.2", 10)
-    b.Cap("C4", "10 µF", 1280, 640); b.gnd_pin("C4.2", 10)
+    b.Cap("C4", "22 µF", 1280, 640); b.gnd_pin("C4.2", 10)
     b.Cap("C5", "4,7 µF", 1210, 640); b.gnd_pin("C5.2", 10)
     b.R("R6", "5,23 k*", 1160, 560, vert=True)
     b.R("R7", "30,1 k*", 1130, 660, vert=True); b.gnd_pin("R7.2", 10)
     b.R("RT1", "NTC 10 k", 1040, 660, vert=True); b.gnd_pin("RT1.2", 10)
-    b.R("R3", "130 Ω", 1400, 640, vert=True); b.gnd_pin("R3.2", 10)
+    b.R("R3", "160 Ω", 1400, 640, vert=True); b.gnd_pin("R3.2", 10)
     b.L("L1", "2,2 µH / 5 A", 1780, 240)
-    b.Cap("C6", "47 nF", 1760, 300, vert=False)
+    b.Cap("C6", "47 nF", 1760, 310, vert=False)
     b.Cap("C7", "2× 10 µF", 1960, 370); b.gnd_pin("C7.2", 10)
     b.Cap("C8", "10 µF", 2070, 420); b.gnd_pin("C8.2", 10)
     b.SW("S1", 1790, 600, "S1 Ein/Aus (TS665ZJ)")
@@ -559,6 +559,7 @@ def build(priority=()):
     b.gnd_pin("U6.GND")
     b.Cap("C11", "2× 10 µF", 2920, 280); b.gnd_pin("C11.2", 10)
     b.R("R10", "100 Ω", 2860, 280, vert=True)
+    b.Cap("C13", "100 nF", 2940, 400); b.gnd_pin("C13.2", 10)
     b.L("L2", "1,5 µH / 4 A", 3380, 240)
     b.Cap("C12", "3× 22 µF", 3560, 360); b.gnd_pin("C12.2", 10)
 
@@ -575,7 +576,7 @@ def build(priority=()):
     b.Cap("C74", "47 nF", 3880, 660); b.gnd_pin("C74.2", 10)
     b.R("R85", "1,0 k", 3990, 620, vert=True)
     b.Cap("C75", "150 nF", 3990, 720); b.gnd_pin("C75.2", 10)
-    M("Q4", 4180, 200, 190, "Q4 SI2308BDS", "N-FET 60 V", [("G", "", "1 G", U), ("S", "", "2 S", U)],
+    M("Q4", 4180, 200, 190, "Q4 AO3422", "N-FET 55 V, 2,5-V-Gate", [("G", "", "1 G", U), ("S", "", "2 S", U)],
       [("D", "", "3 D", U)], pitch=40, top=70)
     b.R("R81", "68 mΩ", 4170, 480, vert=True); b.gnd_pin("R81.2", 10)
     b.R("R86", "2,0 k", 4070, 450)
@@ -732,10 +733,10 @@ def build(priority=()):
     for p in ("U9.MCLK", "U9.SPI", "U9.GND"):
         b.gnd_pin(p)
     b.R("R16", "10 k", 2640, 1100, vert=True, color=C["pwr"])
-    b.Cap("C17", "10µ ‖ 100n", 2560, 1560); b.gnd_pin("C17.2", 10)
-    b.Cap("C18", "10µ ‖ 100n", 2450, 1600); b.gnd_pin("C18.2", 10)
-    for i, (pin, ref, val) in enumerate((("U9.REF", "C19", "10 µF"), ("U9.AVDD", "C20", "10 µF+100 nF"),
-                                         ("U9.DVDD", "C21", "10 µF+100 nF"))):
+    b.Cap("C17", "10 µF", 2560, 1560); b.gnd_pin("C17.2", 10)
+    b.Cap("C18", "100 nF", 2450, 1600); b.gnd_pin("C18.2", 10)
+    for i, (pin, ref, val) in enumerate((("U9.REF", "C19", "10 µF"), ("U9.AVDD", "C20", "10 µF"),
+                                         ("U9.DVDD", "C21", "10 µF"))):
         x, y, _ = b.pins[pin]
         b.Cap(ref, val, x + 30 + i * 90, y, vert=False)
         b.gnd_pin(f"{ref}.2", 10)
@@ -756,6 +757,9 @@ def build(priority=()):
        ("NCX", "", "10,11,17–20 frei", "nc")],
       pitch=40, top=70)
     b.gnd_pin("U10.ADDR"); b.gnd_pin("U10.GND")
+    for i, ref in enumerate(("R90", "R91", "R92")):
+        b.R(ref, "10 k", 4160 + i * 70, 1420, vert=True); b.gnd_pin(f"{ref}.2", 10)
+    s.text(4140, 1560, "R90–R92: Pull-downs (Start = aus)", 11, "#555", family=SANS)
     b.Cap("C22", "100 nF", 3450, 1380); b.gnd_pin("C22.2", 10)
 
     # ================================================================== Andock-Kontakte (Basisstation)
@@ -803,12 +807,14 @@ def build(priority=()):
     b.R("R18", "6,81 k 0,1 %", 2770, 2200, vert=True, color=C["p48"])
     b.Cap("C23", "47 µF/63 V", 2800, 2350, vert=False, polar=True)
     b.Cap("C24", "47 µF/63 V", 2800, 2470, vert=False, polar=True)
-    b.R("R19", "10 Ω", 2900, 2350)
-    b.R("R20", "10 Ω", 2900, 2470)
-    M("D3", 3010, 2530, 120, "D3 BAV99", "Klemme +", [("IO", "", "3 IO", U)], [("P", "", "2 +5VA", U),
-                                                                               ("N", "", "1 −5VA", U)], pitch=40, top=60)
-    M("D4", 3010, 2680, 120, "D4 BAV99", "Klemme −", [("IO", "", "3 IO", U)], [("P", "", "2 +5VA", U),
-                                                                               ("N", "", "1 −5VA", U)], pitch=40, top=60)
+    b.R("R19", "47 Ω", 2900, 2350)
+    b.R("R20", "47 Ω", 2900, 2470)
+    M("D3", 3010, 2530, 120, "D3 BAV99", "Klemme ±0,6 V", [("IO", "", "3 IO", U)], [("P", "", "2 GND", U),
+                                                                               ("N", "", "1 GND", U)], pitch=40, top=60)
+    M("D4", 3010, 2680, 120, "D4 BAV99", "Klemme ±0,6 V", [("IO", "", "3 IO", U)], [("P", "", "2 GND", U),
+                                                                               ("N", "", "1 GND", U)], pitch=40, top=60)
+    for p_ in ("D3.P", "D3.N", "D4.P", "D4.N"):
+        b.gnd_pin(p_, 20)
     b.R("R21", "10 k", 3020, 2370, vert=True); b.gnd_pin("R21.2", 10)
     b.Cap("C26", "100 pF", 3080, 2370); b.gnd_pin("C26.2", 10)
     b.Cap("C25", "470 pF", 3170, 2400)
@@ -876,7 +882,7 @@ def build(priority=()):
     N("DW_VCC", "U4.VCC", "R8.2", "C9.1")
     N("DW_CS", "U4.CS", "R9.2")
     N("OD", "U4.OD", "Q1.G1"); N("OC", "U4.OC", "Q1.G2")
-    N("VINA", "U6.VINA", "R10.2")
+    N("VINA", "U6.VINA", "R10.2", "C13.1")
     N("SW1_63", "U6.L1", "L2.1"); N("SW2_63", "U6.L2", "L2.2")
     N("FB48", "U8.FB", "R11.2", "R12.1")
     N("RT48", "U8.RT", "R80.1"); N("SS48", "U8.SS", "C74.1"); N("COMP48", "U8.COMP", "R85.1", "C87.1")
@@ -943,8 +949,8 @@ def build(priority=()):
     N("S3_EXP_INT", "U16.INT", "R60.2", "S3.L6")
     N("BQ_INT", "U3.INT", "R4.2", "U10.P1"); N("BAT_ALRT", "U5.ALRT", "U16.P10")
     N("PWR_KEY", "D2.A", "U16.P06")
-    N("P48_SW", "U10.P0", "R84.1"); N("HP_EN", "U10.P2", "U13.EN")
-    N("ANA_EN", "U10.P4", "U7.EN"); N("P48_EN", "U10.P5", "U8.UVLO")
+    N("P48_SW", "U10.P0", "R84.1", "R90.1"); N("HP_EN", "U10.P2", "U13.EN", "R92.1")
+    N("ANA_EN", "U10.P4", "U7.EN"); N("P48_EN", "U10.P5", "U8.UVLO", "R91.1")
     # Versorgungen (an Sammelschienen)
     N("VSYS", "U3.SYS", "L1.2", "C7.1", "U6.VIN", "C11.1", "R10.1", "U6.EN", "U6.PS", "R74.1", "U7.INN", "L3.1", "C61.1",
       "U8.BIAS", "U8.VCC", "C70.1", "L5.1", "S3.L11", "LED1.VDD", "LED2.VDD", "LED3.VDD", "LED4.VDD", "C40.1", "C41.1", "C42.1", "C43.1")
@@ -952,8 +958,8 @@ def build(priority=()):
       "U9.LDOSEL", "C17.1", "U10.VCC", "C22.1", "U16.VCC", "U16.ADDR", "C45.1", "R60.1", "R64.2",
 
       *[f"{rr}.1" for (_, _, rr, _) in enc])
-    N("+5VA", "U17.OUT", "R75.1", "C76.1", "C83.1", "U19.IN", "U19.EN", "C85.1", "U11.VP", "C28.1", "U13.VP", "C32.1", "D3.P", "D4.P")
-    N("−5VA", "U18.OUT", "R77.1", "C77.1", "C84.1", "U11.VN", "C79.1", "U13.VN", "C34.1", "D3.N", "D4.N")
+    N("+5VA", "U17.OUT", "R75.1", "C76.1", "C83.1", "U19.IN", "U19.EN", "C85.1", "U11.VP", "C28.1", "U13.VP", "C32.1")
+    N("−5VA", "U18.OUT", "R77.1", "C77.1", "C84.1", "U11.VN", "C79.1", "U13.VN", "C34.1")
     N("P48", "R13.2", "C16.1", "R17.1", "R18.1")
 
     local_first = [n for n in b.nets if b.nets[n] and n not in ("VSYS", "+3V3", "+5VA", "−5VA", "P48")]

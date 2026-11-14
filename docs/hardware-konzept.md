@@ -239,7 +239,7 @@ Stromversorgung:
   Datenblatt 90 % (min) bis 93 % (typ). Deshalb boostet er nur auf **ca. 24 V**, ein **Spannungsverdoppler**
   (2 Dioden + 2 Kondensatoren, 100 V) macht daraus 48 V. FB misst direkt an den 48 V (470 k / 10 k, Referenz 1,0 V).
   Geschaltet wird mit **Q2 ZXMP10A13F** (P-FET −100 V) und **Q3 MMBTA42** (NPN 300 V), Gate geschützt mit 15-V-Zener.
-- Ladestrom-Grenze am BQ25895: **R_ILIM 130 Ω** (ca. 2,7 A). In der Basisstation erkennt der Lader an D+/D− kein
+- Ladestrom-Grenze am BQ25895: **R_ILIM 160 Ω** (ca. 2,2 A, weil der TPS2116 max. 2,5 A verträgt). In der Basisstation erkennt der Lader an D+/D− kein
   Netzteil (nur 500 mA), deshalb setzt die Firmware beim Andocken den Eingangsstrom per I2C hoch.
 - Das S3-Board wird über VSYS gespeist, sein BAT-Anschluss bleibt leer
 - Soft-Power-Taster (lang drücken: Ein/Aus, sauberes Abmelden)

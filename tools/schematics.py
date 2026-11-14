@@ -179,7 +179,7 @@ class Svg:
         self.line([(x + 30, y - 13), (x + 30, y + 13)], color, 3)
         self.line([(x + 30, y), (x + 52, y)], color)
         if polar:
-            self.text(x + 14, y - 16, "+", 13, color)
+            self.text(x + 4, y - 6, "+", 13, color)
         self.text(x + 26, y - 22, ref, 12, "#444", anchor="middle")
         self.text(x + 26, y + 26, val, 12, INK, anchor="middle", weight="bold")
         return (x + 52, y)
@@ -510,9 +510,9 @@ def platine():
               ("SDA", "", "SDA", U), ("SCL", "", "SCL", U), ("INT", "", "/INT", U), ("STAT", "", "STAT", U),
               ("QON", "", "/QON", U), ("DSEL", "", "DSEL", U)], pitch=50, top=70, nums=False)
     to_flag("U3.VBUS", "VBUS_CHG", C["pwr"], 120); under("U3.VBUS", "C3 1 µF → GND", 10)
-    to_text("U3.PMID", "C4 10 µF → GND")
+    to_text("U3.PMID", "C4 22 µF → GND")
     to_flag("U3.REGN", "REGN", C["pwr"], 120); under("U3.REGN", "C5 4,7 µF → GND", 10)
-    to_text("U3.ILIM", "R3 130 Ω → GND (2,7 A)")
+    to_text("U3.ILIM", "R3 160 Ω → GND (2,2 A)")
     to_flag("U3.TS", "TS", C["ana"], 120)
     to_flag("U3.DP", "USB_DP", C["usb"], 120); to_flag("U3.DM", "USB_DM", C["usb"], 120)
     for pin in ("U3.OTG", "U3.CE", "U3.PGND"):
@@ -522,7 +522,7 @@ def platine():
     ys = p("U3.SYS")[1]
     s.line([e, (e[0] + 20, y), (e[0] + 20, ys)], C["pwr"]); s.dot(e[0] + 20, ys, INK)
     xb, yb = p("U3.BTST"); s.line([(xb, yb), (xb + 10, yb)])
-    e2 = s.cap(xb + 10, yb, "C6", "47 nF", vertical=False)
+    e2 = s.cap(xb + 10, yb, "", "", vertical=False); small(xb + 14, yb + 28, "C6 47 nF")
     s.line([e2, (xb + 80, yb), (xb + 80, y)]); s.dot(xb + 80, y, INK)
     x, y = p("U3.SYS"); s.line([(x, y), (x + 170, y)], C["pwr"]); s.flag(x + 170, y, "VSYS", C["pwr"])
     small(x + 70, y + 18, "C7 2× 10 µF → GND")
@@ -602,7 +602,7 @@ def platine():
              [("L1", "", "L1", U), ("L2", "", "L2", U), ("VOUT", "", "VOUT", U), ("FB", "", "FB", U),
               ("PG", "", "PG", "nc")], pitch=46, top=70, nums=False)
     to_flag("U6.VIN", "VSYS", C["pwr"], 160); under("U6.VIN", "C11 2× 10 µF → GND", 96)
-    x2, y2 = p("U6.VINA"); s.line([(x2, y2), (x2 - 10, y2)]); s.resistor(x2 - 70, y2, "R10", "100 Ω")
+    x2, y2 = p("U6.VINA"); s.line([(x2, y2), (x2 - 10, y2)]); s.resistor(x2 - 70, y2, "R10", "100 Ω"); small(x2 - 4, y2 + 31, "C13 100 nF → GND", anchor="end")
     s.line([(x2 - 70, y2), (x2 - 80, y2), (x2 - 80, p("U6.VIN")[1])], C["pwr"]); s.dot(x2 - 80, p("U6.VIN")[1], INK)
     to_text("U6.EN", "→ VSYS", C["pwr"]); to_text("U6.PS", "→ VSYS (PWM)", C["pwr"])
     to_gnd("U6.GND")
@@ -653,13 +653,14 @@ def platine():
               ("COMP", "", "6 COMP", U), ("GND", "", "4+7 GND", U)],
              [("GATE", "", "3 GATE", U), ("CS", "", "5 CS", U), ("FB", "", "8 FB", U)], pitch=30, top=60, nums=False)
     to_flag("U8.BIAS", "VSYS", C["pwr"], 40); to_flag("U8.UVLO", "P48_EN", C["p48"], 40)
-    to_text("U8.RT", "R80 44,2 k"); to_text("U8.SS", "C74 47 nF"); to_text("U8.COMP", "R85 1 k + C75 150 nF ‖ C87 1 nF")
+    to_text("U8.RT", "R80 44,2 k"); to_text("U8.SS", "C74 47 nF"); to_text("U8.COMP", "R85/C75/C87")
     to_gnd("U8.GND")
-    to_text("U8.GATE", "Q4 Gate"); to_text("U8.CS", "R86 2 k → Q4 S / R81"); to_text("U8.FB", "R11/R12")
+    to_text("U8.GATE", "Q4 Gate"); to_text("U8.CS", "R86 → R81"); to_text("U8.FB", "R11/R12")
     s.note(3600, 150, ["Leistungsteil 48 V:",
                        "VSYS → L5 22 µH → Q4 Drain",
-                       "Q4 N-FET ≥ 60 V, Logic Level*",
-                       "R81 68 mΩ, R11 470 k, R12 10 k",
+                       "Q4 AO3422 (55 V, Gate ab 2,5 V)",
+                       "R81 68 mΩ, R86 2 k, R11 470 k, R12 10 k",
+                       "R85 1 k + C75 150 nF, C87 1 nF",
                        "D7 → P24 ≈ 24 V (C71 1 µF/100 V)",
                        "Verdoppler: C72 1 µF/100 V,",
                        "D8, D9 → P48_RAW (C73)",
@@ -672,7 +673,9 @@ def platine():
                        "G–S: R82 100 k + DZ1 15 V",
                        "R83 47 k Gate → Q3 C",
                        "Q3 MMBTA42, E = GND",
-                       "B ← R84 10 k ← P48_SW"], size=12)
+                       "B ← R84 10 k ← P48_SW",
+                       "R90 10 k: P48_SW → GND",
+                       "R91 10 k: P48_EN → GND"], size=12)
 
     # ======================================================================= D · C5
     s.block(30, 960, 1000, 820, "D · ESP32-C5-Zero (gesteckt): Funk, Audio, Tasten")
@@ -744,9 +747,10 @@ def platine():
                         "VSYS → Pin 14 VCC (= Eingang 3,3-V-Wandler",
                         "MP1605 am Board). 5V, BAT, 3V3 offen lassen.",
                         "USB-C am S3-Board im Gerät nicht anstecken.",
-                        "I2C-S3: U5 0x36, U16 0x27, am Board: TCA9554",
-                        "0x20, GT911 0x5D, PCF85063 0x51, QMI8658 0x6A.",
-                        "GP16 = Touch-INT des Boards, nicht benutzen."], size=12)
+                        "I2C-S3: U5 0x36, U16 0x27, am Board:",
+                        "TCA9554 0x20, GT911 0x5D,",
+                        "PCF85063 0x51, QMI8658 0x6A.",
+                        "GP16 = Touch-INT, nicht benutzen."], size=12)
 
     # ======================================================================= F · Codec
     s.block(2070, 960, 1560, 820, "F · Audio-Codec TLV320AIC3204 + I/O-Expander")
@@ -769,11 +773,11 @@ def platine():
     for pin in ("U9.MCLK", "U9.SPI", "U9.GND"):
         to_gnd(pin)
     small(p("U9.RST")[0] - 90, p("U9.RST")[1] + 18, "R16 10 k → +3V3", anchor="end")
-    small(p("U9.IOVDD")[0] - 90, p("U9.IOVDD")[1] + 18, "C17 10 µF + 100 nF → GND", anchor="end")
-    small(p("U9.LDOIN")[0] - 90, p("U9.LDOIN")[1] + 18, "C18 10 µF + 100 nF · 3V3A aus U19 LP5907-3.3 (+5VA)", anchor="end")
+    small(p("U9.IOVDD")[0] - 90, p("U9.IOVDD")[1] + 18, "C17 10 µF → GND", anchor="end")
+    small(p("U9.LDOIN")[0] - 90, p("U9.LDOIN")[1] + 18, "C18 100 nF + C86 1 µF · 3V3A aus U19 LP5907-3.3 (+5VA)", anchor="end")
     small(p("U9.LDOSEL")[0] - 90, p("U9.LDOSEL")[1] + 18, "interne LDOs an → AVDD/DVDD 1,8 V", anchor="end")
-    to_text("U9.REF", "C19 10 µF → GND"); to_text("U9.AVDD", "C20 10 µF + 100 nF → GND")
-    to_text("U9.DVDD", "C21 10 µF + 100 nF → GND")
+    to_text("U9.REF", "C19 10 µF → GND"); to_text("U9.AVDD", "C20 10 µF → GND")
+    to_text("U9.DVDD", "C21 10 µF → GND")
     to_flag("U9.IN1L", "MIC_TO_CODEC", C["ana"], 50)
     to_flag("U9.LOL", "LINE_L", C["ana"], 50); to_flag("U9.LOR", "LINE_R", C["ana"], 50)
 
@@ -813,28 +817,27 @@ def platine():
     s.line([e, (560, e[1] + 12), (600, e[1] + 12)], C["p48"]); s.flag(600, e[1] + 12, "P48", C["p48"])
     s.line([(480, y2), (600, y2)], C["ana"]); s.line([(560, y3), (600, y3)], C["ana"])
     for (yy, rc, rr) in ((y2, "C23", "R19"), (y3, "C24", "R20")):
-        e = s.cap(600, yy, rc, "47 µF/63 V", vertical=False, polar=True, color=C["ana"])
+        e = s.cap(600, yy, rc + " 47 µF", "", vertical=False, polar=True, color=C["ana"])
         s.line([e, (680, yy)], C["ana"])
-        e = s.resistor(680, yy, rr, "10 Ω", color=C["ana"])
+        e = s.resistor(680, yy, rr, "47 Ω", color=C["ana"])
         s.line([e, (870, yy)], C["ana"])
         s.dot(780, yy, INK)
     s.module("U11", 900, 1880, 220, "U11 INA163", "Mic-Vorverstärker ±5 V",
              [("INP", "", "V+IN", U), ("INN", "", "V−IN", U), ("RG1", "", "RG", U), ("RG2", "", "RG", U)],
-             [("VP", "", "V+", U), ("VN", "", "V−", U), ("REF", "", "REF", U), ("OUT", "", "OUT", U)], pitch=50,
+             [("VP", "", "V+", U), ("VN", "", "V−", U), ("REF", "", "REF", U), ("OUT", "", "VO + SENSE", U)], pitch=50,
              top=70, nums=False)
     xg, yg1 = p("U11.RG1"); _, yg2 = p("U11.RG2")
     s.line([(xg, yg1), (830, yg1)]); e = s.resistor(830, yg1, "RG1", "200 Ω", vertical=True)
     s.line([e, (830, e[1] + 10), (850, e[1] + 10), (850, yg2), (xg, yg2)])
     to_flag("U11.VP", "+5VA", C["pwr"], 70); to_flag("U11.VN", "−5VA", C["pwr"], 70); to_gnd("U11.REF", 20)
-    small(p("U11.OUT")[0] + 6, p("U11.OUT")[1] - 30, "SENSE (8) an VO (9)")
     x, y = p("U11.OUT"); s.line([(x, y), (x + 20, y)], C["ana"])
     e = s.resistor(x + 20, y, "R23", "4,7 k", color=C["ana"])
     s.line([e, (e[0] + 20, y)], C["ana"]); s.dot(e[0] + 20, y, INK)
     s.gnd(*s.resistor(e[0] + 20, y, "R24", "1,2 k", vertical=True))
-    e3 = s.cap(e[0] + 20, y, "C29", "1 µF X7R", vertical=False, color=C["ana"])
+    e3 = s.cap(e[0] + 20, y, "C29 1 µF", "", vertical=False, color=C["ana"])
     s.line([e3, (e3[0] + 20, y)], C["ana"]); s.flag(e3[0] + 20, y, "MIC_TO_CODEC", C["ana"])
     s.note(60, 2290, [
-        "Schutz/Filter je Ader (am Knoten hinter R19/R20): BAV99 (D3/D4) nach +5VA / −5VA, R21/R22 10 k nach GND,",
+        "Schutz/Filter je Ader (am Knoten hinter R19/R20): BAV99 (D3/D4) mit beiden äußeren Pins nach GND (Klemme ±0,6 V), R21/R22 10 k nach GND,",
         "C25 470 pF zwischen den Adern, C26/C27 100 pF nach GND. Entkopplung U11: C28 10 µF + C78 100 nF an V+, C79 10 µF + C80 100 nF an V−.",
         "Verstärkung fest: RG1 200 Ω → G = 1 + 6 kΩ/200 Ω = 31 (+30 dB). Feinanpassung über die Codec-PGA (V1 ohne Umschaltung).",
         "Klinke (T/R) liegt parallel zu XLR 2/3. Phantom per Software nur einschalten, wenn ein XLR-Kondensatormikro steckt.",
@@ -875,7 +878,7 @@ def platine():
     s.note(2020, 2240, ["R25/R26 47 k: IN1+/IN2+ nach GND (Ruhepunkt).",
                         "Verstärkung ×2: R27/R28 1 k OUT → IN−, R29/R30 1 k IN− → GND.",
                         "Entkopplung: C32 10 µF + C33 100 nF an V+, C34 10 µF + C35 100 nF an V−.",
-                        "HP_EN erst nach dem Hochfahren einschalten (kein Knacken).",
+                        "HP_EN erst nach dem Hochfahren einschalten (kein Knacken). R92 10 k: HP_EN → GND.",
                         "Stereo: Mono-Mix oder Kanal A links / B rechts (Firmware)."], size=13)
 
     # ======================================================================= I · Bedienung
@@ -918,7 +921,7 @@ def platine():
     for pin, net in (("J7.SCK", "DOCK_SCK"), ("J7.MOSI", "DOCK_MOSI"), ("J7.MISO", "DOCK_MISO"), ("J7.CS", "DOCK_CS")):
         x, y = p(pin)
         s.line([(x, y), (x + 40, y)], C["btn"])
-        e = s.resistor(x + 120, y, "R" + str(50 + ("SCK", "MOSI", "MISO", "CS").index(pin.split(".")[1])), "33 Ω",
+        e = s.resistor(x + 120, y, "R" + str(50 + ("SCK", "MOSI", "MISO", "CS").index(pin.split(".")[1])) + " 33 Ω", "",
                        color=C["btn"])
         s.line([(x + 40, y), (x + 120, y)], C["btn"]); s.line([e, (e[0] + 30, y)], C["btn"])
         s.flag(e[0] + 30, y, net, C["btn"])

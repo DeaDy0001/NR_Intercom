@@ -2,37 +2,72 @@
 
 ## 1. Wie weit darf ein Bodypack vom Access Point (AP) weg sein?
 
-Entscheidend ist nicht eine feste Entfernung, sondern die **Signalstärke am Bodypack**.
-Für Sprache über WLAN gilt die übliche Planungsregel:
+Entscheidend ist die **Signalstärke**, nicht die Entfernung. Die Firmware zeigt sie im Funk-Messmodus am Display.
 
-| Wert | Ziel |
+| Signalstärke am Bodypack | Was man hört |
 |---|---|
-| Signalstärke (RSSI) am Bodypack | **besser als −67 dBm** |
-| Signal-Rausch-Abstand | **mind. 25 dB** |
-| Überlappung zum nächsten AP | jeder Ort sieht einen **zweiten AP mit mind. −75 dBm** (für Roaming und Ausfallsicherheit) |
+| besser als **−67 dBm** | einwandfrei |
+| −67 bis −75 dBm | gut. Einzelne verlorene Pakete werden überdeckt, man hört nichts. |
+| −75 bis −82 dBm | kurze Aussetzer möglich, vor allem wenn man sich vom AP wegdreht |
+| schlechter als −82 dBm | starke Aussetzer, Verbindung reißt ab |
 
-**Richtwerte für 5 GHz mit am Körper getragenem Bodypack und externer Antenne:**
+### Gerechnete Reichweite (5 GHz)
 
-| Umgebung | typische Reichweite pro AP |
+**Sicher** heißt: Auch wenn der eigene Körper zwischen Bodypack und AP steht, bleiben mindestens −75 dBm.
+**Nur mit Sicht** heißt: −75 dBm werden nur erreicht, wenn die Antenne freie Sicht zum AP hat. Dreht man sich weg, gibt es Aussetzer.
+
+| Umgebung | sicher | nur mit Sicht zum AP |
+|---|---|---|
+| draußen, freie Sicht, AP auf 3–4 m Höhe | **ca. 40 m** | bis ca. 150 m |
+| Halle / Bühne, freie Sicht | **ca. 30 m** | bis ca. 100 m |
+| Halle mit Publikum oder Kulissen dazwischen | **ca. 15–20 m** | bis ca. 50 m |
+| Backstage, Gänge, durch 1 Leichtbauwand | **ca. 8–10 m** | bis ca. 20 m |
+| durch 1 Ziegelwand | ca. 5 m | bis ca. 14 m |
+| durch 1 Betonwand | ca. 3 m | bis ca. 7 m → eigener AP im Raum |
+
+Für die Planung zählt die Spalte **sicher**: Im Radius von 30 m um einen AP (Halle) bzw. 40 m (draußen) funktioniert es,
+egal wie man steht. Jede massive Wand ist eine neue Zelle.
+
+### So ist das gerechnet
+
+| Größe | Wert |
 |---|---|
-| Halle / Bühne mit Sichtverbindung | **ca. 30–50 m** |
-| durch 1–2 Leichtbauwände | ca. 15–25 m |
-| Backstage mit Beton- oder Ziegelwänden | ca. 8–15 m, **jede massive Wand ist eine „neue Zelle“** |
-| draußen mit Sichtverbindung, AP erhöht montiert | ca. 60–100 m (mit Richtantennen mehr) |
+| Sendeleistung AP | 17 dBm (auf „mittel“ gestellt) + 4 dBi Antenne = 21 dBm |
+| Sendeleistung Bodypack (ESP32-C5, 5 GHz) | 16,5 dBm + 2 dBi externe Antenne |
+| Verluste am Bodypack (Antennenumschalter, Kabel, Verstimmung durch Körpernähe) | 4 dB |
+| Empfindlichkeit ESP32-C5 bei der langsamsten Datenrate | ca. −92 bis −94 dBm |
+| Dämpfung durch den eigenen Körper bei 5 GHz | 0 dB (Sicht) bis ca. 15 dB (Körper dazwischen) |
+| Streckendämpfung | 46,9 dB bei 1 m, dann je nach Umgebung 20–30 dB je Faktor 10 in der Entfernung |
+| Wände bei 5 GHz | Leichtbau ca. 4 dB, Ziegel ca. 10 dB, Beton ca. 18 dB |
+| Reserve für Mehrwegeausbreitung (Schwund) | 17 dB: von −75 dBm bis zur Empfindlichkeit |
 
-Das sind Erfahrungswerte, keine Garantie. Wie gut es im Gebäude wirklich klappt, zeigt nur eine **Messung**.
-Dafür bekommt die Firmware einen **Funk-Messmodus**: Das Display zeigt Signalstärke, AP-Name, Kanal, Paketverlust und Latenz.
-Man geht damit einmal die Location ab.
+- Pegel am Bodypack = 21 + 2 − 4 − Streckendämpfung − Körper = **19 dBm − Streckendämpfung − Körper**.
+- Pegel am AP = 16,5 + 2 − 4 + 4 − Streckendämpfung − Körper = **18,5 dBm − Streckendämpfung − Körper**.
+  Beide Richtungen sind also etwa gleich stark, solange der AP auf mittlerer Leistung steht.
+- Beispiel Halle mit Sicht, 30 m, Körper dazwischen: 46,9 + 22 × log(30) = 79,4 dB → 19 − 79,4 − 15 = **−75 dBm**.
+- Die Werte sind gerechnet, nicht gemessen. Antenne, Gehäuse und Publikum verschieben sie leicht um ±5 dB,
+  das ändert die Entfernung um den Faktor 1,5. Vor jedem Einsatz mit dem Funk-Messmodus abgehen.
 
-**Warum die Richtung vom Bodypack zum AP die Grenze ist:**
-- Das Bodypack sendet mit kleiner Antenne und wenig Leistung, und der Körper dämpft zusätzlich 5–15 dB.
-- Der AP ist meist deutlich stärker. Deshalb die **Sendeleistung der APs auf mittel stellen** (ca. 14–17 dBm), damit die Verbindung in beide Richtungen etwa gleich gut ist.
-- Sonst „hört“ das Bodypack den AP noch, aber der AP das Bodypack nicht mehr. Das Bodypack wechselt dann zu spät zum besseren AP.
+### Was die Reichweite am stärksten beeinflusst
+
+1. **Antenne am Bodypack.** Die externe Antenne muss oben aus dem Gehäuse ragen, weg von Akkus und Platine.
+   Mit der eingebauten Keramikantenne im Gehäuse fehlen ca. 5–8 dB, die Reichweite halbiert sich.
+2. **Höhe der APs.** 3–4 m hoch montieren, über den Köpfen. Ein AP auf Tischhöhe hinter Publikum verliert 10 dB und mehr.
+3. **Sendeleistung des AP.** Mehr als ca. 17 dBm bringt nichts: Das Bodypack hört den AP dann zwar weiter,
+   der AP das Bodypack aber nicht. Sprechen fällt dann vor dem Hören aus.
+4. **2,4 GHz als Ausweichband.** Reicht rechnerisch etwa doppelt so weit (sicher ca. 80 m in der Halle), weil Strecke und Körper
+   weniger dämpfen. Bei Veranstaltungen ist das Band aber voll (Handys, Bluetooth), deshalb nur als Notlösung für große Freiflächen.
+
+### Kapazität je AP
+
+Jedes Bodypack schickt und empfängt 100 Pakete pro Sekunde (Opus, 10 ms). Ein Paket belegt den Funkkanal ca. 0,2–0,35 ms.
+Das sind **4–7 % der Funkzeit je Bodypack**. Deshalb **höchstens 10–12 Bodypacks je AP und Kanal**.
+Mit 20-ms-Paketen (Einstellung `frame`) halbiert sich die Funkzeit, die Verzögerung steigt um 10 ms.
 
 ## 2. Wie viele APs für 20+ Bodypacks?
 
 Jedes Bodypack verschickt viele kleine Sprachpakete (50–100 pro Sekunde und Richtung).
-Ein AP-Funkkanal schafft zuverlässig etwa **15–20 Sprach-Clients**.
+Ein AP-Funkkanal schafft mit 10-ms-Paketen zuverlässig etwa **12–15 Bodypacks** (Rechnung in Abschnitt 1).
 
 | Bodypacks | APs (Minimum) | Empfehlung |
 |---|---|---|

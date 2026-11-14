@@ -1,0 +1,951 @@
+BT1  []
+         1              BAT−  <- BT2.1, C9.#1, Q1.1, U4.6
+         2              BAT+  <- BT2.2, C10.#0, C8.#0, R8.#1, U3.13, U3.14, U5.2, U5.3
+BT2  []
+         1              BAT−  <- BT1.1, C9.#1, Q1.1, U4.6
+         2              BAT+  <- BT1.2, C10.#0, C8.#0, R8.#1, U3.13, U3.14, U5.2, U5.3
+C1  [10uF]
+        #0              GND
+        #1              VBUS  <- F1.#1, U1.5, U15.6, U2.19
+C2  [1uF]
+        #0              HUB_V33  <- U2.20
+        #1              GND
+C3  [1uF]
+        #0              VBUS_CHG  <- U15.2, U15.7, U3.1
+        #1              GND
+C4  [10uF]
+        #0              PMID  <- U3.23
+        #1              GND
+C5  [4.7uF]
+        #0              GND
+        #1              REGN  <- R6.#0, U3.22
+C6  [47nF]
+        #0              SW_BQ  <- L1.#1, U3.19, U3.20
+        #1              BTST  <- U3.21
+C7_1  [10uF]
+        #0              GND
+        #1              VSYS
+C7_2  [10uF]
+        #0              GND
+        #1              VSYS
+C8  [10uF]
+        #0              BAT+  <- BT1.2, BT2.2, C10.#0, R8.#1, U3.13, U3.14, U5.2, U5.3
+        #1              GND
+C9  [100nF]
+        #0              DW_VCC  <- R8.#0, U4.5
+        #1              BAT−  <- BT1.1, BT2.1, Q1.1, U4.6
+C10  [1uF]
+        #0              BAT+  <- BT1.2, BT2.2, C8.#0, R8.#1, U3.13, U3.14, U5.2, U5.3
+        #1              GND
+C11_1  [10uF]
+        #0              GND
+        #1              VSYS
+C11_2  [10uF]
+        #0              GND
+        #1              VSYS
+C12_1  [22uF]
+        #0              +3V3
+        #1              GND
+C12_2  [22uF]
+        #0              +3V3
+        #1              GND
+C12_3  [22uF]
+        #0              +3V3
+        #1              GND
+C16  [47uF]
+        #0              P48  <- R13.#1, R17.#0, R18.#0
+        #1              GND
+C17  [10uF]
+        #0              +3V3
+        #1              GND
+C18  [100nF]
+        #0              3V3A  <- C86.#0, U19.5, U9.26
+        #1              GND
+C19  [10uF]
+        #0              REF  <- U9.18
+        #1              GND
+C20  [10uF]
+        #0              AVDD  <- U9.24
+        #1              GND
+C21  [100nF]
+        #0              DVDD  <- U9.29
+        #1              GND
+C22  [100nF]
+        #0              +3V3
+        #1              GND
+C23  [47uF]
+        #0              MICP  <- J5.2, J5.6, R17.#1
+        #1              MICP2  <- R19.#1
+C24  [47uF]
+        #0              MICN  <- J5.3, J5.5, R18.#1
+        #1              MICN2  <- R20.#1
+C25  [470pF]
+        #0              INP  <- C26.#1, D3.#2, R19.#0, R21.#0, U11.5
+        #1              INN  <- C27.#1, D4.#2, R20.#0, R22.#0, U11.4
+C26  [100pF]
+        #0              GND
+        #1              INP  <- C25.#0, D3.#2, R19.#0, R21.#0, U11.5
+C27  [100pF]
+        #0              GND
+        #1              INN  <- C25.#1, D4.#2, R20.#0, R22.#0, U11.4
+C28  [10uF]
+        #0              +5VA
+        #1              GND
+C29  [1uF]
+        #0              MIC_TO_CODEC  <- U9.13
+        #1              ATT  <- R23.#0, R24.#1
+C30  [2.2uF]
+        #0              LINE_L  <- U9.22
+        #1              HP1IN  <- R25.#0, U13.1
+C31  [2.2uF]
+        #0              HP2IN  <- R26.#0, U13.5
+        #1              LINE_R  <- U9.23
+C32  [10uF]
+        #0              +5VA
+        #1              GND
+C33  [100nF]
+        #0              +5VA
+        #1              GND
+C34  [10uF]
+        #0              GND
+        #1              -5VA
+C35  [100nF]
+        #0              GND
+        #1              -5VA
+C36  [100nF]
+        #0              T4K  <- R36.#0, T4.1, T4.2
+        #1              GND
+C37  [100nF]
+        #0              T3K  <- R35.#0, T3.1, T3.2
+        #1              GND
+C38  [100nF]
+        #0              T2K  <- R34.#0, T2.1, T2.2
+        #1              GND
+C39  [100nF]
+        #0              T1K  <- R33.#0, T1.1, T1.2
+        #1              GND
+C40  [100nF]
+        #0              GND
+        #1              VSYS
+C41  [100nF]
+        #0              GND
+        #1              VSYS
+C42  [100nF]
+        #0              GND
+        #1              VSYS
+C43  [100nF]
+        #0              GND
+        #1              VSYS
+C44  [10uF]
+        #0              GND
+        #1              +3V3
+C45  [100nF]
+        #0              +3V3
+        #1              GND
+C46  [10uF]
+        #0              GND
+        #1              DOCK_5V  <- J7.2, J7.8, R61.#1, U15.3, U15.5
+C50  [10nF]
+        #0              ENC1_A  <- ENC1.#0, R40.#0, U16.4
+        #1              GND
+C51  [10nF]
+        #0              ENC1_B  <- ENC1.#1, R41.#0, U16.5
+        #1              GND
+C52  [10nF]
+        #0              GND
+        #1              ENC1_SW  <- ENC1.S1, R42.#0, U16.6
+C53  [10nF]
+        #0              ENC2_A  <- ENC2.#0, R43.#0, U16.7
+        #1              GND
+C54  [10nF]
+        #0              ENC2_B  <- ENC2.#1, R44.#0, U16.8
+        #1              GND
+C55  [10nF]
+        #0              GND
+        #1              ENC2_SW  <- ENC2.S1, R45.#0, U16.9
+C60  [100nF]
+        #0              GND
+        #1              VINF  <- R74.#0, U7.4
+C61  [4.7uF]
+        #0              VSYS
+        #1              GND
+C62  [22uF]
+        #0              GND
+        #1              V6P  <- D5.#0, R70.#1, U17.5, U17.8, U7.23
+C63  [220nF]
+        #0              VREF65  <- R73.#1, U7.17
+        #1              GND
+C64  [22uF]
+        #0              GND
+        #1              V6N  <- D6.#1, R72.#0, U18.5, U18.8, U7.15
+C66  [10nF]
+        #0              CP65  <- U7.21
+        #1              GND
+C67  [4.7nF]
+        #0              CN65  <- U7.18
+        #1              GND
+C70_1  [1uF]
+        #0              GND
+        #1              VSYS
+C70_2  [10uF]
+        #0              GND
+        #1              VSYS
+C71  [1uF]
+        #0              GND
+        #1              SW48  <- D7.#0, D8.#1
+C72  [1uF]
+        #0              SW48  <- D7.#1, L5.#0, Q4.#2
+        #1              P24  <- D8.#0, D9.#1
+C73  [1uF]
+        #0              GND
+        #1              P48_RAW  <- D9.#0, DZ1.#0, Q2.#0, R11.#0, R82.#1
+C74  [47nF]
+        #0              GND
+        #1              SS48  <- U8.9
+C75  [150nF]
+        #0              GND
+        #1              COMP48B  <- R85.#1
+C76  [10uF]
+        #0              +5VA
+        #1              GND
+C77  [10uF]
+        #0              -5VA
+        #1              GND
+C78  [100nF]
+        #0              +5VA
+        #1              GND
+C79  [10uF]
+        #0              GND
+        #1              -5VA
+C80  [100nF]
+        #0              -5VA
+        #1              GND
+C81  [10nF]
+        #0              GND
+        #1              NR5P  <- U17.6
+C82  [10nF]
+        #0              NR5N  <- U18.6
+        #1              GND
+C83  [10nF]
+        #0              FB5P  <- R75.#1, R76.#1, U17.2
+        #1              +5VA
+C84  [10nF]
+        #0              FB5N  <- R77.#0, R78.#1, U18.2
+        #1              -5VA
+C85  [1uF]
+        #0              GND
+        #1              +5VA
+C86  [1uF]
+        #0              3V3A  <- C18.#0, U19.5, U9.26
+        #1              GND
+C87  [1nF]
+        #0              GND
+        #1              COMP48  <- R85.#0, U8.6
+D2  [BAT54]
+        #0              PWR_KEY  <- U16.10
+        #1              QON  <- S1.1, U3.12
+        #2              OFFEN
+D3  [BAV99]
+        #0              +5VA
+        #1              -5VA
+        #2              INP  <- C25.#0, C26.#1, R19.#0, R21.#0, U11.5
+D4  [BAV99]
+        #0              +5VA
+        #1              -5VA
+        #2              INN  <- C25.#1, C27.#1, R20.#0, R22.#0, U11.4
+D5  [SS14]
+        #0              V6P  <- C62.#1, R70.#1, U17.5, U17.8, U7.23
+        #1              SWP  <- L3.#1, U7.1, U7.24
+D6  [SS14]
+        #0              SWN  <- L4.#0, U7.13, U7.14
+        #1              V6N  <- C64.#1, R72.#0, U18.5, U18.8, U7.15
+D7  [SS110]
+        #0              SW48  <- C71.#1, D8.#1
+        #1              SW48  <- C72.#0, L5.#0, Q4.#2
+D8  [SS110]
+        #0              P24  <- C72.#1, D9.#1
+        #1              SW48  <- C71.#1, D7.#0
+D9  [SS110]
+        #0              P48_RAW  <- C73.#1, DZ1.#0, Q2.#0, R11.#0, R82.#1
+        #1              P24  <- C72.#1, D8.#0
+DZ1  [BZT52C15]
+        #0              P48_RAW  <- C73.#1, D9.#0, Q2.#0, R11.#0, R82.#1
+        #1              P48_RAW  <- Q2.#2, R82.#0, R83.#1
+ENC1  [ED089050-FE18D9.0-C10-2D7]
+        #0 A            ENC1_A  <- C50.#0, R40.#0, U16.4
+        #1 B            ENC1_B  <- C51.#0, R41.#0, U16.5
+        #2 C            GND
+        S1              ENC1_SW  <- C52.#1, R42.#0, U16.6
+        S2              GND
+ENC2  [ED089050-FE18D9.0-C10-2D7]
+        #0 A            ENC2_A  <- C53.#0, R43.#0, U16.7
+        #1 B            ENC2_B  <- C54.#0, R44.#0, U16.8
+        #2 C            GND
+        S1              ENC2_SW  <- C55.#1, R45.#0, U16.9
+        S2              GND
+F1  [1812L300/16GR]
+        #0              J1VB  <- J1.A4B9, J1.B4A9
+        #1              VBUS  <- C1.#1, U1.5, U15.6, U2.19
+J1  []
+         0 EH           GND
+     B1A12 GND          GND
+      B4A9 VBUS         J1VB  <- F1.#0, J1.A4B9
+        B5 CC2          CC2  <- R2.#1
+        A8 SBU1         OFFEN
+        B6 Dp2          USB_DP  <- J1.A6, U1.1, U1.6, U2.15, U3.2
+        A7 Dn1          USB_DM  <- J1.B7, U1.3, U1.4, U2.14, U3.3
+        A6 Dp1          USB_DP  <- J1.B6, U1.1, U1.6, U2.15, U3.2
+        B7 Dn2          USB_DM  <- J1.A7, U1.3, U1.4, U2.14, U3.3
+        A5 CC1          CC1  <- R1.#1
+        B8 SBU2         OFFEN
+      A4B9 VBUS         J1VB  <- F1.#0, J1.B4A9
+     A1B12 GND          GND
+J2  []
+         1              OFFEN
+         2 GND          GND
+         3              +3V3
+         4              DOCK_CS  <- R53.#1
+         5              DOCK_MISO  <- R52.#1
+         6              UART_C5_TX  <- J3/J4.4
+         7              UART_S3_TX  <- J3/J4.3
+         8              I2S_BCLK  <- U9.2
+         9              I2S_WS  <- U9.3
+        10              I2S_DIN  <- U9.5
+        11              LED_DATA  <- R37.#1
+        12              I2S_DOUT  <- U9.4
+        13              SDA_A  <- R14.#1, U10.23, U3.6, U9.10
+        14              SCL_A  <- R15.#1, U10.22, U3.5, U9.9
+        15              C5_USB_DP  <- U2.12
+        16              C5_USB_DM  <- U2.11
+        17 RX           DOCK_MOSI  <- R51.#1
+        18 TX           DOCK_SCK  <- R50.#1
+J3/J4  []
+         1 G            GND
+         2              OFFEN
+         3 TXD          UART_S3_TX  <- J2.7
+         4 RXD          UART_C5_TX  <- J2.6
+         5              OFFEN
+         6              OFFEN
+         7              OFFEN
+         8              OFFEN
+         9              OFFEN
+        10 G            GND
+        11 BAT          OFFEN
+        12              OFFEN
+        13              OFFEN
+        14 VCC          VSYS
+        15 G            GND
+        16 D-           S3_USB_DM  <- U2.9
+        17 D+           S3_USB_DP  <- U2.10
+        18              OFFEN
+        19              S3_EXP_INT  <- R60.#0, U16.1
+        20              OFFEN
+        21 SCL          SCL_S3  <- U16.22, U5.7
+        22 SDA          SDA_S3  <- U16.23, U5.8
+        23              OFFEN
+        24 G            GND
+J5  []
+         1              GND
+         2              MICP  <- C23.#0, J5.6, R17.#1
+         3              MICN  <- C24.#0, J5.5, R18.#1
+         4 S            GND
+         5 R            MICN  <- C24.#0, J5.3, R18.#1
+         6 T            MICP  <- C23.#0, J5.2, R17.#1
+         7 G            GND
+J6  []
+         1              HPL  <- J6.2, R31.#0
+         2              HPL  <- J6.1, R31.#0
+         3              HPR  <- J6.4, R32.#0
+         4              HPR  <- J6.3, R32.#0
+         5              GND
+         6              GND
+J7  []
+         1 GND          GND
+         2              DOCK_5V  <- C46.#1, J7.8, R61.#1, U15.3, U15.5
+         3 SCK          DK_SCK  <- R50.#0, U14.1
+         4 MOSI         DK_MOSI  <- R51.#0, U14.2
+         5 DET          DOCK_DET  <- U16.14
+         6 MISO         DK_MISO  <- R52.#0, U14.4
+         7 CS           DK_CS  <- R53.#0, U14.5
+         8              DOCK_5V  <- C46.#1, J7.2, R61.#1, U15.3, U15.5
+         9 GND          GND
+L1  [2.2uH]
+        #0              VSYS
+        #1              SW_BQ  <- C6.#0, U3.19, U3.20
+L2  [SLO0420H1R5MTT]
+        #0              SW1_63  <- U6.8, U6.9
+        #1              SW2_63  <- U6.6, U6.7
+L3  [SLO0420H4R7MTT]
+        #0              VSYS
+        #1              SWP  <- D5.#1, U7.1, U7.24
+L4  [SLO0420H4R7MTT]
+        #0              SWN  <- D6.#0, U7.13, U7.14
+        #1              GND
+L5  [ZEMS0420-220M]
+        #0              SW48  <- C72.#0, D7.#1, Q4.#2
+        #1              VSYS
+LED1  [SK6812MINI-E]
+         3 VDD          VSYS
+         4 DOUT         LD2  <- LED2.2
+         1 GND          GND
+         2 DIN          LD1  <- R37.#0
+LED2  [SK6812MINI-E]
+         3 VDD          VSYS
+         4 DOUT         LD3  <- LED3.2
+         1 GND          GND
+         2 DIN          LD2  <- LED1.4
+LED3  [SK6812MINI-E]
+         3 VDD          VSYS
+         4 DOUT         LD4  <- LED4.2
+         1 GND          GND
+         2 DIN          LD3  <- LED2.4
+LED4  [SK6812MINI-E]
+         3 VDD          VSYS
+         4 DOUT         OFFEN
+         1 GND          GND
+         2 DIN          LD4  <- LED3.4
+Q1  [FS8205A]
+         1              BAT−  <- BT1.1, BT2.1, C9.#1, U4.6
+         2 D1/D2        OFFEN
+         3              GND
+         4              OC  <- U4.3
+         5 D1/D2        OFFEN
+         6              OD  <- U4.1
+Q2  [ZXMP10A13FTA]
+        #0              P48_RAW  <- C73.#1, D9.#0, DZ1.#0, R11.#0, R82.#1
+        #1              P48D  <- R13.#0
+        #2              P48_RAW  <- DZ1.#1, R82.#0, R83.#1
+Q3  [MMBTA42]
+        #0              QG  <- R83.#0
+        #1              QC  <- R84.#0
+        #2              GND
+Q4  [SI2308BDS]
+        #0              RS48  <- R81.#1, R86.#0
+        #1              GATE48  <- U8.3
+        #2              SW48  <- C72.#0, D7.#1, L5.#0
+R1  [5.1kΩ]
+        #0              GND
+        #1              CC1  <- J1.A5
+R2  [5.1kΩ]
+        #0              GND
+        #1              CC2  <- J1.B5
+R3  [130Ω]
+        #0              GND
+        #1              ILIM  <- U3.10
+R4  [10kΩ]
+        #0              BQ_INT  <- U10.5, U3.7
+        #1              +3V3
+R6  [5.23kΩ]
+        #0              REGN  <- C5.#1, U3.22
+        #1              TS  <- R7.#1, RT1.1, U3.11
+R7  [30.1kΩ]
+        #0              GND
+        #1              TS  <- R6.#1, RT1.1, U3.11
+R8  [100Ω]
+        #0              DW_VCC  <- C9.#0, U4.5
+        #1              BAT+  <- BT1.2, BT2.2, C10.#0, C8.#0, U3.13, U3.14, U5.2, U5.3
+R9  [1kΩ]
+        #0              GND
+        #1              DW_CS  <- U4.2
+R10  [100Ω]
+        #0              VINA  <- U6.1
+        #1              VSYS
+R11  [470kΩ]
+        #0              P48_RAW  <- C73.#1, D9.#0, DZ1.#0, Q2.#0, R82.#1
+        #1              FB48  <- R12.#1, U8.8
+R12  [10kΩ]
+        #0              GND
+        #1              FB48  <- R11.#1, U8.8
+R13  [100Ω]
+        #0              P48D  <- Q2.#1
+        #1              P48  <- C16.#0, R17.#0, R18.#0
+R14  [4.7kΩ]
+        #0              +3V3
+        #1              SDA_A  <- J2.13, U10.23, U3.6, U9.10
+R15  [4.7kΩ]
+        #0              +3V3
+        #1              SCL_A  <- J2.14, U10.22, U3.5, U9.9
+R16  [10kΩ]
+        #0              CODEC_RST  <- U10.7, U9.31
+        #1              +3V3
+R17  [6.81kΩ]
+        #0              P48  <- C16.#0, R13.#1, R18.#0
+        #1              MICP  <- C23.#0, J5.2, J5.6
+R18  [6.81kΩ]
+        #0              P48  <- C16.#0, R13.#1, R17.#0
+        #1              MICN  <- C24.#0, J5.3, J5.5
+R19  [10Ω]
+        #0              INP  <- C25.#0, C26.#1, D3.#2, R21.#0, U11.5
+        #1              MICP2  <- C23.#1
+R20  [10Ω]
+        #0              INN  <- C25.#1, C27.#1, D4.#2, R22.#0, U11.4
+        #1              MICN2  <- C24.#1
+R21  [10kΩ]
+        #0              INP  <- C25.#0, C26.#1, D3.#2, R19.#0, U11.5
+        #1              GND
+R22  [10kΩ]
+        #0              INN  <- C25.#1, C27.#1, D4.#2, R20.#0, U11.4
+        #1              GND
+R23  [4.7kΩ]
+        #0              ATT  <- C29.#1, R24.#1
+        #1              PRE_OUT  <- U11.8, U11.9
+R24  [1.2kΩ]
+        #0              GND
+        #1              ATT  <- C29.#1, R23.#0
+R25  [47kΩ]
+        #0              HP1IN  <- C30.#1, U13.1
+        #1              GND
+R26  [47kΩ]
+        #0              HP2IN  <- C31.#0, U13.5
+        #1              GND
+R27  [1kΩ]
+        #0              HP1OUT  <- R31.#1, U13.9
+        #1              HP1FB  <- R29.#1, U13.10
+R28  [OPA1622IDRCR]
+        #0              HP2OUT  <- R32.#1, U13.7
+        #1              HP2FB  <- R30.#1, U13.6
+R29  [1kΩ]
+        #0              GND
+        #1              HP1FB  <- R27.#1, U13.10
+R30  [1kΩ]
+        #0              GND
+        #1              HP2FB  <- R28.#1, U13.6
+R31  [10Ω]
+        #0              HPL  <- J6.1, J6.2
+        #1              HP1OUT  <- R27.#0, U13.9
+R32  [10Ω]
+        #0              HPR  <- J6.3, J6.4
+        #1              HP2OUT  <- R28.#0, U13.7
+R33  [1kΩ]
+        #0              T1K  <- C39.#0, T1.1, T1.2
+        #1              T1  <- U10.13
+R34  [1kΩ]
+        #0              T2K  <- C38.#0, T2.1, T2.2
+        #1              T2  <- U10.14
+R35  [1kΩ]
+        #0              T3K  <- C37.#0, T3.1, T3.2
+        #1              T3  <- U10.15
+R36  [1kΩ]
+        #0              T4K  <- C36.#0, T4.1, T4.2
+        #1              T4  <- U10.16
+R37  [33Ω]
+        #0              LD1  <- LED1.2
+        #1              LED_DATA  <- J2.11
+R40  [10kΩ]
+        #0              ENC1_A  <- C50.#0, ENC1.#0, U16.4
+        #1              +3V3
+R41  [10kΩ]
+        #0              ENC1_B  <- C51.#0, ENC1.#1, U16.5
+        #1              +3V3
+R42  [10kΩ]
+        #0              ENC1_SW  <- C52.#1, ENC1.S1, U16.6
+        #1              +3V3
+R43  [10kΩ]
+        #0              ENC2_A  <- C53.#0, ENC2.#0, U16.7
+        #1              +3V3
+R44  [10kΩ]
+        #0              ENC2_B  <- C54.#0, ENC2.#1, U16.8
+        #1              +3V3
+R45  [10kΩ]
+        #0              ENC2_SW  <- C55.#1, ENC2.S1, U16.9
+        #1              +3V3
+R50  [33Ω]
+        #0              DK_SCK  <- J7.3, U14.1
+        #1              DOCK_SCK  <- J2.18
+R51  [33Ω]
+        #0              DK_MOSI  <- J7.4, U14.2
+        #1              DOCK_MOSI  <- J2.17
+R52  [33Ω]
+        #0              DK_MISO  <- J7.6, U14.4
+        #1              DOCK_MISO  <- J2.5
+R53  [33Ω]
+        #0              DK_CS  <- J7.7, U14.5
+        #1              DOCK_CS  <- J2.4
+R60  [10kΩ]
+        #0              S3_EXP_INT  <- J3/J4.19, U16.1
+        #1              +3V3
+R61  [100kΩ]
+        #0              PR1  <- R62.#0, U15.4
+        #1              DOCK_5V  <- C46.#1, J7.2, J7.8, U15.3, U15.5
+R62  [33kΩ]
+        #0              PR1  <- R61.#0, U15.4
+        #1              GND
+R63  [10kΩ]
+        #0              GND
+        #1              PSELF  <- U2.18
+R64  [10kΩ]
+        #0              DSEL  <- U3.24
+        #1              +3V3
+R70  [470kΩ]
+        #0              FBP  <- R71.#0, U7.22
+        #1              V6P  <- C62.#1, D5.#0, U17.5, U17.8, U7.23
+R71  [120kΩ]
+        #0              FBP  <- R70.#0, U7.22
+        #1              GND
+R72  [590kΩ]
+        #0              V6N  <- C64.#1, D6.#1, U18.5, U18.8, U7.15
+        #1              FBN  <- R73.#0, U7.16
+R73  [120kΩ]
+        #0              FBN  <- R72.#1, U7.16
+        #1              VREF65  <- C63.#0, U7.17
+R74  [100Ω]
+        #0              VINF  <- C60.#1, U7.4
+        #1              VSYS
+R75  [32.4kΩ]
+        #0              +5VA
+        #1              FB5P  <- C83.#0, R76.#1, U17.2
+R76  [10kΩ]
+        #0              GND
+        #1              FB5P  <- C83.#0, R75.#1, U17.2
+R77  [32.4kΩ]
+        #0              FB5N  <- C84.#0, R78.#1, U18.2
+        #1              -5VA
+R78  [10kΩ]
+        #0              GND
+        #1              FB5N  <- C84.#0, R77.#0, U18.2
+R80  [44.2kΩ]
+        #0              GND
+        #1              RT48  <- U8.10
+R81  [68mΩ]
+        #0              GND
+        #1              RS48  <- Q4.#0, R86.#0
+R82  [100kΩ]
+        #0              P48_RAW  <- DZ1.#1, Q2.#2, R83.#1
+        #1              P48_RAW  <- C73.#1, D9.#0, DZ1.#0, Q2.#0, R11.#0
+R83  [47kΩ]
+        #0              QG  <- Q3.#0
+        #1              P48_RAW  <- DZ1.#1, Q2.#2, R82.#0
+R84  [10kΩ]
+        #0              QC  <- Q3.#1
+        #1              P48_SW  <- U10.4
+R85  [1kΩ]
+        #0              COMP48  <- C87.#1, U8.6
+        #1              COMP48B  <- C75.#1
+R86  [2kΩ]
+        #0              RS48  <- Q4.#0, R81.#1
+        #1              CS48  <- U8.5
+RG1  [200Ω]
+        #0              RGB  <- U11.12
+        #1              RGA  <- U11.3
+RT1  []
+         1              TS  <- R6.#1, R7.#1, U3.11
+         2              GND
+S1  [TS665ZJ]
+         1              QON  <- D2.#1, U3.12
+         2              GND
+         3              OFFEN
+         4              OFFEN
+T1  [TS-1187A-S16]
+         3              GND
+         4              GND
+         1              T1K  <- C39.#0, R33.#0, T1.2
+         2              T1K  <- C39.#0, R33.#0, T1.1
+T2  [TS-1187A-S16]
+         3              GND
+         4              GND
+         1              T2K  <- C38.#0, R34.#0, T2.2
+         2              T2K  <- C38.#0, R34.#0, T2.1
+T3  [TS-1187A-S16]
+         3              GND
+         4              GND
+         1              T3K  <- C37.#0, R35.#0, T3.2
+         2              T3K  <- C37.#0, R35.#0, T3.1
+T4  [TS-1187A-S16]
+         3              GND
+         4              GND
+         1              T4K  <- C36.#0, R36.#0, T4.2
+         2              T4K  <- C36.#0, R36.#0, T4.1
+U1  [USBLC6-2P6]
+         1 I/O1         USB_DP  <- J1.A6, J1.B6, U1.6, U2.15, U3.2
+         2 GND          GND
+         3 I/O2         USB_DM  <- J1.A7, J1.B7, U1.4, U2.14, U3.3
+         4 I/O2         USB_DM  <- J1.A7, J1.B7, U1.3, U2.14, U3.3
+         5 VBUS         VBUS  <- C1.#1, F1.#1, U15.6, U2.19
+         6 I/O1         USB_DP  <- J1.A6, J1.B6, U1.1, U2.15, U3.2
+U2  []
+        25 GND          GND
+        24 PWREN#       OFFEN
+        23 LED2         OFFEN
+        22 LED1         OFFEN
+        21 LED4/SDA     OFFEN
+        20 VDD33        HUB_V33  <- C2.#0
+        19              VBUS  <- C1.#1, F1.#1, U1.5, U15.6
+        18 PSELF        PSELF  <- R63.#1
+        17 NC           OFFEN
+        16 RESET#/CDP   OFFEN
+        15 DPU          USB_DP  <- J1.A6, J1.B6, U1.1, U1.6, U3.2
+        14 DMU          USB_DM  <- J1.A7, J1.B7, U1.3, U1.4, U3.3
+        13 LED3/SCL     OFFEN
+        12 DP1          C5_USB_DP  <- J2.15
+        11 DM1          C5_USB_DM  <- J2.16
+        10 DP2          S3_USB_DP  <- J3/J4.17
+         9 DM2          S3_USB_DM  <- J3/J4.16
+         8 DP3          OFFEN
+         7 DM3          OFFEN
+         6 DP4          OFFEN
+         5 DM4          OFFEN
+         4 XI           HUB_XI  <- Y2.1
+         3 XO           HUB_XO  <- Y2.3
+         2 NC.          OFFEN
+         1 OVCUR#       OFFEN
+U3  [BQ25895RTWR]
+         1 VBUS         VBUS_CHG  <- C3.#0, U15.2, U15.7
+         2 D+           USB_DP  <- J1.A6, J1.B6, U1.1, U1.6, U2.15
+         3 D            USB_DM  <- J1.A7, J1.B7, U1.3, U1.4, U2.14
+         4 STAT         OFFEN
+         5 SCL          SCL_A  <- J2.14, R15.#1, U10.22, U9.9
+         6 SDA          SDA_A  <- J2.13, R14.#1, U10.23, U9.10
+         7 INT          BQ_INT  <- R4.#0, U10.5
+         8 OTG          GND
+         9 CE           GND
+        10 ILIM         ILIM  <- R3.#1
+        11 TS           TS  <- R6.#1, R7.#1, RT1.1
+        12 QON          QON  <- D2.#1, S1.1
+        13 BAT          BAT+  <- BT1.2, BT2.2, C10.#0, C8.#0, R8.#1, U3.14, U5.2, U5.3
+        14 BAT          BAT+  <- BT1.2, BT2.2, C10.#0, C8.#0, R8.#1, U3.13, U5.2, U5.3
+        15 SYS          VSYS
+        16 SYS          VSYS
+        17 PGND         GND
+        18 PGND         GND
+        19 SW           SW_BQ  <- C6.#0, L1.#1, U3.20
+        20 SW           SW_BQ  <- C6.#0, L1.#1, U3.19
+        21 BTST         BTST  <- C6.#1
+        22 REGN         REGN  <- C5.#1, R6.#0
+        23 PMID         PMID  <- C4.#0
+        24 DSEL         DSEL  <- R64.#0
+        25 PAD          GND
+U4  [DW01A]
+         1 OD           OD  <- Q1.6
+         2 VM           DW_CS  <- R9.#1
+         3 OC           OC  <- Q1.4
+         4 TD           OFFEN
+         5 VCC          DW_VCC  <- C9.#0, R8.#0
+         6 GND          BAT−  <- BT1.1, BT2.1, C9.#1, Q1.1
+U5  [MAX17048G+T10]
+         1 CTG          GND
+         2 CELL         BAT+  <- BT1.2, BT2.2, C10.#0, C8.#0, R8.#1, U3.13, U3.14, U5.3
+         3 VDD          BAT+  <- BT1.2, BT2.2, C10.#0, C8.#0, R8.#1, U3.13, U3.14, U5.2
+         4 GND          GND
+         5 ALRT#        BAT_ALRT  <- U16.13
+         6 QSTRT        GND
+         7 SCL          SCL_S3  <- J3/J4.21, U16.22
+         8 SDA          SDA_S3  <- J3/J4.22, U16.23
+         9 EP           GND
+U6  [TPS63021DSJT]
+         1 VINA         VINA  <- R10.#0
+         2 GND          GND
+         3 FB           +3V3
+         4 VOUT         +3V3
+         5 VOUT         +3V3
+         6              SW2_63  <- L2.#1, U6.7
+         7              SW2_63  <- L2.#1, U6.6
+         8              SW1_63  <- L2.#0, U6.9
+         9              SW1_63  <- L2.#0, U6.8
+        10 VIN          VSYS
+        11 VIN          VSYS
+        12 EN           VSYS
+        13 PS/SYNC      VSYS
+        14 PG           OFFEN
+        15 PGND         GND
+U7  []
+         1 INP          SWP  <- D5.#1, L3.#1, U7.24
+         2 PGND         GND
+         3 PGND         GND
+         4 VIN          VINF  <- C60.#1, R74.#0
+         5 INN          VSYS
+         6 INN          VSYS
+         7 BSW          OFFEN
+         8 ENP          ANA_EN  <- U10.8, U7.10
+         9 PSP          GND
+        10 ENN          ANA_EN  <- U10.8, U7.8
+        11 PSN          GND
+        12 NC           OFFEN
+        13 OUTN         SWN  <- D6.#0, L4.#0, U7.14
+        14 OUTN         SWN  <- D6.#0, L4.#0, U7.13
+        15 VNEG         V6N  <- C64.#1, D6.#1, R72.#0, U18.5, U18.8
+        16 FBN          FBN  <- R72.#1, R73.#0
+        17 VREF         VREF65  <- C63.#0, R73.#1
+        18 CN           CN65  <- C67.#0
+        19 AGND         GND
+        20 NC           OFFEN
+        21 CP           CP65  <- C66.#0
+        22 FBP          FBP  <- R70.#0, R71.#0
+        23 VPOS         V6P  <- C62.#1, D5.#0, R70.#1, U17.5, U17.8
+        24 INP          SWP  <- D5.#1, L3.#1, U7.1
+        25 EP           GND
+U8  []
+         1 BIAS         VSYS
+         2 VCC          VSYS
+         3 GATE         GATE48  <- Q4.#1
+         4 PGND         GND
+         5 CS           CS48  <- R86.#1
+         6 COMP         COMP48  <- C87.#1, R85.#0
+         7 AGND         GND
+         8 FB           FB48  <- R11.#1, R12.#1
+         9 SS           SS48  <- C74.#1
+        10 RT           RT48  <- R80.#1
+        11 PGOOD        OFFEN
+        12 UVLO/SYNC    P48_EN  <- U10.9
+        13 EP           GND
+U9  []
+         1 MCLK         GND
+         2 BCLK         I2S_BCLK  <- J2.8
+         3 WCLK         I2S_WS  <- J2.9
+         4 DIN/MFP1     I2S_DOUT  <- J2.12
+         5 DOUT/MFP2    I2S_DIN  <- J2.10
+         6 IOVDD        +3V3
+         7 IOVSS        GND
+         8 SCLK/MFP3    OFFEN
+         9 SCL/SS#      SCL_A  <- J2.14, R15.#1, U10.22, U3.5
+        10 SDA/MOSI     SDA_A  <- J2.13, R14.#1, U10.23, U3.6
+        11 MISO/MFP4    OFFEN
+        12 SPI_SELECT   GND
+        13 IN1_L        MIC_TO_CODEC  <- C29.#0
+        14 IN1_R        OFFEN
+        15 IN2_L        OFFEN
+        16 IN2_R        OFFEN
+        17 AVSS         GND
+        18 REF          REF  <- C19.#0
+        19 MICBIAS      OFFEN
+        20 IN3_L        OFFEN
+        21 IN3_R        OFFEN
+        22 LOL          LINE_L  <- C30.#0
+        23 LOR          LINE_R  <- C31.#1
+        24 AVDD         AVDD  <- C20.#0
+        25 HPL          OFFEN
+        26 LDOIN/HPVDD  3V3A  <- C18.#0, C86.#0, U19.5
+        27 HPR          OFFEN
+        28 DVSS         GND
+        29 DVDD         DVDD  <- C21.#0
+        30 LDO_SELECT   +3V3
+        31 RESET#       CODEC_RST  <- R16.#0, U10.7
+        32 GPIO/MFP5    OFFEN
+        33 EP           GND
+U10  []
+         1 INT#         OFFEN
+         2              GND
+         3              GND
+         4              P48_SW  <- R84.#1
+         5              BQ_INT  <- R4.#0, U3.7
+         6              HP_EN  <- U13.8
+         7              CODEC_RST  <- R16.#0, U9.31
+         8              ANA_EN  <- U7.10, U7.8
+         9              P48_EN  <- U8.12
+        10              OFFEN
+        11              OFFEN
+        12 GND          GND
+        13              T1  <- R33.#1
+        14              T2  <- R34.#1
+        15              T3  <- R35.#1
+        16              T4  <- R36.#1
+        17              OFFEN
+        18              OFFEN
+        19              OFFEN
+        20              OFFEN
+        21              GND
+        22 SCL          SCL_A  <- J2.14, R15.#1, U3.5, U9.9
+        23 SDA          SDA_A  <- J2.13, R14.#1, U3.6, U9.10
+        24 VCC          +3V3
+U11  []
+         1 VO1          OFFEN
+         2 NC           OFFEN
+         3 GS1          RGA  <- RG1.#1
+         4 VIN-         INN  <- C25.#1, C27.#1, D4.#2, R20.#0, R22.#0
+         5 VIN+         INP  <- C25.#0, C26.#1, D3.#2, R19.#0, R21.#0
+         6 V-           -5VA
+         7 NC           OFFEN
+         8 SENSE        PRE_OUT  <- R23.#1, U11.9
+         9 VO           PRE_OUT  <- R23.#1, U11.8
+        10 REF          GND
+        11 V+           +5VA
+        12 GS2          RGB  <- RG1.#0
+        13 NC           OFFEN
+        14 VO2          OFFEN
+U13  []
+         1 +INA         HP1IN  <- C30.#1, R25.#0
+         2 V+           +5VA
+         3 GND          GND
+         4 V-           -5VA
+         5 +INB         HP2IN  <- C31.#0, R26.#0
+         6 -INB         HP2FB  <- R28.#1, R30.#1
+         7 OUTB         HP2OUT  <- R28.#0, R32.#1
+         8 EN           HP_EN  <- U10.6
+         9 OUTA         HP1OUT  <- R27.#0, R31.#1
+        10 -INA         HP1FB  <- R27.#1, R29.#1
+        11 EP           -5VA
+U14  []
+         1 D1+          DK_SCK  <- J7.3, R50.#0
+         2 D1-          DK_MOSI  <- J7.4, R51.#0
+         4 D2+          DK_MISO  <- J7.6, R52.#0
+         5 D2-          DK_CS  <- J7.7, R53.#0
+         8 GND          GND
+         3 GND          GND
+        10 NC           OFFEN
+         9 NC           OFFEN
+         7 NC           OFFEN
+         6 NC           OFFEN
+U15  []
+         1 GND          GND
+         2 VOUT         VBUS_CHG  <- C3.#0, U15.7, U3.1
+         3 VIN1         DOCK_5V  <- C46.#1, J7.2, J7.8, R61.#1, U15.5
+         4 PR1          PR1  <- R61.#0, R62.#0
+         5 MODE         DOCK_5V  <- C46.#1, J7.2, J7.8, R61.#1, U15.3
+         6 VIN2         VBUS  <- C1.#1, F1.#1, U1.5, U2.19
+         7 VOUT         VBUS_CHG  <- C3.#0, U15.2, U3.1
+         8 ST           OFFEN
+U16  []
+         1 INT#         S3_EXP_INT  <- J3/J4.19, R60.#0
+         2              +3V3
+         3              +3V3
+         4              ENC1_A  <- C50.#0, ENC1.#0, R40.#0
+         5              ENC1_B  <- C51.#0, ENC1.#1, R41.#0
+         6              ENC1_SW  <- C52.#1, ENC1.S1, R42.#0
+         7              ENC2_A  <- C53.#0, ENC2.#0, R43.#0
+         8              ENC2_B  <- C54.#0, ENC2.#1, R44.#0
+         9              ENC2_SW  <- C55.#1, ENC2.S1, R45.#0
+        10              PWR_KEY  <- D2.#0
+        11              OFFEN
+        12 GND          GND
+        13              BAT_ALRT  <- U5.5
+        14              DOCK_DET  <- J7.5
+        15              OFFEN
+        16              OFFEN
+        17              OFFEN
+        18              OFFEN
+        19              OFFEN
+        20              OFFEN
+        21              +3V3
+        22 SCL          SCL_S3  <- J3/J4.21, U5.7
+        23 SDA          SDA_S3  <- J3/J4.22, U5.8
+        24 VCC          +3V3
+U17  []
+         1 OUT          +5VA
+         2 FB           FB5P  <- C83.#0, R75.#1, R76.#1
+         3 NC           OFFEN
+         4 GND          GND
+         5 EN           V6P  <- C62.#1, D5.#0, R70.#1, U17.8, U7.23
+         6 NR/SS        NR5P  <- C81.#1
+         7 DNC          OFFEN
+         8 IN           V6P  <- C62.#1, D5.#0, R70.#1, U17.5, U7.23
+         9 PwPd         GND
+U18  []
+         1 OUT          -5VA
+         2 FB           FB5N  <- C84.#0, R77.#0, R78.#1
+         3 NC           OFFEN
+         4              GND
+         5 EN           V6N  <- C64.#1, D6.#1, R72.#0, U18.8, U7.15
+         6 NRSS         NR5N  <- C82.#0
+         7 DNC          OFFEN
+         8 IN           V6N  <- C64.#1, D6.#1, R72.#0, U18.5, U7.15
+         9              GND
+U19  [LP5907MFX-3.3]
+         1 VIN          +5VA
+         2 GND          GND
+         3 EN           +5VA
+         4 NC           OFFEN
+         5 VOUT         3V3A  <- C18.#0, C86.#0, U9.26
+Y2  [12MHz]
+         1              HUB_XI  <- U2.4
+         3              HUB_XO  <- U2.3
+         4              GND
+         2              GND
