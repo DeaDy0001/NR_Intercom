@@ -58,6 +58,24 @@ egal wie man steht. Jede massive Wand ist eine neue Zelle.
 4. **2,4 GHz als Ausweichband.** Reicht rechnerisch etwa doppelt so weit (sicher ca. 80 m in der Halle), weil Strecke und Körper
    weniger dämpfen. Bei Veranstaltungen ist das Band aber voll (Handys, Bluetooth), deshalb nur als Notlösung für große Freiflächen.
 
+### Externe oder eingebaute Antenne, 5 GHz oder 2,4 GHz
+
+Die Tabelle oben gilt für die **externe Antenne am IPEX-Anschluss** des C5 (2 dBi) bei 5 GHz. Zum Vergleich, jeweils „sicher“:
+
+| Umgebung | 5 GHz extern | 5 GHz eingebaut | 2,4 GHz extern | 2,4 GHz eingebaut |
+|---|---|---|---|---|
+| draußen, freie Sicht | 40 m | 20 m | ca. 140 m | ca. 80 m |
+| Halle / Bühne, freie Sicht | 30 m | 15 m | ca. 90 m | ca. 50 m |
+| Halle mit Publikum oder Kulissen | 17 m | 10 m | ca. 45 m | ca. 28 m |
+| durch 1 Leichtbauwand | 9 m | 5 m | ca. 20 m | ca. 13 m |
+| durch 1 Betonwand | 3 m | 2 m | ca. 7 m | ca. 5 m |
+
+- Für die eingebaute Keramikantenne sind 5–6 dB weniger angesetzt (kleine Antenne, im Gehäuse neben Akkus und Platine).
+- 2,4 GHz reicht rechnerisch zwei- bis dreimal so weit: 6,7 dB weniger Streckendämpfung, der Körper dämpft ca. 10 statt 15 dB,
+  Wände dämpfen weniger.
+- Die Rechnung berücksichtigt **keine Störungen**. Bei 2,4 GHz gibt es nur 3 überlappungsfreie Kanäle, und bei Veranstaltungen
+  senden dort Handys, Bluetooth und fremde WLANs. Dann gibt es Aussetzer trotz guter Signalstärke. Deshalb bleibt 5 GHz der Standard.
+
 ### Kapazität je AP
 
 Jedes Bodypack schickt und empfängt 100 Pakete pro Sekunde (Opus, 10 ms). Ein Paket belegt den Funkkanal ca. 0,2–0,35 ms.

@@ -45,7 +45,17 @@ und die Datenblätter in `Platine/Datenblätter/`. Werte mit „ca.“ sind Absc
 - **Laufzeit (Abschätzung, neu gerechnet):** 2× 18650 à 3,4 Ah × 3,6 V = 24,5 Wh, davon ca. 22 Wh nutzbar.
   Verbrauch: C5 mit WLAN im Dauerempfang ca. 0,4 W, S3-Board mit Display ca. 0,65 W, Analogteil mit Wandlerverlusten ca. 0,45 W,
   LEDs und Kleinteile ca. 0,1 W → **ca. 1,6 W → ca. 13–14 h**. Mit Phantom 48 V ca. +0,35 W → **ca. 11 h**.
-  Mit gedimmtem Display entsprechend mehr. Das sind Schätzwerte, die Messung am ersten Gerät zählt.
+  Das sind Schätzwerte, die Messung am ersten Gerät zählt.
+- **Mit Display im Standby** (Aufwecken über den Taster eines Drehgebers, U16 /INT → GP4 am S3 ist dafür schon verdrahtet):
+
+  | Zustand | Verbrauch gesamt | Laufzeit | mit Phantom 48 V |
+  |---|---|---|---|
+  | Display dauernd an | ca. 1,6 W | ca. 13–14 h | ca. 11 h |
+  | Beleuchtung aus, S3 läuft weiter | ca. 1,2 W | ca. 18 h | ca. 14 h |
+  | Beleuchtung aus, Display und S3 schlafen (Light Sleep) | ca. 1,0 W | ca. 21 h | ca. 16 h |
+  | wie oben, Display 10 % der Zeit an | ca. 1,1 W | ca. 20 h | ca. 15 h |
+
+  Der Rest (ca. 1,0 W) sind C5 mit WLAN und der Analogteil, die für das Intercom dauernd laufen müssen.
 
 ## 4. 3,3 V: TPS63021
 
