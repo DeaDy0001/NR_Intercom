@@ -619,11 +619,11 @@ def build(priority=()):
     b.L("L3", "4,7 µH", 4480, 1640)
     b.Cap("C61", "4,7 µF", 4400, 1660); b.gnd_pin("C61.2", 10)
     b.D("D5", "Schottky 1 A", 4700, 1640, color=C["pwr"])
-    b.R("R70", "470 k", 5180, 1230, vert=True)
+    b.R("R70", "523 k", 5180, 1230, vert=True)
     b.R("R71", "120 k", 5040, 1270); b.gnd_pin("R71.2", 10)
     b.R("R73", "120 k", 5260, 1310, vert=True)
     b.Cap("C63", "220 nF", 5230, 1420); b.gnd_pin("C63.2", 10)
-    b.R("R72", "590 k", 5020, 1350)
+    b.R("R72", "649 k", 5020, 1350)
     b.Cap("C62", "22 µF", 5300, 1150)
     b.gnd_pin("C62.2", 10)
     b.D("D6", "Schottky 1 A", 5060, 1700, color=C["pwr"])
@@ -653,7 +653,7 @@ def build(priority=()):
     b.R("R78", "10 k", 5640, 1790, vert=True); b.gnd_pin("R78.2", 10)
     b.Cap("C77", "10 µF", 5700, 1620)
     b.gnd_pin("C77.2", 10)
-    s.text(4300, 1980, "TPS65131: +6 V = 1,213 V × (1 + 470 k/120 k), −6 V = −1,213 V × 590 k/120 k. "
+    s.text(4300, 1980, "TPS65131: +6,5 V = 1,213 V × (1 + 523 k/120 k), −6,6 V = −1,213 V × 649 k/120 k. "
            "LDOs: VFB 1,185 V / −1,179 V → 32,4 k / 10 k, C81/C82 NR/SS 10 nF, C83/C84 10 nF parallel zu R75/R77 (weniger Rauschen).", 12, "#444", family=SANS)
 
     # ================================================================== Sammelschienen
@@ -770,6 +770,7 @@ def build(priority=()):
            ("G2", "", "9 GND", U)],
       pitch=40, top=60)
     b.gnd_pin("J7.G1"); b.gnd_pin("J7.G2")
+    b.R("R79", "1 k", 780, 3200, color=C["btn"])
     # TPD4E05U06 ist ein Durchgangs-Baustein (flow-through): IOx links und rechts sind dieselbe Leitung
     M("U14", 440, 2900, 200, "U14 TPD4E05U06", "ESD 4-fach",
       [("IO1", "", "1 D1+", U), ("IO2", "", "2 D1−", U), ("IO3", "", "4 D2+", U), ("IO4", "", "5 D2−", U)],
@@ -941,7 +942,7 @@ def build(priority=()):
     N("DOCK_MISO", "C5.GP1", "R52.2"); N("DOCK_CS", "C5.GP0", "R53.2")
     N("DK_SCK", "J7.SCK", "U14.IO1", "R50.1"); N("DK_MOSI", "J7.MOSI", "U14.IO2", "R51.1")
     N("DK_MISO", "J7.MISO", "U14.IO3", "R52.1"); N("DK_CS", "J7.CS", "U14.IO4", "R53.1")
-    N("DOCK_DET", "J7.DET", "U16.P11")                 # Pull-up im TCA9555, Station zieht auf GND
+    N("DOCK_DET_J", "J7.DET", "R79.1"); N("DOCK_DET", "R79.2", "U16.P11")                 # Pull-up im TCA9555, Station zieht auf GND
     N("LED_DATA", "C5.GP7", "R37.1")
     N("C5_USB_DP", "U2.D1P", "C5.GP14"); N("C5_USB_DM", "U2.D1M", "C5.GP13")
     N("S3_USB_DP", "U2.D2P", "S3.L8"); N("S3_USB_DM", "U2.D2M", "S3.L9")

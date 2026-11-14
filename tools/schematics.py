@@ -631,7 +631,7 @@ def platine():
     to_flag("U7.VNEG", "V6N", C["pwr"], 20)
     to_text("U7.OUTN", "L4 → GND, D6")
     to_text("U7.CP", "C66 10 nF"); to_text("U7.CN", "C67 4,7 nF")
-    small(2470, 896, "R70 470 k V6P→FBP, R71 120 k FBP→GND, R72 590 k V6N→FBN, R73 120 k FBN→VREF, C60 100 nF, C61 4,7 µF,")
+    small(2470, 896, "R70 523 k V6P→FBP, R71 120 k FBP→GND, R72 649 k V6N→FBN, R73 120 k FBN→VREF, C60 100 nF, C61 4,7 µF,")
     small(2470, 914, "L3/L4 4,7 µH, D5 INP→V6P und D6 V6N→OUTN Schottky 1 A, C62/C64 22 µF. Ergibt ±5,96 V vor den LDOs.")
     s.module("U17", 3300, 540, 190, "U17 TPS7A4901", "LDO +5 V rauscharm",
              [("IN", "", "IN + EN", U), ("GND", "", "GND", U)], [("OUT", "", "OUT", U), ("FB", "", "FB", U)],
@@ -926,7 +926,7 @@ def platine():
         s.line([(x + 40, y), (x + 120, y)], C["btn"]); s.line([e, (e[0] + 30, y)], C["btn"])
         s.flag(e[0] + 30, y, net, C["btn"])
     to_flag("J7.V5", "DOCK_5V", C["pwr"], 60); small(p("J7.V5")[0] + 10, p("J7.V5")[1] + 18, "C46 10 µF → GND")
-    to_flag("J7.DET", "DOCK_DET", C["btn"], 60); to_gnd("J7.GND", 20)
+    to_flag("J7.DET", "DOCK_DET", C["btn"], 60); small(p("J7.DET")[0] + 10, p("J7.DET")[1] + 18, "über R79 1 k"); to_gnd("J7.GND", 20)
     s.note(900, 2660, ["U14 TPD4E05U06 (ESD, 4-fach) direkt an J7 auf SCK/MOSI/MISO/CS,",
                        "dahinter R50–R53 33 Ω zum C5. DOCK_DET: Pull-up im TCA9555, Station zieht auf GND.",
                        "Station: W5500 (SPI → 100-Mbit-LAN) + RJ45 mit Übertrager + 5 V/3 A, Federstifte geführt.",

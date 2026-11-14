@@ -11,7 +11,7 @@ und die Datenblätter in `Platine/Datenblätter/`. Werte mit „ca.“ sind Absc
 |---|---|
 | Laden, Akku, Schutz | passt mit **R3 160 Ω** (2,2 A Eingang, weil der TPS2116 nur 2,5 A verträgt), 2 A Laden, Schutz löst bei 2,6–4,4 A aus |
 | 3,3 V (TPS63021) | passt, große Reserve (2 A möglich, ca. 0,6 A Spitze nötig) |
-| ±6 V → ±5 V | passt, LDOs mit ca. 0,9 V Spannungsreserve, **zusätzlich C83/C84 für weniger Rauschen** |
+| ±6,5 V → ±5 V | passt, LDOs mit ca. 1,5 V Spannungsreserve, **zusätzlich C83/C84 für weniger Rauschen** |
 | 48 V Phantom | **geändert:** 500 kHz (R80 44,2 k), **neu R86 2 k** (Flankenausgleich), Kompensation R85 1 k / C75 150 nF / **neu C87 1 nF**. Vorher drohte Schwingen bei halber Taktfrequenz |
 | Mikrofon-Kette | **Eingangsrauschen ca. −125 dBu** (20 Hz–20 kHz, unbewertet). Studio-Vorverstärker liegen bei ca. −128 dBu |
 | Kopfhörer | 1 V eff. an 32 Ω (ca. 30 mW), sehr rauscharm |
@@ -69,7 +69,7 @@ und die Datenblätter in `Platine/Datenblätter/`. Werte mit „ca.“ sind Absc
 
 ## 5. ±6 V und ±5 V (Analog)
 
-- **TPS65131:** +6 V = 1,213 V × (1 + 470 k / 120 k) = **+5,96 V**; −6 V = −1,213 V × 590 k / 120 k = **−5,96 V**.
+- **TPS65131 (geändert auf ±6,5 V):** +6,5 V = 1,213 V × (1 + 523 k / 120 k) = **+6,50 V**; −6,5 V = −1,213 V × 649 k / 120 k = **−6,56 V**.
   Teiler-Strom ca. 10 µA (wie im Datenblatt empfohlen ≥ 5 µA).
 - Takt ca. 1,38 MHz, PSP/PSN an GND = fester PWM-Betrieb.
 - Spulenwelligkeit (plus): ΔI = V_IN × D / (f × L) = 3,7 V × 0,41 / (1,38 MHz × 4,7 µH) ≈ **0,23 A**. Spule
@@ -78,7 +78,8 @@ und die Datenblätter in `Platine/Datenblätter/`. Werte mit „ca.“ sind Absc
   **ca. 70 mA Spitze je Seite**. Der TPS65131 schafft mehrere 100 mA.
 - **LDOs TPS7A4901 / TPS7A3001:**
   - Ausgang +5 V: 1,185 V × (1 + 32,4 k / 10 k) = **5,02 V**; −5 V: −1,179 V × (1 + 32,4 k / 10 k) = **−5,00 V**.
-  - Spannungsreserve 5,96 − 5,0 = **0,96 V** (Dropout typ. 0,26 V bei 100 mA). Passt.
+  - Spannungsreserve 6,5 − 5,0 = **1,5 V** (Dropout typ. 0,26 V bei 100 mA). Laut Datenblatt sind ≥ 1 V für die beste
+    Unterdrückung des Wandler-Rippels empfohlen. Passt.
   - **Rauschen:** NR/SS 10 nF (C81/C82) **und neu 10 nF parallel zum oberen Teilerwiderstand (C83 ∥ R75, C84 ∥ R77)**.
     Laut Datenblatt sinkt das Ausgangsrauschen damit auf ca. 15–20 µV eff. (10 Hz–100 kHz).
   - Unterdrückung des 1,38-MHz-Rippels des TPS65131: ca. 40 dB im LDO + LC-Wirkung der Ausgangskondensatoren.
@@ -298,14 +299,14 @@ Pin für Pin gegen die Datenblätter in `Platine/Datenblätter/`. Alle Blöcke w
 |---|---|---|
 | **Q4** | Si2308BDS → **AO3422** (gleiche Bauform SOT-23) | Gate bekommt nur 3,3–4,2 V. Der Si2308BDS ist erst ab 4,5 V spezifiziert, der AO3422 ab 2,5 V. |
 | **C4** | 10 µF → **22 µF** (25 V) | BQ25895 verlangt an PMID mind. 8,2 µF wirksam. |
-| R70, R72 (optional) | 470 k → 523 k, 590 k → 649 k (ergibt ±6,5 V) | Die LDOs haben dann 1,5 V statt 0,94 V Reserve und unterdrücken den Wandler-Rippel etwas besser. Funktioniert auch ohne. |
-| DOCK_DET (optional) | 1 kΩ in Reihe zwischen J7 Pin 5 und U16 Pin 14 | Der Federkontakt liegt offen, der Widerstand schützt den Expander vor statischer Entladung. |
+| R70, R72 (umgesetzt) | 470 k → 523 k, 590 k → 649 k (ergibt ±6,5 V) | Die LDOs haben dann 1,5 V statt 0,94 V Reserve und unterdrücken den Wandler-Rippel etwas besser. Funktioniert auch ohne. |
+| DOCK_DET (umgesetzt, R79) | 1 kΩ in Reihe zwischen J7 Pin 5 und U16 Pin 14 | Der Federkontakt liegt offen, der Widerstand schützt den Expander vor statischer Entladung. |
 
 ### 15.4 Wo es im Betrieb Probleme geben könnte
 
 | Punkt | Was passieren kann | Abhilfe |
 |---|---|---|
-| **Akkus falsch herum oder ungleich geladen** | Die zwei Zellen liegen direkt parallel. Wird eine Zelle verpolt eingelegt, schließt sie die andere kurz (mehrere 10 A). Auch eine volle neben einer leeren Zelle gleicht sich mit vielen Ampere aus. Der DW01A sitzt dahinter und schützt davor nicht. | Halter mit mechanischem Verpolschutz nehmen, Polung groß beschriften, immer zwei gleiche, gleich geladene Zellen einlegen. Sicherer: je Zelle eine rückstellbare Sicherung (3 A) in Reihe. |
+| **Akkus (fest verbaut)** | Die zwei Zellen liegen direkt parallel. Werden sie mit unterschiedlicher Spannung verbunden, gleichen sie sich mit vielen Ampere aus. | Zellen mit Lötfahnen aus derselben Charge nehmen, vor dem Verbinden beide auf gleiche Spannung bringen (Unterschied < 0,05 V), Polung beim Einbau prüfen. Danach kein Risiko mehr. |
 | **48 V bei fast leerem Akku** | Unter ca. 3,4 V braucht der Wandler über 87 % Tastverhältnis, der LM5155 schafft ca. 88–92 %. Die 48 V können dann absinken. | Firmware schaltet P48 unter 3,4 V ab und meldet das. |
 | **LEDs bei leerem Akku** | SK6812MINI-E ist ab 3,7 V spezifiziert, VSYS sinkt bis 3,3 V. Farben werden schwächer, Blau zuerst. | hinnehmen oder Helligkeit in der Firmware begrenzen |
 | **Schnelllade-Netzteile** | Der BQ25895 versucht nach dem Einstecken von sich aus, ein Netzteil auf 9/12 V hochzuschalten (MaxCharge). Übliche Netzteile reagieren darauf nicht. Der Eingang (TPS2116, CH334F) verträgt aber nur 5 V. | Firmware löscht beim Start HVDCP_EN und MAXC_EN (Register 02). |
@@ -325,7 +326,7 @@ Pin für Pin gegen die Datenblätter in `Platine/Datenblätter/`. Alle Blöcke w
 | U4 DW01A, Q1 FS8205A | Pins stimmen (Q1: 1 = S1, 3 = S2, 4 = G2, 6 = G1). R8 100 Ω, C9 100 nF, R9 1 kΩ wie im Datenblatt. Ladeschluss 4,2 V liegt unter der Schutzschwelle 4,25 V. |
 | U5 MAX17048 | CTG und QSTRT an GND, VDD = CELL, ALRT an U16 (Pull-up im Expander). |
 | U6 TPS63021 | FB an VOUT, PS/SYNC und EN an VIN. L2 6 A Sättigung bei 4 A Begrenzung. |
-| U7 TPS65131 | ±5,96 V. VIN über 100 Ω / 100 nF, VREF 220 nF, CP 10 nF, CN 4,7 nF, PSP/PSN an GND, D5/D6 richtig herum. Möglich wären ca. 0,7 A (plus) und 0,4 A (minus), gebraucht werden ca. 70 mA. |
+| U7 TPS65131 | ±6,5 V. VIN über 100 Ω / 100 nF, VREF 220 nF, CP 10 nF, CN 4,7 nF, PSP/PSN an GND, D5/D6 richtig herum. Möglich wären ca. 0,7 A (plus) und 0,4 A (minus), gebraucht werden ca. 70 mA. |
 | U17/U18 TPS7A4901/3001 | +5,02 V / −4,99 V. EN an IN ist bei beiden zulässig. NR/SS 10 nF, 10 nF parallel zum oberen Teilerwiderstand, Ausgang 10 µF. |
 | U19 LP5907-3.3 | Eingang 5,02 V (erlaubt bis 5,5 V), 1 µF am Ein- und Ausgang. |
 | U8 LM5155 + Verdoppler | BIAS = VCC = VSYS ist ab 2,97 V erlaubt. Werte wie in Abschnitt 7. Dioden und Kondensatoren richtig herum, alle Spannungsfestigkeiten reichen. |
