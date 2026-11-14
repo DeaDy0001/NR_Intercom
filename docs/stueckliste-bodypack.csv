@@ -117,7 +117,7 @@
 "H · Kopfhörer";"C33";"100 nF X7R";"≥ 16 V";"0603";"U13 OPA1622: V+ (+5 V) → GND, direkt am Pin"
 "H · Kopfhörer";"C34";"10 µF X5R";"≥ 16 V";"0805";"U13 OPA1622: V− (−5 V) → GND"
 "H · Kopfhörer";"C35";"100 nF X7R";"≥ 16 V";"0603";"U13 OPA1622: V− (−5 V) → GND, direkt am Pin"
-"H · Kopfhörer";"J6";"6,35-mm-Stereo-Klinkenbuchse (Typ offen)";"—";"THT";"Kopfhörer"
+"H · Kopfhörer";"J6";"6,35-mm-Stereo-Klinkenbuchse 6-polig";"—";"THT";"Kopfhörer: 1 = Tip (L), 3 = Ring (R), 5 = Sleeve (GND), 2/4/6 frei"
 "I · Bedienung";"T1–T4";"TS-1187A-S16";"12 V / 50 mA";"SMD 5,1 × 5,1";"frei programmierbare Tasten"
 "I · Bedienung";"R33–R36";"1 kΩ";"Standard";"0603";"Tasten"
 "I · Bedienung";"C36–C39";"100 nF X7R";"≥ 10 V";"0603";"Entprellung"

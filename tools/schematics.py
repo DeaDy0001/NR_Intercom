@@ -864,8 +864,9 @@ def platine():
     to_flag("U13.EN", "HP_EN", C["ana"], 80); to_flag("U13.VP", "+5VA", C["pwr"], 80); to_flag("U13.VN", "−5VA", C["pwr"], 80)
     small(p("U13.VN")[0] - 80, p("U13.VN")[1] + 18, "Pad (11) an V−, GND (3) an GND", anchor="end")
     to_text("U13.FB", "siehe unten", INK, 16)
-    s.module("J6", 2620, 1900, 120, "J6", "6,35 Stereo", [("T", "", "T (L)", U), ("R", "", "R (R)", U),
-                                                       ("S", "", "S (GND)", U)], [], pitch=60, top=70, nums=False)
+    s.module("J6", 2620, 1900, 150, "J6", "6,35 Stereo 6-pol.", [("T", "", "1 Tip (L)", U), ("R", "", "3 Ring (R)", U),
+                                                       ("S", "", "5 Sleeve GND", U), ("NC", "", "2,4,6 frei", "nc")],
+             [], pitch=60, top=70, nums=False)
     for po, pj, ref in (("U13.O1", "J6.T", "R31"), ("U13.O2", "J6.R", "R32")):
         x, y = p(po); s.line([(x, y), (x + 10, y)], C["ana"])
         e = s.resistor(x + 10, y, ref, "10 Ω", color=C["ana"])
