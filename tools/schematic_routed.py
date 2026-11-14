@@ -142,7 +142,7 @@ class Board:
             s.line([(x + 34, y - 12), (x + 34, y + 12)], color, 3)
             s.line([(x + 34, y), (x + 60, y)], color)
             if polar:
-                s.text(x + 16, y - 16, "+", 12, color)
+                s.text(x + 8, y - 6, "+", 12, color)
             s.text(x + 30, y - 18, ref, 11, "#444", anchor="middle")
             s.text(x + 30, y + 22, val, 11, INK, anchor="middle", weight="bold")
             self.obstacle(x + 14, y - 26, x + 46, y + 28, margin=0)
@@ -507,22 +507,22 @@ def build(priority=()):
        ("QON", "", "12 /QON", U), ("DSEL", "", "24 DSEL", U)], pitch=40, top=70)
     for p in ("U3.OTG", "U3.CE", "U3.PGND"):
         b.gnd_pin(p)
-    b.Cap("C3", "1 µF", 1340, 640); b.gnd_pin("C3.2", 10)
+    b.Cap("C3", "1 µF", 1350, 640); b.gnd_pin("C3.2", 10)
     b.Cap("C4", "10 µF", 1280, 640); b.gnd_pin("C4.2", 10)
-    b.Cap("C5", "4,7 µF", 1220, 640); b.gnd_pin("C5.2", 10)
+    b.Cap("C5", "4,7 µF", 1210, 640); b.gnd_pin("C5.2", 10)
     b.R("R6", "5,23 k*", 1160, 560, vert=True)
-    b.R("R7", "30,1 k*", 1100, 660, vert=True); b.gnd_pin("R7.2", 10)
+    b.R("R7", "30,1 k*", 1130, 660, vert=True); b.gnd_pin("R7.2", 10)
     b.R("RT1", "NTC 10 k", 1040, 660, vert=True); b.gnd_pin("RT1.2", 10)
     b.R("R3", "130 Ω", 1400, 640, vert=True); b.gnd_pin("R3.2", 10)
     b.L("L1", "2,2 µH / 5 A", 1780, 240)
-    b.Cap("C6", "47 nF", 1760, 280, vert=False)
+    b.Cap("C6", "47 nF", 1760, 300, vert=False)
     b.Cap("C7", "2× 10 µF", 1960, 370); b.gnd_pin("C7.2", 10)
     b.Cap("C8", "10 µF", 2070, 420); b.gnd_pin("C8.2", 10)
     b.SW("S1", 1790, 600, "S1 Ein/Aus (TS665ZJ)")
     b.gnd_pin("S1.2", 10)
-    b.D("D2", "BAT54 (1=A, 3=K)", 1800, 680, color=C["btn"])
+    b.D("D2", "BAT54 (1=A, 3=K)", 1820, 680, color=C["btn"])
     b.R("R4", "10 k", 2000, 470, vert=True, color=C["pwr"])
-    b.R("R64", "10 k", 1740, 630, vert=True, color=C["pwr"])
+    b.R("R64", "10 k", 1720, 630, vert=True, color=C["pwr"])
 
     b.block(2120, 120, 0, 0, "Akku 2× 18650 · Schutz · Ladezustand")
     for i, (cx) in enumerate((2200, 2330)):
@@ -536,19 +536,19 @@ def build(priority=()):
                                                        ("CS", "", "2 CS/VM", U)],
       [("OD", "", "1 OD", U), ("OC", "", "3 OC", U), ("TD", "", "4 TD", "nc")], pitch=40, top=70)
     b.R("R8", "100 Ω", 2160, 420)
-    b.Cap("C9", "100 nF", 2130, 480)
+    b.Cap("C9", "100 nF", 2110, 540)
     b.R("R9", "1 k", 2160, 500); b.gnd_pin("R9.1", 10)
     M("Q1", 2300, 580, 160, "Q1 FS8205A", "2× N-MOSFET", [("G1", "", "6 G1", U), ("S1", "", "1 S1", U)],
       [("G2", "", "4 G2", U), ("S2", "", "3 S2", U), ("DD", "", "2+5 Drain", "nc")], pitch=40, top=70)
     b.gnd_pin("Q1.S2")
-    s.text(2380, 700, "Drains intern verbunden · S2 = P− = GND", 11, "#555", anchor="middle", family=SANS)
+    s.text(2380, 745, "Drains intern verbunden · S2 = P− = GND", 11, "#555", anchor="middle", family=SANS)
     M("U5", 2620, 350, 180, "U5 MAX17048", "Ladezustand, 0x36",
       [("CELL", "", "2 CELL", U), ("VDD", "", "3 VDD", U), ("GND", "", "4+9 GND/EP", U), ("CTG", "", "1 CTG", U),
        ("QSTRT", "", "6 QSTRT", U)],
       [("SDA", "", "8 SDA", U), ("SCL", "", "7 SCL", U), ("ALRT", "", "5 ALRT", U)], pitch=40, top=70)
     for p in ("U5.GND", "U5.CTG", "U5.QSTRT"):
         b.gnd_pin(p)
-    b.Cap("C10", "1 µF", 2560, 470); b.gnd_pin("C10.2", 10)
+    b.Cap("C10", "1 µF", 2580, 240); b.gnd_pin("C10.2", 10)
 
     b.block(2960, 120, 0, 0, "3,3 V: TPS63021 (fest 3,3 V, PWM)")
     M("U6", 3100, 170, 220, "U6 TPS63021", "PS/SYNC an VIN = PWM",
@@ -621,7 +621,7 @@ def build(priority=()):
     b.R("R70", "470 k", 5180, 1230, vert=True)
     b.R("R71", "120 k", 5040, 1270); b.gnd_pin("R71.2", 10)
     b.R("R73", "120 k", 5260, 1310, vert=True)
-    b.Cap("C63", "220 nF", 5330, 1310, vert=False); b.gnd_pin("C63.2", 10)
+    b.Cap("C63", "220 nF", 5230, 1420); b.gnd_pin("C63.2", 10)
     b.R("R72", "590 k", 5020, 1350)
     b.Cap("C62", "22 µF", 5300, 1150)
     b.gnd_pin("C62.2", 10)
@@ -733,11 +733,11 @@ def build(priority=()):
         b.gnd_pin(p)
     b.R("R16", "10 k", 2640, 1100, vert=True, color=C["pwr"])
     b.Cap("C17", "10µ ‖ 100n", 2560, 1560); b.gnd_pin("C17.2", 10)
-    b.Cap("C18", "10µ ‖ 100n", 2470, 1600); b.gnd_pin("C18.2", 10)
+    b.Cap("C18", "10µ ‖ 100n", 2450, 1600); b.gnd_pin("C18.2", 10)
     for i, (pin, ref, val) in enumerate((("U9.REF", "C19", "10 µF"), ("U9.AVDD", "C20", "10 µF+100 nF"),
                                          ("U9.DVDD", "C21", "10 µF+100 nF"))):
         x, y, _ = b.pins[pin]
-        b.Cap(ref, val, x + 30 + i * 0, y, vert=False)
+        b.Cap(ref, val, x + 30 + i * 90, y, vert=False)
         b.gnd_pin(f"{ref}.2", 10)
 
     M("U19", 2180, 1830, 190, "U19 LP5907-3.3", "3,3 V rauscharm, Codec",
@@ -745,7 +745,7 @@ def build(priority=()):
                                                          ("NCX", "", "4 NC", "nc")], pitch=30, top=60)
     b.gnd_pin("U19.GND")
     b.Cap("C85", "1 µF", 2060, 1930); b.gnd_pin("C85.2", 10)
-    b.Cap("C86", "1 µF", 2440, 1900); b.gnd_pin("C86.2", 10)
+    b.Cap("C86", "1 µF", 2490, 1900); b.gnd_pin("C86.2", 10)
 
     M("U10", 3680, 1240, 270, "U10 TCA9555", "I/O-Expander C5, 0x20",
       [("VCC", "", "24 VCC", U), ("SDA", "", "23 SDA", U), ("SCL", "", "22 SCL", U),
@@ -756,7 +756,7 @@ def build(priority=()):
        ("NCX", "", "10,11,17–20 frei", "nc")],
       pitch=40, top=70)
     b.gnd_pin("U10.ADDR"); b.gnd_pin("U10.GND")
-    b.Cap("C22", "100 nF", 3580, 1480); b.gnd_pin("C22.2", 10)
+    b.Cap("C22", "100 nF", 3450, 1380); b.gnd_pin("C22.2", 10)
 
     # ================================================================== Andock-Kontakte (Basisstation)
     b.block(40, 2780, 0, 0, "Andock-Kontakte Basisstation (LAN über W5500 in der Station, 5 V laden)")
@@ -799,25 +799,25 @@ def build(priority=()):
        ("TR", "", "R Klinke", U), ("TS", "", "S Klinke", U), ("G", "", "G Schirm", U)], pitch=40, top=70)
     b.gnd_pin("J5.X1"); b.gnd_pin("J5.TS"); b.gnd_pin("J5.G")
     b.R("R17", "6,81 k 0,1 %", 2640, 2200, vert=True, color=C["p48"])
-    b.R("R18", "6,81 k 0,1 %", 2730, 2200, vert=True, color=C["p48"])
+    b.R("R18", "6,81 k 0,1 %", 2770, 2200, vert=True, color=C["p48"])
     b.Cap("C23", "47 µF/63 V", 2800, 2350, vert=False, polar=True)
     b.Cap("C24", "47 µF/63 V", 2800, 2470, vert=False, polar=True)
     b.R("R19", "10 Ω", 2900, 2350)
     b.R("R20", "10 Ω", 2900, 2470)
-    M("D3", 3010, 2530, 120, "D3 BAV99", "Klemme +", [("IO", "", "3 IO", U)], [("P", "", "2 → +5VA", U),
-                                                                               ("N", "", "1 → −5VA", U)], pitch=40, top=60)
-    M("D4", 3010, 2680, 120, "D4 BAV99", "Klemme −", [("IO", "", "3 IO", U)], [("P", "", "2 → +5VA", U),
-                                                                               ("N", "", "1 → −5VA", U)], pitch=40, top=60)
+    M("D3", 3010, 2530, 120, "D3 BAV99", "Klemme +", [("IO", "", "3 IO", U)], [("P", "", "2 +5VA", U),
+                                                                               ("N", "", "1 −5VA", U)], pitch=40, top=60)
+    M("D4", 3010, 2680, 120, "D4 BAV99", "Klemme −", [("IO", "", "3 IO", U)], [("P", "", "2 +5VA", U),
+                                                                               ("N", "", "1 −5VA", U)], pitch=40, top=60)
     b.R("R21", "10 k", 3020, 2370, vert=True); b.gnd_pin("R21.2", 10)
-    b.Cap("C26", "100 pF", 3060, 2370); b.gnd_pin("C26.2", 10)
-    b.Cap("C25", "470 pF", 3130, 2400)
-    b.R("R22", "10 k", 3170, 2490, vert=True); b.gnd_pin("R22.2", 10)
+    b.Cap("C26", "100 pF", 3080, 2370); b.gnd_pin("C26.2", 10)
+    b.Cap("C25", "470 pF", 3170, 2400)
+    b.R("R22", "10 k", 3160, 2490, vert=True); b.gnd_pin("R22.2", 10)
     b.Cap("C27", "100 pF", 3220, 2490); b.gnd_pin("C27.2", 10)
-    M("U11", 3380, 2280, 200, "U11 INA163", "Mic-Vorverstärker",
+    M("U11", 3380, 2280, 240, "U11 INA163", "Mic-Vorverstärker",
       [("INP", "", "5 VIN+", U), ("INN", "", "4 VIN−", U), ("RG1", "", "3 GS1", U), ("RG2", "", "12 GS2", U),
        ("REF", "", "10 REF", U)],
       [("VP", "", "11 V+", U), ("VN", "", "6 V−", U), ("OUT", "", "9 VO", U), ("SENSE", "", "8 SENSE → VO", U),
-       ("NCX", "", "1,14 VO1/2; 2,7,13 NC", "nc")], pitch=40, top=70)
+       ("NCX", "", "1,2,7,13,14 frei", "nc")], pitch=40, top=70)
     b.gnd_pin("U11.REF")
     b.R("RG1", "200 Ω", 3300, 2530, vert=True)
     b.Cap("C28", "10µ ‖ C78 100n", 3720, 2230); b.gnd_pin("C28.2", 10)
@@ -835,7 +835,7 @@ def build(priority=()):
     b.gnd_pin("U13.GND")
     b.Cap("C30", "2,2 µF", 3990, 2370, vert=False)
     b.Cap("C31", "2,2 µF", 3990, 2450, vert=False)
-    b.R("R25", "47 k", 4060, 2560, vert=True); b.gnd_pin("R25.2", 10)
+    b.R("R25", "47 k", 4040, 2610, vert=True); b.gnd_pin("R25.2", 10)
     b.R("R26", "47 k", 3990, 2600, vert=True); b.gnd_pin("R26.2", 10)
     b.R("R27", "1 k", 4400, 2240, color=C["ana"])
     b.R("R28", "1 k", 4400, 2620, color=C["ana"])
