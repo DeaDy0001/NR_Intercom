@@ -24,6 +24,7 @@ Aktueller Prototyp: ESP32-S3 AMOLED + Waveshare WM8960 Audio Board
 ➡️ **Hardware-Konzept (Funk, eigene Trägerplatine, Akku, Latenz): [docs/hardware-konzept.md](docs/hardware-konzept.md)**
 
 ➡️ **Berechnungen und Rauschbetrachtung der Trägerplatine: [docs/berechnungen.md](docs/berechnungen.md)**
+- [Hinweise fürs Layout](docs/layout.md): Leiterbahnbreiten, Kondensatoren am Pin, Aufteilung der Platine
 
 ➡️ **Funknetz-Planung (Access Points, Reichweite, Einstellungen): [docs/funknetz-planung.md](docs/funknetz-planung.md)**
 
