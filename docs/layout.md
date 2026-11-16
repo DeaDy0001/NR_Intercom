@@ -106,6 +106,42 @@ Pull-ups, Rückführungen (FB), Kompensation, RT, SS, VREF, NR/SS, Quarz.
 - 48-V-Teil: **mind. 0,5 mm** zu allem anderen.
 - sonst: Minimum des Fertigers (0,15–0,2 mm), bei Leistungsleitungen besser 0,3 mm.
 
+## 1b. Aufbau 1 oz außen / 2 oz innen: welche Leitung auf welcher Lage
+
+Lage 1 (oben) und Lage 4 (unten): 1 oz. Inner1 (Lage 2): GND-Ebene, 2 oz. Inner2 (Lage 3): Signal, 2 oz.
+
+| Netz | Verbindung | Strom | Lage 1 / 4 (1 oz) | Inner2 (2 oz) | Empfohlen |
+|---|---|---|---|---|---|
+| USB-C 5 V | J1 → F1 → U15 Pin 6 | 2,5 A | 1,5 mm | 1,0 mm | Inner2 |
+| Station 5 V | J7 Pin 2 + 8 → C46 → U15 Pin 3 | 2,5 A | 1,5 mm | 1,0 mm | Inner2 |
+| Lader-Eingang | U15 Pin 2 + 7 → C3 → U3 Pin 1 | 2,5 A | 1,5 mm | 1,0 mm | Inner2, kurze Stücke außen |
+| Akku plus | BT1/BT2 + → C8 → U3 Pin 13 + 14 | 2 A | 1,5 mm | 0,8 mm | Inner2 |
+| Akku minus (BAT−) | BT1/BT2 − → Q1 Pin 1 | 2 A | 1,5 mm | 0,8 mm | Inner2, **nicht mit GND verbinden** |
+| GND hinter Q1 | Q1 Pin 3 → GND-Ebene | 2 A | Fläche | – | außen, 3–4 Vias in Inner1 |
+| PMID | U3 Pin 23 → C4 | 3 A Spitze | Fläche | – | **nur außen**, so kurz wie möglich |
+| Schaltknoten Lader | U3 Pin 19 + 20 → L1 → C6 | 3 A Spitze | Fläche | – | **nur außen**, so kurz wie möglich |
+| SYS am Lader | L1 → U3 Pin 15 + 16 → C7_1/C7_2 | 3 A | 1,5 mm / Fläche | – | außen, wenige mm |
+| VSYS Hauptleitung | C7 → Abzweige | 1,5 A | 1,0 mm | 0,6 mm | Inner2 |
+| VSYS → U6 | → C11_1/C11_2 → U6 Pin 10 + 11 | 1 A | 0,8 mm | 0,4 mm | Inner2, am Ende außen an C11 |
+| Schaltknoten 3,3 V | U6 Pin 8 + 9 → L2 → Pin 6 + 7 | 1,2 A Spitze | 0,8 mm | – | **nur außen** |
+| +3V3 am Wandler | U6 Pin 4 + 5 → C12_1–C12_3 | 0,8 A | 0,8 mm | – | außen |
+| VSYS → 48 V | → C70 → L5 | 0,4 A | 0,6 mm | 0,4 mm | Inner2 oder außen |
+| Schaltknoten 48 V, Verdoppler | L5 → Q4 → D7 → C71/C72 → D8/D9 → C73 | 0,5 A Spitze | 0,6 mm | – | **nur außen**, 0,5 mm Abstand |
+| Strommessung 48 V | Q4 Pin 2 → R81 → GND | 0,5 A Spitze | 0,6 mm | – | außen, 2 Vias in Inner1 |
+| VSYS → ±6,5 V | → C61 → U7 Pin 5 + 6, → L3 → U7 Pin 1 + 24 | 0,5 A | 0,6 mm | 0,4 mm | Zuleitung Inner2, Schleifen außen |
+| Schaltknoten ±6,5 V | U7 Pin 1/24 → D5, Pin 13/14 → L4/D6 | 0,5 A Spitze | 0,6 mm | – | **nur außen** |
+| VSYS → S3-Board | → J3/J4 Pin 14 | 0,5 A | 0,6 mm | 0,4 mm | Inner2 |
+| +3V3 → C5 | C12 → C44 → J2 Pin 3 | 0,4 A | 0,6 mm | 0,3 mm | Inner2, nicht unter dem Analogteil |
+| Gate 48 V | U8 Pin 3 → Q4 Pin 1 | Spitzen | 0,4 mm | – | außen, kurz |
+| ±6,5 V | D5/C62 → U17 Pin 8 + 5; D6/C64 → U18 Pin 8 + 5 | 0,1 A | 0,4 mm | 0,3 mm | beides möglich |
+| +5VA / −5VA | U17/U18 Pin 1 → U11, U13, U19 | 0,1 A | 0,4 mm | 0,3 mm | Inner2 oder Fläche |
+| Kopfhörer | U13 Pin 9 → R31 → J6; Pin 7 → R32 → J6 | 0,1 A | 0,4 mm | 0,3 mm | außen |
+| +3V3 Verteilung, 3V3A, LEDs, P48, Hub | siehe Abschnitt 1 | < 0,1 A | 0,3 mm | 0,3 mm | beliebig |
+| alle Signale | | – | 0,2 mm | 0,2 mm | beliebig, nicht auf Inner1 |
+
+An den Pins kleiner ICs (U3, U15, Q1) wird die Leitung auf den letzten 1–2 mm auf Pad-Breite schmal. Kupferflächen
+dort direkt anbinden (ohne Wärmefallen), Vias für den Lagenwechsel direkt neben das Pad, 3–4 Stück bei 2–3 A.
+
 ## 2. Besondere Leitungen
 
 | Leitung | Was zu beachten ist |
