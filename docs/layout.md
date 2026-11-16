@@ -7,36 +7,104 @@ Lage 2 ist eine durchgehende GND-Fläche, Lage 3 die Versorgungen.
 
 ---
 
-## 1. Leiterbahnbreiten
+## 1. Leiterbahnbreiten (ausführlich, von dick nach dünn)
 
-Gerechnet nach IPC-2221 für 10 °C Erwärmung, mit Reserve aufgerundet. Innenlagen brauchen wegen des dünneren Kupfers
-etwa die 4- bis 5-fache Breite, deshalb Ströme über 1 A **auf den Außenlagen oder als Fläche** führen.
+Gerechnet nach IPC-2221 für 10 °C Erwärmung, mit Reserve. Alle Breiten gelten für die **Außenlagen (35 µm)**.
+Auf den Innenlagen (17 µm) braucht man die 4- bis 5-fache Breite. Deshalb alles ab 0,6 mm **außen** führen,
+oder innen als Fläche.
 
-| Leitung | Strom max. | Außenlage | Innenlage |
-|---|---|---|---|
-| **VBUS:** J1 → F1 → U1/U15 → U3 Pin 1 | 2,5 A | **1,5 mm** oder Fläche | Fläche |
-| **Station 5 V:** J7 Pin 2 + 8 → C46 → U15 Pin 3 | 2,5 A | **1,5 mm** | Fläche |
-| **U3 SW** (Pin 19/20) → L1 | 3 A Spitze | **Fläche, ≥ 1,5 mm**, so kurz wie möglich | – |
-| **L1 → SYS** (U3 Pin 15/16) und PMID (Pin 23) | 3 A | **1,5 mm** oder Fläche | Fläche |
-| **Akku:** BT+ → U3 Pin 13/14 | 2 A laden, 1,5 A entladen | **1,5 mm** oder Fläche | Fläche |
-| **Akku-Minus:** BT− → Q1 Pin 1, Q1 Pin 3 → GND | 2 A | **1,5 mm** oder Fläche | Fläche |
-| **VSYS Hauptleitung** (von U3 zu den Wandlern) | 1,5 A | **1,0 mm** | 4 mm oder Fläche |
-| VSYS → U6 Pin 10/11 (3,3 V) | 1 A | 0,8 mm | 3 mm |
-| VSYS → L5 (48 V), VSYS → L3 / U7 (±6,5 V) | je 0,5 A | 0,5 mm | 1,5 mm |
-| VSYS → J3/J4 Pin 14 (S3-Board) | 0,5 A | 0,5 mm | 1,5 mm |
-| VSYS → LEDs | 0,1 A | 0,3 mm | 0,5 mm |
-| +3V3 von U6 | 0,6 A | 0,5 mm | 1,5 mm |
-| +3V3 zum C5-Modul (J2 Pin 3) | 0,4 A | 0,4 mm | 1,2 mm |
-| ±6,5 V, ±5VA, 3V3A | 0,1 A | 0,3 mm | 0,5 mm |
-| 48-V-Teil (Schaltknoten L5/Q4/D7/C72, P24, P48) | 0,5 A | 0,6 mm | – |
-| alle Signale (I2C, I2S, UART, SPI, Tasten) | – | 0,2 mm | 0,2 mm |
+### 1,5 mm oder Kupferfläche (2–3 A)
 
-**Durchkontaktierungen (Vias):** Ein Standard-Via (0,3 mm Bohrung) trägt ca. 1 A. Bei 2–3 A **3–4 Vias** nebeneinander setzen.
+| Netz | Verbindung | Strom |
+|---|---|---|
+| VBUS | J1 A4B9 + B4A9 → F1 → U15 Pin 6 | 2,5 A |
+| Station 5 V | J7 Pin 2 + Pin 8 → C46 → U15 Pin 3 | 2,5 A |
+| Lader-Eingang | U15 Pin 2 + Pin 7 → C3 → U3 Pin 1 | 2,5 A |
+| PMID | U3 Pin 23 → C4 | 3 A Spitze |
+| SW (Lader) | U3 Pin 19 + 20 → L1 (und C6), **so kurz wie möglich** | 3 A Spitze |
+| SYS am Lader | L1 → U3 Pin 15 + 16 → C7_1, C7_2 | 3 A |
+| Akku plus | BT1 + / BT2 + → C8 → U3 Pin 13 + 14 | 2 A |
+| Akku minus | BT1 − / BT2 − → Q1 Pin 1 | 2 A |
+| GND hinter dem Schutz | Q1 Pin 3 → GND, **3–4 Vias** | 2 A |
 
-**Abstände:**
+### 1,0 mm (bis 1,5 A)
 
-- 48-V-Teil (P24, DBL, P48_RAW, P48, Mikrofonleitungen hinter R17/R18): **mind. 0,5 mm** zu allem anderen.
-- Sonst reicht das Minimum des Fertigers (0,15–0,2 mm).
+| Netz | Verbindung | Strom |
+|---|---|---|
+| VSYS Hauptleitung | von C7_1/C7_2 zu den Abzweigen unten | 1,5 A |
+
+Alternativ als Fläche auf Lage 3.
+
+### 0,8 mm (ca. 1 A)
+
+| Netz | Verbindung | Strom |
+|---|---|---|
+| VSYS → 3,3-V-Wandler | Hauptleitung → C11_1/C11_2 → U6 Pin 10 + 11 (und Pin 12, 13 dünn) | 1 A |
+| Schaltknoten U6 | U6 Pin 8 + 9 → L2 → U6 Pin 6 + 7, kurz | 1,2 A Spitze |
+| +3V3 am Wandler | U6 Pin 4 + 5 → C12_1 – C12_3 | 0,8 A |
+
+### 0,6 mm (ca. 0,5 A)
+
+| Netz | Verbindung | Strom |
+|---|---|---|
+| VSYS → 48 V | Hauptleitung → C70_1/C70_2 → L5 | 0,4 A |
+| Schaltknoten 48 V | L5 → Q4 Pin 3 → D7 → C72 | 0,5 A Spitze |
+| Strommessung 48 V | Q4 Pin 2 → R81 → GND (2 Vias) | 0,5 A Spitze |
+| Verdoppler | D7 → C71 → D8 → C72 → D9 → C73 | Ladestöße bis 0,5 A |
+| VSYS → ±6,5 V | Hauptleitung → C61 → U7 Pin 5 + 6, und → L3 → U7 Pin 1 + 24 → D5 | 0,5 A |
+| Schaltknoten minus | U7 Pin 13 + 14 → L4 und D6 | 0,5 A Spitze |
+| VSYS → S3-Board | Hauptleitung → J3/J4 Pin 14 | 0,5 A |
+| +3V3 zum C5 | C12 → C44 → J2 Pin 3 (am Rand, nicht unter dem Analogteil) | 0,4 A |
+
+**48-V-Teil: zusätzlich 0,5 mm Abstand** zu allen anderen Leitungen (P24, DBL, P48_RAW, Schaltknoten L5/Q4/D7).
+
+### 0,4 mm (0,1–0,3 A oder kurze Stromspitzen)
+
+| Netz | Verbindung |
+|---|---|
+| Gate 48 V | U8 Pin 3 → Q4 Pin 1, kurz (Treiberstrom 1,5 A für wenige ns) |
+| BIAS/VCC 48 V | U8 Pin 1 + 2 → C70_1/C70_2 |
+| ±6,5 V | D5 → C62 → U17 Pin 8 + 5; D6 → C64 → U18 Pin 8 + 5 |
+| +5VA | U17 Pin 1 → C76 → U11 Pin 11, U13 Pin 2, U19 Pin 1 + 3, C28, C32, C33, C78, C85 |
+| −5VA | U18 Pin 1 → C77 → U11 Pin 6, U13 Pin 4 + Pad, C34, C35, C79, C80 |
+| Kopfhörer | U13 Pin 9 → R31 → J6 Pin 1 + 2; U13 Pin 7 → R32 → J6 Pin 3 + 4 |
+| Kopfhörer-Masse | J6 Pin 5 + 6 → GND (2 Vias) |
+| +3V3 Verteilung | C12 → U9 Pin 6 / 30, U10, U16, U2-Umgebung |
+
+±5VA kann auch als Fläche auf Lage 3 laufen.
+
+### 0,3 mm (unter 0,1 A)
+
+| Netz | Verbindung |
+|---|---|
+| VSYS → LEDs | je LED Pin 3 mit C40–C43 |
+| VSYS → Wandler-Steuerpins | U6 Pin 12, 13, R10; R74 → U7 Pin 4 |
+| 3V3A | U19 Pin 5 → C86 → C18 → U9 Pin 26 |
+| P48 | Q2 Pin 3 → R13 → C16 → R17 / R18 (0,5 mm Abstand!) |
+| Hub-Versorgung | VBUS → C1 → U2 Pin 19 |
+| BAT+ Abzweige | R8 → U4 Pin 5; eigene Leitung zu U5 Pin 2 + 3 |
+| BAT− Abzweig | U4 Pin 6, C9 |
+| U8 Pin 4/7, U7 Pin 2/3/19 | direkt per Via auf GND |
+
+### 0,2 mm (alles andere)
+
+I2C, I2S, UART, SPI zur Station, Taster, Drehgeber, LED-Daten, alle Steuerleitungen (ANA_EN, P48_EN, HP_EN, ...),
+Pull-ups, Rückführungen (FB), Kompensation, RT, SS, VREF, NR/SS, Quarz.
+
+### Durchkontaktierungen
+
+| Strom | Vias (0,3 mm Bohrung) |
+|---|---|
+| bis 0,5 A | 1 |
+| 1 A | 2 |
+| 2–3 A | 3–4 |
+| GND-Pad eines Leistungs-Kondensators | 2–3, direkt am Pad |
+| Thermisches Pad (U3, U6, U7, U8, U9, U17, U18, U13) | 5–9 im Pad |
+
+### Abstände
+
+- 48-V-Teil: **mind. 0,5 mm** zu allem anderen.
+- sonst: Minimum des Fertigers (0,15–0,2 mm), bei Leistungsleitungen besser 0,3 mm.
 
 ## 2. Besondere Leitungen
 
