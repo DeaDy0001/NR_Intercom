@@ -162,7 +162,7 @@ Die Firmware wird von Anfang an so aufgebaut, dass die Oberfläche später auf d
 
 | Element | Angeschlossen an | Funktion |
 |---|---|---|
-| **Taste 1–4** | **C5** (direkt, schnellste Reaktion) | **frei programmierbar**: Talk Kanal X (Tasten- oder Halte-Modus), Ruf (Call), Mikro stumm, Antworten usw. Je Taste eine **RGB-LED** (Talk/Ruf/Status), alle zusammen über 1 Pin (SK6812-LED-Kette) |
+| **Taste 1–4** | **C5** (direkt, schnellste Reaktion) | **frei programmierbar**: Talk Kanal X (Tasten- oder Halte-Modus), Ruf (Call), Mikro stumm, Antworten usw. Je Taste eine **RGB-LED** (Talk/Ruf/Status), alle zusammen über 1 Pin (LED-Kette WS2812B-2020) |
 | **Drehgeber 1 + 2** (mit Druck) | **S3** | Bedienung am Display: Menü, Kanal wählen, Lautstärke pro Kanal, Einstellungen |
 
 Die Tastenbelegung wird im Gerät gespeichert. Sie wird am Display über die Drehgeber eingestellt, später optional auch über NR_Com.

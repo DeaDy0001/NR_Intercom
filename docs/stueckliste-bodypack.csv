@@ -126,7 +126,7 @@
 "I · Bedienung";"T1–T4";"TS-1187A-S16";"12 V / 50 mA";"SMD 5,1 × 5,1";"frei programmierbare Tasten"
 "I · Bedienung";"R33–R36";"1 kΩ";"Standard";"0603";"Tasten"
 "I · Bedienung";"C36–C39";"100 nF X7R";"≥ 10 V";"0603";"Entprellung"
-"I · Bedienung";"LED1–LED4";"SK6812MINI-E (Reverse Mount, Ausschnitt in der Platine)";"3,7–5,5 V (VSYS)";"3,2 × 2,8 mm";"RGB-LED je Taste"
+"I · Bedienung";"LED1–LED4";"WS2812B-2020-V6 (leuchtet nach oben, kein Ausschnitt)";"3,3–5,3 V (VSYS)";"2,0 × 2,0 mm";"RGB-LED je Taste. Pins: 1 DO, 2 GND, 3 DI, 4 VDD"
 "I · Bedienung";"R37";"33 Ω";"Standard";"0603";"LED-Datenleitung"
 "I · Bedienung";"C40–C43";"100 nF X7R";"≥ 10 V";"0603";"LED-Versorgung"
 "I · Bedienung";"ENC1, ENC2";"ED089050-FE18D9.0, liegend, 20/20, Taster";"5 V / 1 mA";"THT (nicht reflow)";"Drehgeber am Display"

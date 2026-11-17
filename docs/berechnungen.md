@@ -199,8 +199,9 @@ Stromgeregelter Boost, Rechnung nach Datenblatt (Fehlerverstärker Gm = 2 mA/V, 
 
 - **Tasten:** 1 kΩ + 100 nF + Pull-up im TCA9555 (ca. 100 kΩ). Loslassen dauert ca. 10 ms → bei 5 ms Abfrage passt das.
 - **Drehgeber:** 10 kΩ / 10 nF → 0,1 ms Entprellung, Rest in der Firmware.
-- **LEDs SK6812MINI-E:** 33 Ω in der Datenleitung. Datenblatt ab 3,7 V, VSYS kann bis ca. 3,5 V sinken → Farben bei
-  fast leerem Akku evtl. schwächer.
+- **LEDs WS2812B-2020-V6** (statt SK6812MINI-E, leuchtet nach oben): 33 Ω in der Datenleitung. Versorgung laut Datenblatt
+  3,3–5,3 V, passt für VSYS im ganzen Bereich. Dateneingang: High ab 0,55 × VDD = 2,3 V bei 4,2 V, die 3,3 V des C5 reichen.
+  Pins: 1 DO, 2 GND, 3 DI, 4 VDD.
 - **I2C am C5:** 4,7 kΩ Pull-ups, ca. 50 pF Leitung → Anstieg ca. 0,25 µs → 400 kHz möglich.
 - **I2C am S3:** Pull-ups sitzen vermutlich auf dem 2,8″-Board (Touch). **Am Board-Schaltplan prüfen**, sonst
   2× 4,7 kΩ ergänzen.
@@ -308,7 +309,7 @@ Pin für Pin gegen die Datenblätter in `Platine/Datenblätter/`. Alle Blöcke w
 |---|---|---|
 | **Akkus (fest verbaut)** | Die zwei Zellen liegen direkt parallel. Werden sie mit unterschiedlicher Spannung verbunden, gleichen sie sich mit vielen Ampere aus. | Zellen mit Lötfahnen aus derselben Charge nehmen, vor dem Verbinden beide auf gleiche Spannung bringen (Unterschied < 0,05 V), Polung beim Einbau prüfen. Danach kein Risiko mehr. |
 | **48 V bei fast leerem Akku** | Unter ca. 3,4 V braucht der Wandler über 87 % Tastverhältnis, der LM5155 schafft ca. 88–92 %. Die 48 V können dann absinken. | Firmware schaltet P48 unter 3,4 V ab und meldet das. |
-| **LEDs bei leerem Akku** | SK6812MINI-E ist ab 3,7 V spezifiziert, VSYS sinkt bis 3,3 V. Farben werden schwächer, Blau zuerst. | hinnehmen oder Helligkeit in der Firmware begrenzen |
+| LEDs bei leerem Akku | erledigt: WS2812B-2020-V6 ist ab 3,3 V spezifiziert | – |
 | **Schnelllade-Netzteile** | Der BQ25895 versucht nach dem Einstecken von sich aus, ein Netzteil auf 9/12 V hochzuschalten (MaxCharge). Übliche Netzteile reagieren darauf nicht. Der Eingang (TPS2116, CH334F) verträgt aber nur 5 V. | Firmware löscht beim Start HVDCP_EN und MAXC_EN (Register 02). |
 | **Laden an der Station** | Ohne USB-Datenleitungen erkennt der Lader kein Netzteil und nimmt nur 0,5 A. | Firmware setzt bei DOCK_DET den Eingangsstrom auf 2,2 A. |
 | **Übersteuern mit lautem Kondensatormikro** | Grenze 68 mV eff. am Eingang. | RG1 auf 680 Ω (+20 dB) bestücken, wenn es stört. |

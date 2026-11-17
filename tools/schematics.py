@@ -899,9 +899,9 @@ def platine():
         s.line([(xx, yl + 20), (xx + 12, yl + 20)], C["led"])
         s.rect(xx + 12, yl, 90, 40, stroke=C["led"], fill="#ffffff", sw=2.5)
         s.text(xx + 57, yl + 13, f"LED{i + 1}", 11, C["led"], anchor="middle", weight="bold")
-        s.text(xx + 57, yl + 29, "SK6812MINI", 10, INK, anchor="middle")
+        s.text(xx + 57, yl + 29, "WS2812B-2020", 10, INK, anchor="middle")
         xx += 102
-    small(2810, yl + 64, "DIN → DOUT → DIN … · VDD aller LEDs = VSYS (3,5–4,2 V), je 100 nF (C40–C43)")
+    small(2810, yl + 64, "DI (3) → DO (1) → DI … · VDD (4) = VSYS, GND (2), je 100 nF (C40–C43)")
     ye = 2370
     s.text(2810, ye, "Drehgeber EC11 (direkt auf der Platine)", 13, INK, weight="bold", family=SANS)
     for i, nets in enumerate((("ENC1_A", "ENC1_B", "ENC1_SW"), ("ENC2_A", "ENC2_B", "ENC2_SW"))):

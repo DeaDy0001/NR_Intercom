@@ -793,8 +793,8 @@ def build(priority=()):
     b.R("R37", "33 Ω", 1300, 2600, color=C["led"])
     for i in range(4):
         x0 = 1420 + i * 220
-        M(f"LED{i + 1}", x0, 2540, 120, f"LED{i + 1}", "SK6812MINI-E", [("DIN", "", "2 DIN", U), ("VDD", "", "3 VDD", U)],
-          [("DOUT", "", "4 DOUT" if i < 3 else "4 frei", U if i < 3 else "nc"), ("GND", "", "1 GND", U)],
+        M(f"LED{i + 1}", x0, 2540, 120, f"LED{i + 1}", "WS2812B-2020", [("DIN", "", "3 DI", U), ("VDD", "", "4 VDD", U)],
+          [("DOUT", "", "1 DO" if i < 3 else "1 frei", U if i < 3 else "nc"), ("GND", "", "2 GND", U)],
           pitch=40, top=60)
         b.gnd_pin(f"LED{i + 1}.GND", 10)
         b.Cap(f"C{40 + i}", "100 nF", x0 - 40, 2700); b.gnd_pin(f"C{40 + i}.2", 10)
