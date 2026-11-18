@@ -753,14 +753,28 @@ def build(priority=()):
        ("ADDR", "", "21,2,3 A0–A2", U), ("INT", "", "1 /INT (Abfrage)", "nc"), ("GND", "", "12 GND", U)],
       [("P0", "", "4 P00 P48_SW", U), ("P1", "", "5 P01 BQ_INT", U), ("P2", "", "6 P02 HP_EN", U),
        ("P3", "", "7 P03 CODEC_RST", U), ("P4", "", "8 P04 ANA_EN", U), ("P5", "", "9 P05 P48_EN", U),
+       ("P6", "", "10 P06 VIB", U),
        ("P10", "", "13 P10 T1", U), ("P11", "", "14 P11 T2", U), ("P12", "", "15 P12 T3", U), ("P13", "", "16 P13 T4", U),
-       ("NCX", "", "10,11,17–20 frei", "nc")],
+       ("NCX", "", "11,17–20 frei", "nc")],
       pitch=40, top=70)
     b.gnd_pin("U10.ADDR"); b.gnd_pin("U10.GND")
     for i, ref in enumerate(("R90", "R91", "R92")):
         b.R(ref, "10 k", 4160 + i * 70, 1420, vert=True); b.gnd_pin(f"{ref}.2", 10)
     s.text(4140, 1560, "R90–R92: Pull-downs (Start = aus)", 11, "#555", family=SANS)
     b.Cap("C22", "100 nF", 3450, 1380); b.gnd_pin("C22.2", 10)
+
+    # Vibrationsalarm: Münzmotor 1020 (3 V, 80 mA) an VSYS, geschaltet von U10 P06
+    s.text(4130, 1600, "Vibrationsalarm (Münzmotor 3 V / 80 mA)", 12, "#555", weight="bold", family=SANS)
+    b.R("R93", "100 Ω", 4130, 1640, vert=True)
+    b.R("R94", "10 k", 4130, 1800, vert=True); b.gnd_pin("R94.2", 10)
+    M("Q5", 4200, 1690, 150, "Q5 AO3400A", "N-FET", [("G", "", "1 G", U), ("S", "", "2 S", U)],
+      [("D", "", "3 D", U)], pitch=40, top=60)
+    b.gnd_pin("Q5.S")
+    b.D("D10", "1N4148W", 4430, 1790, vert=True)
+    b.Cap("C88", "100 nF", 4520, 1790)
+    M("J8", 4620, 1760, 180, "J8 Motor", "2 Lötpads", [("P", "", "1 + (rot)", U), ("N", "", "2 − (schwarz)", U)],
+      [], pitch=40, top=60)
+    b.R("R95", "10 Ω", 4580, 1890, vert=True, color=C["pwr"])
 
     # ================================================================== Andock-Kontakte (Basisstation)
     b.block(40, 2780, 0, 0, "Andock-Kontakte Basisstation (LAN über W5500 in der Station, 5 V laden)")
@@ -950,11 +964,13 @@ def build(priority=()):
     N("S3_EXP_INT", "U16.INT", "R60.2", "S3.L6")
     N("BQ_INT", "U3.INT", "R4.2", "U10.P1"); N("BAT_ALRT", "U5.ALRT", "U16.P10")
     N("PWR_KEY", "D2.A", "U16.P06")
+    N("VIB", "U10.P6", "R93.1"); N("VIB_G", "R93.2", "R94.1", "Q5.G")
+    N("VIB_P", "R95.1", "D10.K", "C88.1", "J8.P"); N("VIB_N", "Q5.D", "D10.A", "C88.2", "J8.N")
     N("P48_SW", "U10.P0", "R84.1", "R90.1"); N("HP_EN", "U10.P2", "U13.EN", "R92.1")
     N("ANA_EN", "U10.P4", "U7.EN"); N("P48_EN", "U10.P5", "U8.UVLO", "R91.1")
     # Versorgungen (an Sammelschienen)
     N("VSYS", "U3.SYS", "L1.2", "C7.1", "U6.VIN", "C11.1", "R10.1", "U6.EN", "U6.PS", "R74.1", "U7.INN", "L3.1", "C61.1",
-      "U8.BIAS", "U8.VCC", "C70.1", "L5.1", "S3.L11", "LED1.VDD", "LED2.VDD", "LED3.VDD", "LED4.VDD", "C40.1", "C41.1", "C42.1", "C43.1")
+      "U8.BIAS", "U8.VCC", "C70.1", "L5.1", "S3.L11", "R95.2", "LED1.VDD", "LED2.VDD", "LED3.VDD", "LED4.VDD", "C40.1", "C41.1", "C42.1", "C43.1")
     N("+3V3", "U6.VOUT", "C12.1", "U6.FB", "C5.3V3", "C44.1", "R14.1", "R15.1", "R4.1", "R16.1", "U9.IOVDD",
       "U9.LDOSEL", "C17.1", "U10.VCC", "C22.1", "U16.VCC", "U16.ADDR", "C45.1", "R60.1", "R64.2",
 

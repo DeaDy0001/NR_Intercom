@@ -785,17 +785,21 @@ def platine():
              [("VCC", "", "VCC", U), ("SDA", "", "SDA", U), ("SCL", "", "SCL", U), ("ADDR", "", "A0–A2", U),
               ("GND", "", "GND", U)],
              [("P0", "", "P00", U), ("P1", "", "P01", U), ("P2", "", "P02", U), ("P3", "", "P03", U), ("P4", "", "P04", U),
-              ("P5", "", "P05", U), ("P10", "", "P10", U), ("P11", "", "P11", U), ("P12", "", "P12", U),
+              ("P5", "", "P05", U), ("P6", "", "P06", U), ("P10", "", "P10", U), ("P11", "", "P11", U), ("P12", "", "P12", U),
               ("P13", "", "P13", U)], pitch=34, top=64, nums=False)
     to_flag("U10.VCC", "+3V3", C["pwr"], 70); small(p("U10.VCC")[0] - 70, p("U10.VCC")[1] + 18, "C22 100 nF", anchor="end")
     to_flag("U10.SDA", "SDA_A", C["i2c"], 70); to_flag("U10.SCL", "SCL_A", C["i2c"], 70)
     to_gnd("U10.ADDR"); to_gnd("U10.GND")
     for pin, name, col in (("U10.P0", "P48_SW", C["p48"]), ("U10.P1", "BQ_INT", C["i2c"]),
                            ("U10.P2", "HP_EN", C["ana"]), ("U10.P3", "CODEC_RST", C["i2c"]),
-                           ("U10.P4", "ANA_EN", C["i2c"]), ("U10.P5", "P48_EN", C["p48"]),
+                           ("U10.P4", "ANA_EN", C["i2c"]), ("U10.P5", "P48_EN", C["p48"]), ("U10.P6", "VIB", INK),
                            ("U10.P10", "T1", C["btn"]), ("U10.P11", "T2", C["btn"]), ("U10.P12", "T3", C["btn"]),
                            ("U10.P13", "T4", C["btn"])):
         to_flag(pin, name, col, 20)
+    for i, t in enumerate(("Vibrationsalarm: VIB → R93 100 Ω → Q5 AO3400A (Gate), R94 10 k → GND (Start = aus).",
+                           "Q5 schaltet Münzmotor J8 (1020, 3 V / 80 mA, ins Gehäuse geklebt) gegen GND,",
+                           "Motor-Plus über R95 10 Ω an VSYS. D10 1N4148W + C88 100 nF parallel zum Motor.")):
+        s.text(3060, 1668 + i * 18, t, 12, "#555", family=SANS)
 
     # ======================================================================= G · Mikrofon
     s.block(30, 1800, 1940, 780, "G · Mikrofon-Eingang: Kombibuchse XLR / 6,35 mm, Phantom 48 V, Vorverstärker")

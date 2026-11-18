@@ -345,3 +345,21 @@ Pin für Pin gegen die Datenblätter in `Platine/Datenblätter/`. Alle Blöcke w
 3. Phantom 48 V: nur auf Wunsch einschalten, Codec dabei 0,5 s stumm, unter 3,4 V Akkuspannung abschalten.
 4. Reihenfolge Audio: ANA_EN an → 50 ms warten → Codec-Reset lösen und einrichten → 0,5 s warten → HP_EN an.
 5. Abschalten bei ca. 3,2 V Akkuspannung (Ship-Mode), der DW01A trennt erst bei 2,5 V.
+6. Vibrationsalarm: U10 P06 (Pin 10) als Ausgang auf 0 setzen, bevor irgendetwas anderes passiert. Muster (z. B. 2 × 300 ms) macht die Firmware über Ein-/Ausschaltzeiten.
+
+## 16. Vibrationsalarm (neu, 18.11.2026)
+
+Münzmotor 1020 (10 × 2 mm, 3 V Nennspannung, 80 mA, 11.000 U/min, Litze 34 mm), ins Gehäuse geklebt, an zwei Lötpads J8.
+
+| Bauteil | Wert | Rechnung / Grund |
+|---|---|---|
+| Q5 | AO3400A, SOT-23 | Gate bekommt 3,3 V vom TCA9555. R_DS(on) ≤ 48 mΩ bei 2,5 V → bei 80 mA nur 4 mV Abfall und 0,3 mW. |
+| R93 | 100 Ω | dämpft die Schaltflanke am Gate, begrenzt den Umladestrom (33 mA Spitze) für den Expander-Pin |
+| R94 | 10 kΩ nach GND | Der TCA9555 zieht nach dem Start alle Pins über 100 kΩ auf 3,3 V. Mit 10 kΩ liegt das Gate bei 3,3 V × 10 / 110 = 0,30 V, Q5 (Schwelle min. 0,65 V) bleibt sicher aus. |
+| R95 | 10 Ω, 0805 | VSYS 3,5–4,2 V minus 80 mA × 10 Ω = 0,8 V → Motor bekommt ca. 2,7–3,4 V (Nenn 3,0 V). Leistung 64 mW im Lauf, beim Anlaufen kurz ca. 0,15 W. |
+| D10 | 1N4148W | Freilaufdiode: fängt die Spannung der Motorwicklung beim Abschalten ab (Kathode an Motor +). 150 mA Dauerstrom reicht für 80 mA. |
+| C88 | 100 nF | direkt an den Motor-Pads, dämpft das Bürstenfeuer (Störungen bis in den MHz-Bereich) |
+
+- **Strom:** ca. 80 mA nur während der Vibration. Bei z. B. 10 Rufen à 2 s pro Stunde sind das 0,4 mAh pro Stunde, also nichts gegen die ca. 400 mA Grundlast.
+- **Versorgung an VSYS, nicht an +3V3:** Die Störspitzen des Motors sollen nicht in die 3,3 V der beiden ESP32.
+- **Layout:** Q5, D10, C88, R93–R95 und die Pads J8 nah zusammen, weit weg vom Analogteil (J5, U11, U9, U13). Motor-GND über eigenes Via in die GND-Fläche. Motor nicht auf die Platine kleben, sondern ins Gehäuse (Rückwand), damit Platine, Quarz und Kondensatoren nicht mitschwingen.

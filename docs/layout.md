@@ -230,6 +230,14 @@ Wenig Strom, aber empfindlich gegen Einstreuung. Weg von Schaltknoten, kurze Lei
 | C50–C55 | Entprellung Drehgeber |
 | C72, C73 | Verdoppler 48 V: kompakt bei D8/D9, aber nicht so kritisch wie C71 |
 
+### Vibrationsalarm (neu)
+
+| Bauteil | Wo |
+|---|---|
+| Q5, D10, C88, R95 | als Gruppe direkt an den Motor-Pads J8, 0,3-mm-Leitungen reichen (80 mA) |
+| R93, R94 | am Gate von Q5. Die Leitung von U10 Pin 10 darf lang sein (nur Schaltsignal). |
+| J8 | am Rand, weit weg vom Analogteil (J5, U11, U9, U13), z. B. oben bei Akku/Lader. Motor-GND mit eigenem Via. |
+
 ## 4. Aufteilung der Platine
 
 1. **Zone Leistung:** J1, U1, U15, U3 mit L1, Akkuanschluss, U4/Q1, U6 mit L2, U7 mit L3/L4/D5/D6, U8 mit L5/Q4/D7–D9.
