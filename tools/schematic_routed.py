@@ -496,6 +496,9 @@ def build(priority=()):
     s.text(1150, 530, "12 MHz", 12, INK, weight="bold")
     b.R("R61", "100 k", 400, 770, vert=True, color=C["pwr"])
     b.R("R62", "33 k", 420, 860); b.gnd_pin("R62.2", 20)
+    b.Cap("C89", "1 µF", 150, 640); b.gnd_pin("C89.2", 10)
+    b.Cap("C90", "1 µF", 240, 770); b.gnd_pin("C90.2", 10)
+    s.text(90, 876, "C89/C90: direkt an U15 Pin 6 / Pin 3", 11, "#555", family=SANS)
 
     b.block(1220, 120, 0, 0, "Laderegler BQ25895 (Power-Path)")
     M("U3", 1440, 170, 260, "U3 BQ25895", "Lader 2 A, I2C 0x6A (Bus C5)",
@@ -876,9 +879,9 @@ def build(priority=()):
     # lokale Netze zuerst (kurz), dann Signale, dann Versorgungen
     N("J1VB", "J1.VBUS", "F1.1")
     N("CC1", "J1.CC1", "R1.1"); N("CC2", "J1.CC2", "R2.1")
-    N("VBUS", "F1.2", "U1.VBUS", "U2.VBUS", "C1.1", "U15.IN2")
+    N("VBUS", "F1.2", "U1.VBUS", "U2.VBUS", "C1.1", "U15.IN2", "C89.1")
     N("VBUS_CHG", "U15.OUT", "U3.VBUS", "C3.1")
-    N("DOCK_5V", "J7.V5A", "J7.V5B", "U15.IN1", "U15.MODE", "R61.1", "C46.1")
+    N("DOCK_5V", "J7.V5A", "J7.V5B", "U15.IN1", "U15.MODE", "R61.1", "C46.1", "C90.1")
     N("PR1", "U15.PR1", "R61.2", "R62.1")
     N("HUB_XI", "U2.XI", "Y2.X1"); N("HUB_XO", "U2.XO", "Y2.X2"); N("PSELF", "U2.PSELF", "R63.2")
     N("DSEL", "U3.DSEL", "R64.1")

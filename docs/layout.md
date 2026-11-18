@@ -186,6 +186,7 @@ instabiler Wandler oder ein zerstörtes IC.
 | **U11 INA163** | **C78** 100 nF / **C80** 100 nF | 11 V+ / 6 V− ↔ GND | Verstärker mit hoher Bandbreite |
 | **U13 OPA1622** | **C33** 100 nF / **C35** 100 nF | 2 V+ / 4 V− ↔ GND | Verstärker mit hohen Ausgangsströmen |
 | **U2 CH334F** | **C2** 1 µF | 20 VDD33 ↔ 25 GND | interner 3,3-V-Regler |
+| **U15 TPS2116** (neu) | **C89** 1 µF / **C90** 1 µF | 6 VIN2 / 3 VIN1 ↔ GND-Via | dämpft Spannungsspitzen beim Einstecken (USB, Federkontakte Station). Leitung erst über den Kondensator, dann zum Pin |
 
 ### Stufe 2: wichtig, nah am Pin (2–5 mm)
 

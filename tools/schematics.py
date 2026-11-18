@@ -495,10 +495,11 @@ def platine():
     to_text("U15.PR1", "R61/R62", INK, 16)
     to_text("U15.MODE", "→ DOCK_5V", C["pwr"], 16)
     to_flag("U15.OUT", "VBUS_CHG", C["pwr"], 10)
-    s.note(60, 850, ["Ein USB-C für alles: Laden (über U15 → U3) und Flashen/Konsole beider ESP32 über den Hub.",
+    s.note(60, 868, ["Ein USB-C für alles: Laden (über U15 → U3) und Flashen/Konsole beider ESP32 über den Hub.",
                      "In der Basisstation lädt U15 aus deren 5 V (DOCK_5V). Die USB-C-Buchsen der Module bleiben unbenutzt.",
-                     "U15: Vorrang Station (MODE → VIN1, PR1 über R61 100 k von DOCK_5V und R62 33 k → GND, schaltet ab ca. 4 V)."],
-           size=14)
+                     "U15: Vorrang Station (MODE → VIN1, PR1 über R61 100 k von DOCK_5V und R62 33 k → GND, schaltet ab ca. 4 V).",
+                     "C89 1 µF an VIN2 (Pin 6) und C90 1 µF an VIN1 (Pin 3), je direkt am Pin nach GND: dämpft Spitzen beim Einstecken."],
+           size=12)
 
     # ======================================================================= B · Laden + Akku
     s.block(1130, 100, 1300, 840, "B · Laderegler mit Power-Path, 2× 18650 parallel, Schutz, Ladezustand")
