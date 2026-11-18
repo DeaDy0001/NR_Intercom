@@ -756,9 +756,8 @@ def build(priority=()):
        ("ADDR", "", "21,2,3 A0–A2", U), ("INT", "", "1 /INT (Abfrage)", "nc"), ("GND", "", "12 GND", U)],
       [("P0", "", "4 P00 P48_SW", U), ("P1", "", "5 P01 BQ_INT", U), ("P2", "", "6 P02 HP_EN", U),
        ("P3", "", "7 P03 CODEC_RST", U), ("P4", "", "8 P04 ANA_EN", U), ("P5", "", "9 P05 P48_EN", U),
-       ("P6", "", "10 P06 VIB", U),
        ("P10", "", "13 P10 T1", U), ("P11", "", "14 P11 T2", U), ("P12", "", "15 P12 T3", U), ("P13", "", "16 P13 T4", U),
-       ("NCX", "", "11,17–20 frei", "nc")],
+       ("P17", "", "20 P17 VIB", U), ("NCX", "", "10,11,17–19 frei", "nc")],
       pitch=40, top=70)
     b.gnd_pin("U10.ADDR"); b.gnd_pin("U10.GND")
     for i, ref in enumerate(("R90", "R91", "R92")):
@@ -766,7 +765,7 @@ def build(priority=()):
     s.text(4140, 1560, "R90–R92: Pull-downs (Start = aus)", 11, "#555", family=SANS)
     b.Cap("C22", "100 nF", 3450, 1380); b.gnd_pin("C22.2", 10)
 
-    # Vibrationsalarm: Münzmotor 1020 (3 V, 80 mA) an VSYS, geschaltet von U10 P06
+    # Vibrationsalarm: Münzmotor 1020 (3 V, 80 mA) an VSYS, geschaltet von U10 P17 (Pin 20)
     s.text(4130, 1600, "Vibrationsalarm (Münzmotor 3 V / 80 mA)", 12, "#555", weight="bold", family=SANS)
     b.R("R93", "100 Ω", 4130, 1640, vert=True)
     b.R("R94", "10 k", 4130, 1800, vert=True); b.gnd_pin("R94.2", 10)
@@ -967,7 +966,7 @@ def build(priority=()):
     N("S3_EXP_INT", "U16.INT", "R60.2", "S3.L6")
     N("BQ_INT", "U3.INT", "R4.2", "U10.P1"); N("BAT_ALRT", "U5.ALRT", "U16.P10")
     N("PWR_KEY", "D2.A", "U16.P06")
-    N("VIB", "U10.P6", "R93.1"); N("VIB_G", "R93.2", "R94.1", "Q5.G")
+    N("VIB", "U10.P17", "R93.1"); N("VIB_G", "R93.2", "R94.1", "Q5.G")
     N("VIB_P", "R95.1", "D10.K", "C88.1", "J8.P"); N("VIB_N", "Q5.D", "D10.A", "C88.2", "J8.N")
     N("P48_SW", "U10.P0", "R84.1", "R90.1"); N("HP_EN", "U10.P2", "U13.EN", "R92.1")
     N("ANA_EN", "U10.P4", "U7.EN"); N("P48_EN", "U10.P5", "U8.UVLO", "R91.1")

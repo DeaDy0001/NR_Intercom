@@ -345,7 +345,7 @@ Pin für Pin gegen die Datenblätter in `Platine/Datenblätter/`. Alle Blöcke w
 3. Phantom 48 V: nur auf Wunsch einschalten, Codec dabei 0,5 s stumm, unter 3,4 V Akkuspannung abschalten.
 4. Reihenfolge Audio: ANA_EN an → 50 ms warten → Codec-Reset lösen und einrichten → 0,5 s warten → HP_EN an.
 5. Abschalten bei ca. 3,2 V Akkuspannung (Ship-Mode), der DW01A trennt erst bei 2,5 V.
-6. Vibrationsalarm: U10 P06 (Pin 10) als Ausgang auf 0 setzen, bevor irgendetwas anderes passiert. Muster (z. B. 2 × 300 ms) macht die Firmware über Ein-/Ausschaltzeiten.
+6. Vibrationsalarm: U10 P17 (Pin 20) als Ausgang auf 0 setzen, bevor irgendetwas anderes passiert. Muster (z. B. 2 × 300 ms) macht die Firmware über Ein-/Ausschaltzeiten.
 
 ## 16. Vibrationsalarm (neu, 18.11.2026)
 

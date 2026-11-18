@@ -236,7 +236,7 @@ Wenig Strom, aber empfindlich gegen Einstreuung. Weg von Schaltknoten, kurze Lei
 | Bauteil | Wo |
 |---|---|
 | Q5, D10, C88, R95 | als Gruppe direkt an den Motor-Pads J8, 0,3-mm-Leitungen reichen (80 mA) |
-| R93, R94 | am Gate von Q5. Die Leitung von U10 Pin 10 darf lang sein (nur Schaltsignal). |
+| R93, R94 | am Gate von Q5. Die Leitung von U10 Pin 20 (P17) darf lang sein (nur Schaltsignal). |
 | J8 | am Rand, weit weg vom Analogteil (J5, U11, U9, U13), z. B. oben bei Akku/Lader. Motor-GND mit eigenem Via. |
 
 ## 4. Aufteilung der Platine

@@ -134,7 +134,7 @@
 "I · Bedienung";"ENC1, ENC2";"ED089050-FE18D9.0, liegend, 20/20, Taster";"5 V / 1 mA";"THT (nicht reflow)";"Drehgeber am Display"
 "I · Bedienung";"R40–R45";"10 kΩ";"Standard";"0603";"Pull-ups Drehgeber"
 "I · Bedienung";"C50–C55";"10 nF X7R";"≥ 16 V";"0603";"Entprellung Drehgeber"
-"I · Bedienung";"Q5";"AO3400A (AOS), N-FET 30 V / 5,7 A, R_DS(on) ≤ 48 mΩ bei 2,5 V";"30 V";"SOT-23";"NEU: schaltet den Vibrationsmotor, Gate von U10 P06 (Pin 10)"
+"I · Bedienung";"Q5";"AO3400A (AOS), N-FET 30 V / 5,7 A, R_DS(on) ≤ 48 mΩ bei 2,5 V";"30 V";"SOT-23";"NEU: schaltet den Vibrationsmotor, Gate von U10 P17 (Pin 20)"
 "I · Bedienung";"R93";"100 Ω";"Standard";"0603";"NEU: Gate-Widerstand Q5"
 "I · Bedienung";"R94";"10 kΩ";"Standard";"0603";"NEU: Pull-down Gate Q5 → GND: Motor bleibt beim Einschalten aus"
 "I · Bedienung";"R95";"10 Ω";"≥ 0,125 W";"0805";"NEU: Vorwiderstand Motor an VSYS, Motor bekommt ca. 2,7–3,4 V"
