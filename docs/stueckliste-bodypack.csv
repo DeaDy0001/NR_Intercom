@@ -11,6 +11,8 @@
 "A · USB-C, Hub, Umschalter";"U15";"TI TPS2116";"5 V / 2,5 A";"SOT-583 (DRL-8)";"5 V: Station (Vorrang) oder USB-C → Lader"
 "A · USB-C, Hub, Umschalter";"R61, R62";"100 kΩ, 33 kΩ 1 %";"Standard";"0603";"PR1-Teiler, Umschalten ab ca. 4 V"
 "A · USB-C, Hub, Umschalter";"C46";"10 µF X5R";"≥ 16 V";"0805";"5 V von der Station"
+"A · USB-C, Hub, Umschalter";"C89";"1 µF X5R/X7R (z. B. Samsung CL10A105KB8NNNC, LCSC C15849)";"≥ 16 V, besser 25 V";"0603";"NEU: U15 Pin 6 (VIN2, USB) → GND, direkt am Pin mit GND-Via. Dämpft Spitzen beim Einstecken"
+"A · USB-C, Hub, Umschalter";"C90";"1 µF X5R/X7R (wie C89)";"≥ 16 V, besser 25 V";"0603";"NEU: U15 Pin 3 (VIN1, Station) → GND, direkt am Pin mit GND-Via. Dämpft Spitzen der Federkontakte"
 "B · Laden und Akku";"U3";"TI BQ25895";"VBUS 5 V";"WQFN-24 4×4 (RTW)";"Lader mit Power-Path, I2C 0x6A am Bus des C5"
 "B · Laden und Akku";"L1";"2,2 µH, Isat ≥ 5 A, z. B. YSPI0530-2R2M";"—";"SMD 5,4 × 5,2 mm";"Lader-Spule"
 "B · Laden und Akku";"C3";"1 µF X7R";"≥ 25 V";"0603";"VBUS"

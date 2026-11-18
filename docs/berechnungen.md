@@ -322,7 +322,7 @@ Pin für Pin gegen die Datenblätter in `Platine/Datenblätter/`. Alle Blöcke w
 |---|---|
 | USB-C J1, R1/R2 5,1 kΩ, F1 3 A, U1 USBLC6-2P6 | Pins und Werte stimmen. |
 | U2 CH334F | Pinbelegung stimmt (V5 Pin 19, VDD33 Pin 20, PSELF Pin 18 über 10 kΩ an GND). OVCUR# und RESET# dürfen offen bleiben (interne Pull-ups). Quarz ohne externe Kondensatoren ist richtig (16 pF eingebaut). |
-| U15 TPS2116 | MODE an VIN1, Teiler 100 k / 33 k → Station hat ab 4,03 V Vorrang. Ohne Station wird automatisch USB genommen. |
+| U15 TPS2116 | MODE an VIN1, Teiler 100 k / 33 k → Station hat ab 4,03 V Vorrang. Ohne Station wird automatisch USB genommen. **Nachtrag 18.11.:** C89/C90 (je 1 µF) direkt an VIN2/VIN1 fehlten, siehe Abschnitt 17. |
 | U3 BQ25895 | Alle Pins wie im Datenblatt: CE und OTG an GND, DSEL und INT mit 10 kΩ an 3,3 V, REGN 4,7 µF, BTST 47 nF, TS-Teiler 5,23 k / 30,1 k + NTC 10 k, SYS 2× 10 µF, BAT 10 µF. |
 | U4 DW01A, Q1 FS8205A | Pins stimmen (Q1: 1 = S1, 3 = S2, 4 = G2, 6 = G1). R8 100 Ω, C9 100 nF, R9 1 kΩ wie im Datenblatt. Ladeschluss 4,2 V liegt unter der Schutzschwelle 4,25 V. |
 | U5 MAX17048 | CTG und QSTRT an GND, VDD = CELL, ALRT an U16 (Pull-up im Expander). |
@@ -363,3 +363,16 @@ Münzmotor 1020 (10 × 2 mm, 3 V Nennspannung, 80 mA, 11.000 U/min, Litze 34 mm)
 - **Strom:** ca. 80 mA nur während der Vibration. Bei z. B. 10 Rufen à 2 s pro Stunde sind das 0,4 mAh pro Stunde, also nichts gegen die ca. 400 mA Grundlast.
 - **Versorgung an VSYS, nicht an +3V3:** Die Störspitzen des Motors sollen nicht in die 3,3 V der beiden ESP32.
 - **Layout:** Q5, D10, C88, R93–R95 und die Pads J8 nah zusammen, weit weg vom Analogteil (J5, U11, U9, U13). Motor-GND über eigenes Via in die GND-Fläche. Motor nicht auf die Platine kleben, sondern ins Gehäuse (Rückwand), damit Platine, Quarz und Kondensatoren nicht mitschwingen.
+
+## 17. Nachtrag 18.11.2026: Eingangskondensatoren am TPS2116 (C89, C90)
+
+Bei der Layoutprüfung aufgefallen: An U15 saß kein Kondensator direkt an den Eingängen. C46 (10 µF) liegt bei J7, ca. 31 mm entfernt,
+C1 (10 µF) beim Hub, ca. 47 mm entfernt.
+
+- **Problem:** Beim Einstecken bilden Kabel- bzw. Leitungsinduktivität und die weit entfernten Keramik-Kondensatoren einen Schwingkreis.
+  Die Spannung schwingt kurz über 5 V hinaus. An der Station passiert das wegen der Federkontakte mehrfach. Der TPS2116 verträgt am
+  Eingang nur knapp 6 V.
+- **Lösung:** je 1 µF direkt an Pin 6 (VIN2, USB) und Pin 3 (VIN1, Station) nach GND, mit GND-Via direkt am Pad. Die Zuleitung
+  kommt zuerst am Kondensator an und geht dann zum Pin.
+- **Bauart:** Keramik X5R oder X7R, 0603, mindestens 16 V, besser 25 V. Ein 10-V-Typ hat bei 5 V Gleichspannung oft nur noch ca. 0,5 µF.
+- C46 und C1 bleiben unverändert.
