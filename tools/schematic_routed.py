@@ -553,11 +553,11 @@ def build(priority=()):
         b.gnd_pin(p)
     b.Cap("C10", "1 µF", 2580, 240); b.gnd_pin("C10.2", 10)
 
-    b.block(2960, 120, 0, 0, "3,3 V: TPS63021 (fest 3,3 V, PWM)")
-    M("U6", 3100, 170, 220, "U6 TPS63021", "PS/SYNC an VIN = PWM",
+    b.block(2960, 120, 0, 0, "3,3 V: TPS63020 (R96/R97 → 3,28 V, PWM)")
+    M("U6", 3100, 170, 220, "U6 TPS63020", "PS/SYNC an VIN = PWM",
       [("VIN", "", "10+11 VIN", U), ("VINA", "", "1 VINA", U), ("EN", "", "12 EN", U), ("PS", "", "13 PS/SYNC", U),
        ("GND", "", "2+15 GND/PGND", U)],
-      [("L1", "", "8+9 L1", U), ("L2", "", "6+7 L2", U), ("VOUT", "", "4+5 VOUT", U), ("FB", "", "3 FB → VOUT", U),
+      [("L1", "", "8+9 L1", U), ("L2", "", "6+7 L2", U), ("VOUT", "", "4+5 VOUT", U), ("FB", "", "3 FB", U),
        ("PG", "", "14 PG", "nc")], pitch=40, top=70)
     b.gnd_pin("U6.GND")
     b.Cap("C11", "2× 10 µF", 2920, 280); b.gnd_pin("C11.2", 10)
@@ -565,6 +565,10 @@ def build(priority=()):
     b.Cap("C13", "100 nF", 2940, 400); b.gnd_pin("C13.2", 10)
     b.L("L2", "1,5 µH / 4 A", 3380, 240)
     b.Cap("C12", "3× 22 µF", 3560, 360); b.gnd_pin("C12.2", 10)
+    b.R("R96", "1 MΩ 1%", 3400, 380, vert=True, color=C["pwr"])
+    b.R("R97", "180 k 1%", 3400, 480, vert=True); b.gnd_pin("R97.2", 10)
+    s.text(3120, 600, "FB: R96 von +3V3 (VOUT) an Pin 3, R97 von Pin 3 an GND (Pin 2).", 11, "#555", family=SANS)
+    s.text(3120, 616, "Pin 3 NICHT direkt an VOUT. 0,5 V × (1 + 1 M/180 k) = 3,28 V", 11, "#555", family=SANS)
 
     # ---------------------------------------------------------------- 48 V: LM5155 Boost (~24 V) + Verdoppler
     b.block(3760, 120, 0, 0, "48 V Phantom: LM5155 → ca. 24 V, Spannungsverdoppler → 48 V, P-FET-Schalter")
@@ -973,7 +977,8 @@ def build(priority=()):
     # Versorgungen (an Sammelschienen)
     N("VSYS", "U3.SYS", "L1.2", "C7.1", "U6.VIN", "C11.1", "R10.1", "U6.EN", "U6.PS", "R74.1", "U7.INN", "L3.1", "C61.1",
       "U8.BIAS", "U8.VCC", "C70.1", "L5.1", "S3.L11", "R95.2", "LED1.VDD", "LED2.VDD", "LED3.VDD", "LED4.VDD", "C40.1", "C41.1", "C42.1", "C43.1")
-    N("+3V3", "U6.VOUT", "C12.1", "U6.FB", "C5.3V3", "C44.1", "R14.1", "R15.1", "R4.1", "R16.1", "U9.IOVDD",
+    N("FB3V3", "U6.FB", "R96.2", "R97.1")
+    N("+3V3", "U6.VOUT", "C12.1", "R96.1", "C5.3V3", "C44.1", "R14.1", "R15.1", "R4.1", "R16.1", "U9.IOVDD",
       "U9.LDOSEL", "C17.1", "U10.VCC", "C22.1", "U16.VCC", "U16.ADDR", "C45.1", "R60.1", "R64.2",
 
       *[f"{rr}.1" for (_, _, rr, _) in enc])

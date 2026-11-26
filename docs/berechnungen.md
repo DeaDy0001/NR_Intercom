@@ -57,7 +57,7 @@ und die Datenblätter in `Platine/Datenblätter/`. Werte mit „ca.“ sind Absc
 
   Der Rest (ca. 1,0 W) sind C5 mit WLAN und der Analogteil, die für das Intercom dauernd laufen müssen.
 
-## 4. 3,3 V: TPS63021
+## 4. 3,3 V: TPS63021 (ab 26.11.: TPS63020 mit R96/R97, siehe Abschnitt 18)
 
 - Fest 3,3 V, **FB an VOUT**, **PS/SYNC an VIN** (fester PWM-Betrieb, kein Burst-Modus, damit kein Brummen im Hörbereich).
 - Last: C5 bis ca. 0,35 A beim Senden, Expander, Codec-Digitalteil, Pull-ups → **ca. 0,4–0,6 A Spitze**. Der TPS63021 kann 2 A.
@@ -376,3 +376,17 @@ C1 (10 µF) beim Hub, ca. 47 mm entfernt.
   kommt zuerst am Kondensator an und geht dann zum Pin.
 - **Bauart:** Keramik X5R oder X7R, 0603, mindestens 16 V, besser 25 V. Ein 10-V-Typ hat bei 5 V Gleichspannung oft nur noch ca. 0,5 µF.
 - C46 und C1 bleiben unverändert.
+
+## 18. Nachtrag 26.11.2026: U6 TPS63020 statt TPS63021
+
+Der TPS63021 (fest 3,3 V) war bei JLCPCB knapp und teuer. Der **TPS63020DSJR** (LCSC C15483) ist derselbe Chip in der
+einstellbaren Ausführung: gleiches Gehäuse (DSJ), gleiche Pins. Einziger Unterschied ist Pin 3 (FB):
+
+- TPS63021: FB direkt an VOUT.
+- **TPS63020: FB an den Teiler R96 / R97.** R96 = 1 MΩ 1 % von VOUT nach FB, R97 = 180 kΩ 1 % von FB nach GND
+  (Werte aus dem Datenblatt, Tabelle 3).
+- U_out = 0,5 V × (1 + 1000 k / 180 k) = **3,28 V**. Mit 1-%-Widerständen und ±1 % Referenz: ca. 3,23–3,33 V.
+- Strom durch den Teiler 2,8 µA, Bauform 0402 oder 0603 reicht.
+- **Wichtig:** VOUT (Pin 4/5) bleibt an der +3V3-Leitung mit C12. Pin 3 hängt **nur** am Knoten R96/R97.
+- Layout: R96/R97 direkt an Pin 3, R97 kurz an Pin 2 (GND). Die FB-Leitung ist hochohmig: kurz halten,
+  nicht neben L2 oder den Pins 6–9 (Schaltknoten) führen.

@@ -597,7 +597,7 @@ def platine():
 
     # ======================================================================= C · Spannungen
     s.block(2450, 100, 1420, 840, "C · Spannungen: 3,3 V (Logik), ±5 V (Analog), 48 V (Phantom)")
-    s.module("U6", 2680, 170, 230, "U6 TPS63021", "Buck-Boost 3,3 V / 2 A",
+    s.module("U6", 2680, 170, 230, "U6 TPS63020", "Buck-Boost 3,3 V / 2 A",
              [("VIN", "", "VIN", U), ("VINA", "", "VINA", U), ("EN", "", "EN", U), ("PS", "", "PS/SYNC", U),
               ("GND", "", "GND/PGND", U)],
              [("L1", "", "L1", U), ("L2", "", "L2", U), ("VOUT", "", "VOUT", U), ("FB", "", "FB", U),
@@ -612,7 +612,7 @@ def platine():
     s.line([(xa + 110, ya), (xa + 124, ya), (xa + 124, yb_), (xb_, yb_)])
     x, y = p("U6.VOUT"); s.line([(x, y), (x + 130, y)], C["pwr"]); s.flag(x + 130, y, "+3V3", C["pwr"])
     small(x + 40, y + 18, "C12 3× 22 µF → GND")
-    to_text("U6.FB", "→ VOUT (Festspannung)")
+    to_text("U6.FB", "R96 1 M → VOUT, R97 180 k → GND (3,28 V)")
 
     s.module("U7", 2720, 540, 230, "U7 TPS65131", "±6 V Doppelwandler, PWM",
              [("EN", "", "8+10 ENP/ENN", U), ("VIN", "", "4 VIN", U), ("INN", "", "5+6 INN", U), ("INP", "", "1+24 INP", U),
