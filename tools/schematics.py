@@ -614,7 +614,7 @@ def platine():
     small(x + 40, y + 18, "C12 3× 22 µF → GND")
     to_text("U6.FB", "R96 1 M → VOUT, R97 180 k → GND (3,28 V)")
 
-    s.module("U7", 2720, 540, 230, "U7 TPS65131", "±6 V Doppelwandler, PWM",
+    s.module("U7", 2720, 540, 230, "U7 TPS65130", "±6 V Doppelwandler, PWM",
              [("EN", "", "8+10 ENP/ENN", U), ("VIN", "", "4 VIN", U), ("INN", "", "5+6 INN", U), ("INP", "", "1+24 INP", U),
               ("PS", "", "9+11 PSP/PSN", U), ("GND", "", "2,3,19 GND", U)],
              [("VPOS", "", "23 VPOS", U), ("FBP", "", "22 FBP", U), ("VREF", "", "17 VREF", U), ("FBN", "", "16 FBN", U),

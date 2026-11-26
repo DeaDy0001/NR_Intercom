@@ -390,3 +390,18 @@ einstellbaren Ausführung: gleiches Gehäuse (DSJ), gleiche Pins. Einziger Unter
 - **Wichtig:** VOUT (Pin 4/5) bleibt an der +3V3-Leitung mit C12. Pin 3 hängt **nur** am Knoten R96/R97.
 - Layout: R96/R97 direkt an Pin 3, R97 kurz an Pin 2 (GND). Die FB-Leitung ist hochohmig: kurz halten,
   nicht neben L2 oder den Pins 6–9 (Schaltknoten) führen.
+
+## 19. Nachtrag 26.11.2026: U7 TPS65130 statt TPS65131
+
+Der TPS65131 war bei JLCPCB nicht verfügbar (Lieferung erst Mitte Dezember). Der **TPS65130RGER** (LCSC C54989) steht im
+selben Datenblatt (SLVS493E), hat dasselbe Gehäuse (RGE) und laut gemeinsamer Pin-Tabelle **identische Pins**.
+Alle Bauteile drumherum bleiben gleich (R70–R73, L3, L4, D5, D6, C60–C67).
+
+Einziger Unterschied: Schalter-Strombegrenzung **0,8 A** (min. 0,7 A) statt 1,95 A.
+
+| | Spitzenstrom im Schalter (VIN 3,4 V, 70 mA) | Grenze min. | Max. Ausgangsstrom laut Datenblatt (VIN 3,3 V) |
+|---|---|---|---|
+| +6,5 V (Boost, 4,7 µH) | ca. 0,26 A | 0,7 A | ca. 400 mA |
+| −6,5 V (Invertierer, 4,7 µH) | ca. 0,38 A | 0,7 A | ca. 200 mA |
+
+Gebraucht werden ca. 70 mA je Seite, die Reserve ist also etwa dreifach. Spannung, Rauschen und Schaltfrequenz bleiben gleich.

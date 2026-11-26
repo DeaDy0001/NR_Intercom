@@ -612,8 +612,8 @@ def build(priority=()):
            12, "#444", family=SANS)
 
     # ---------------------------------------------------------------- ±5 V: TPS65131 (±6 V) + rauscharme LDOs
-    b.block(4300, 1090, 0, 0, "±5 V Analog: TPS65131 (±6 V) → TPS7A4901 (+5 V) / TPS7A3001 (−5 V)")
-    M("U7", 4700, 1160, 260, "U7 TPS65131", "±6 V, PSP/PSN = PWM",
+    b.block(4300, 1090, 0, 0, "±5 V Analog: TPS65130 (±6,5 V) → TPS7A4901 (+5 V) / TPS7A3001 (−5 V)")
+    M("U7", 4700, 1160, 260, "U7 TPS65130", "±6 V, PSP/PSN = PWM",
       [("EN", "", "8+10 ENP/ENN", U), ("VIN", "", "4 VIN", U), ("INN", "", "5+6 INN", U), ("INP", "", "1+24 INP", U),
        ("PS", "", "9+11 PSP/PSN", U), ("BSW", "", "7 BSW", "nc"), ("GND", "", "2,3,19,25 GND", U),
        ("NCX", "", "12+20 NC", "nc")],
@@ -660,7 +660,7 @@ def build(priority=()):
     b.R("R78", "10 k", 5640, 1790, vert=True); b.gnd_pin("R78.2", 10)
     b.Cap("C77", "10 µF", 5700, 1620)
     b.gnd_pin("C77.2", 10)
-    s.text(4300, 1980, "TPS65131: +6,5 V = 1,213 V × (1 + 523 k/120 k), −6,6 V = −1,213 V × 649 k/120 k. "
+    s.text(4300, 1980, "TPS65130: +6,5 V = 1,213 V × (1 + 523 k/120 k), −6,6 V = −1,213 V × 649 k/120 k. "
            "LDOs: VFB 1,185 V / −1,179 V → 32,4 k / 10 k, C81/C82 NR/SS 10 nF, C83/C84 10 nF parallel zu R75/R77 (weniger Rauschen).", 12, "#444", family=SANS)
 
     # ================================================================== Sammelschienen

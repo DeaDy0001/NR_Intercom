@@ -42,7 +42,7 @@
 "C · 3,3 V";"C12";"3× 22 µF X5R";"≥ 10 V";"0805";"Ausgang 3,3 V"
 "C · 3,3 V";"R10";"100 Ω";"Standard";"0603";"VINA-Filter"
 "C · 3,3 V";"C13";"100 nF X7R";"≥ 10 V";"0603";"NEU: U6 Pin 1 (VINA) → GND, laut Datenblatt (max. 220 nF)"
-"C · ±6 V / ±5 V Analog";"U7";"TI TPS65131";"VSYS → ±6 V";"VQFN-24 4×4 (RGE)";"±6 V Doppelwandler (PWM)"
+"C · ±6 V / ±5 V Analog";"U7";"TI TPS65130RGER (LCSC C54989), statt TPS65131";"VSYS → ±6,5 V";"VQFN-24 4×4 (RGE)";"±6,5 V Doppelwandler (PWM). Gleiche Pins wie TPS65131, Schalter 0,8 A statt 1,95 A, reicht für ca. 70 mA je Seite"
 "C · ±6 V / ±5 V Analog";"L3, L4";"4,7 µH, Isat ≥ 2,5 A, SLO0420H4R7MTT";"—";"SMD 4,45 × 4,2 mm";"±6 V Spulen"
 "C · ±6 V / ±5 V Analog";"D5, D6";"Schottky 1 A (z. B. MBRM120, SS14)";"≥ 20 V";"SOD-123F oder SMA";"±6 V Gleichrichter"
 "C · ±6 V / ±5 V Analog";"R70–R73";"523 k, 120 k, 649 k, 120 k 1 % (R70/R72 geändert)";"Standard";"0603";"Teiler +6,5 V / −6,6 V"
